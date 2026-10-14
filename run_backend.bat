@@ -1,6 +1,6 @@
 @echo off
 title ClearBuild (SAQ QURYLYS) - Backend API
-cd /d "W:\Projects\Hackathon 8.0"
+cd /d "%~dp0"
 echo ========================================================
 echo  ClearBuild (SAQ QURYLYS) - FastAPI REST Server
 echo  Codemasters Hackathon 8.0 (Ust-Kamenogorsk)
