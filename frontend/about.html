@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>О системе · SAQ QURYLYS</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Top Civic Header -->
+  <header class="civic-header no-print">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-wrap">
+        <div class="brand-badge">🏛️</div>
+        <div>
+          <div class="brand-title">
+            <span>SAQ QURYLYS</span>
+            <span class="accent">·</span>
+            <span style="font-weight: 500; font-size: 0.9rem; color: var(--text-secondary);">ClearBuild</span>
+          </div>
+          <div class="brand-subtitle" id="i18n-header-sub">
+            Мониторинг строящегося жилья · Усть-Каменогорск
+          </div>
+        </div>
+      </a>
+
+      <!-- Main Navigation Menu (Desktop) -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link ">
+          <span>🗺️</span> <span>Карта</span>
+        </a>
+        <a href="registry.html" class="nav-link ">
+          <span>📋</span> <span>Реестр ЖК</span>
+        </a>
+        <a href="ads.html" class="nav-link ">
+          <span>📢</span> <span>Реклама и ИИ</span>
+        </a>
+        <a href="scoring.html" class="nav-link ">
+          <span>⚖️</span> <span>Матрица R1–R6</span>
+        </a>
+        <a href="signal.html" class="nav-link ">
+          <span>📑</span> <span>Сигнальный акт</span>
+        </a>
+        <a href="about.html" class="nav-link active">
+          <span>ℹ️</span> <span>О проекте</span>
+        </a>
+      </nav>
+
+      <!-- Right Controls: Domain, Theme, Language -->
+      <div class="header-tools">
+        <a href="https://komputerny-oslik.site" target="_blank" class="domain-link">
+          🌐 <span>komputerny-oslik.site</span>
+        </a>
+
+        <!-- Theme Toggle -->
+        <div class="pill-group" role="group" aria-label="Theme Switcher">
+          <button class="pill-btn" id="theme-btn-light" onclick="setTheme('light')">
+            ☀️ <span id="lbl-theme-light">Светлая</span>
+          </button>
+          <button class="pill-btn" id="theme-btn-dark" onclick="setTheme('dark')">
+            🌙 <span id="lbl-theme-dark">Тёмная</span>
+          </button>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="pill-group" role="group" aria-label="Language Switcher">
+          <button class="pill-btn" id="lang-btn-kz" onclick="setLanguage('kz')">ҚАЗ</button>
+          <button class="pill-btn active" id="lang-btn-ru" onclick="setLanguage('ru')">РУС</button>
+          <button class="pill-btn" id="lang-btn-en" onclick="setLanguage('en')">ENG</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Sub-Navigation Bar -->
+  <div class="mobile-nav-bar no-print">
+    <a href="index.html" class="nav-link ">🗺️ Карта</a>
+    <a href="registry.html" class="nav-link ">📋 Реестр</a>
+    <a href="ads.html" class="nav-link ">📢 Реклама</a>
+    <a href="scoring.html" class="nav-link ">⚖️ Матрица</a>
+    <a href="signal.html" class="nav-link ">📑 Акт</a>
+    <a href="about.html" class="nav-link active">ℹ️ О проекте</a>
+  </div>
+
+  <!-- Citizen Info Ribbon -->
+  <div class="civic-ribbon no-print">
+    <div class="container civic-ribbon-inner">
+      <div>
+        <span class="ribbon-tag">🛡️ <span id="i18n-ribbon-tag">Официальный реестр:</span></span>
+        <span id="i18n-ribbon-desc">Сверка строящихся объектов с базой разрешений МИО ВКО и договоров гарантии АО «КЖК».</span>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">
+        Codemasters Hackathon 8.0 · 2026
+      </div>
+    </div>
+  </div>
+
+
+  <main class="container" style="flex: 1; padding-top: 1.5rem; padding-bottom: 2rem;">
+    <div class="kpi-card" style="flex-direction: column; align-items: flex-start; gap: 1rem; padding: 2rem;">
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">О системе SAQ QURYLYS (ClearBuild)</h1>
+      <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; max-width: 900px;">
+        <p style="margin-bottom: 1rem;">
+          <strong>Codemasters Hackathon 8.0 (г. Усть-Каменогорск)</strong> — Платформа гражданского контроля и мониторинга соблюдения Закона РК «О долевом участии в жилищном строительстве».
+        </p>
+        
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-top: 1.25rem; margin-bottom: 0.5rem;">Ключевые преимущества и решения:</h3>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+          <li><strong>100% достоверная географическая привязка:</strong> Все 8 строящихся комплексов посажены строго на фактические земельные участки г. Усть-Каменогорска (набережная Ульбы возле Дворца спорта, Стрелка, КШТ, пос. Новая Согра возле ТМК). Никаких маркеров на проезжей части или чужих улицах.</li>
+          <li><strong>Многостраничная архитектура (MPA):</strong> Удобное разделение функционала: отдельная просторная карта новостроек, реестр ЖК с поиском и экспортом, лента рекламы с подсветкой серых схем, матрица риск-скоринга и официальный сигнальный акт (PDF).</li>
+          <li><strong>Нулевой бюджет на инфраструктуру:</strong> Использование OpenStreetMap (100% бесплатно, без коммерческих API-ключей и лимитов).</li>
+          <li><strong>Объяснимый скоринг R1–R6:</strong> Детерминированная математическая модель. Каждый балл строго обоснован нормативными документами УГАСК и КЖК.</li>
+          <li><strong>ИИ как советник, человек как судья:</strong> Гипотезы машинного обучения подсвечивают риски для аналитика, но юридический вердикт выносится экспертом.</li>
+          <li><strong>Трёхъязычный интерфейс (RU / KZ / EN):</strong> Полная локализация названий, терминов, факторов и независимый выбор языка для печатного акта.</li>
+        </ul>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+          <a href="https://github.com/Raul894123/ClearBuild" target="_blank" class="btn btn-primary">📦 Исходный код на GitHub</a>
+          <a href="https://komputerny-oslik.site" target="_blank" class="btn btn-secondary">🌐 Production: komputerny-oslik.site</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Civic Footer -->
+  <footer class="civic-footer no-print">
+    <div class="container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <strong>SAQ QURYLYS</strong> · ClearBuild © 2026. Мониторинг законности долевого строительства г. Усть-Каменогорск.
+      </div>
+      <div style="font-size: 0.75rem;">
+        Данные обновлены: <span id="footer-update-time">15.10.2026</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Reusable Dossier Modal -->
+  <div class="modal-overlay" id="dossier-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;" id="modal-dossier-tag">Досье объекта</div>
+          <h3 style="font-size: 1.15rem; font-weight: 800;" id="modal-dossier-title">ЖК</h3>
+        </div>
+        <button onclick="closeDossierModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body" id="modal-dossier-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDossierModal()">Закрыть</button>
+        <button class="btn btn-primary" onclick="openSignalPage(SELECTED_COMPLEX_ID)">📄 Сформировать акт проверки</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/data.js"></script>
+  <script src="js/shared.js"></script>
+</body>
+</html>
