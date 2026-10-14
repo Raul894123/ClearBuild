@@ -2684,17 +2684,23 @@ function triggerDownload(filename, content, mimeType) {
   URL.revokeObjectURL(url);
 }
 
+
+function getApiBaseUrl() {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+  return isLocal ? 'http://localhost:8000/api/v1' : 'https://komputerny-oslik.site/api/v1';
+}
+
 async function toggleDataSourceMode(isMock) {
   USE_MOCK_DATA = isMock;
   const flagText = document.getElementById('mock-flag-text');
+  const apiBase = getApiBaseUrl();
   if (flagText) {
-    flagText.textContent = isMock ? 'true' : 'false (API http://localhost:8000)';
+    flagText.textContent = isMock ? 'true' : 'false (' + apiBase + ')';
     flagText.style.color = isMock ? '#38bdf8' : '#fcd34d';
   }
 
   if (!isMock) {
     try {
-      const apiBase = 'http://localhost:8000/api/v1';
       const [compRes, pubRes] = await Promise.all([
         fetch(apiBase + '/complexes'),
         fetch(apiBase + '/publications')
@@ -2704,14 +2710,14 @@ async function toggleDataSourceMode(isMock) {
         const pubData = await pubRes.json();
         complexes = compData;
         ads = pubData;
-        console.log('✓ Данные успешно загружены из FastAPI backend:', { complexes: complexes.length, publications: ads.length });
+        console.log('✓ Данные успешно загружены из API (' + apiBase + '):', { complexes: complexes.length, publications: ads.length });
         refreshAllViews();
         return;
       }
     } catch (err) {
-      console.warn('FastAPI backend недоступен по http://localhost:8000. Включён безопасный откат (fallback) на локальные INITIAL_COMPLEXES:', err);
+      console.warn('API недоступен по ' + apiBase + '. Включён безопасный откат (fallback) на локальные INITIAL_COMPLEXES:', err);
     }
-    // Fallback: безопасный откат при недоступности локального бэкенда
+    // Fallback: безопасный откат при недоступности бэкенда
     complexes = JSON.parse(JSON.stringify(INITIAL_COMPLEXES));
     ads = JSON.parse(JSON.stringify(INITIAL_ADS));
     refreshAllViews();
@@ -2794,7 +2800,7 @@ async function saveManualPublication() {
 
   if (!USE_MOCK_DATA) {
     try {
-      await fetch('http://localhost:8000/api/v1/publications', {
+      await fetch(getApiBaseUrl() + '/publications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPub)

@@ -99,6 +99,7 @@ def get_health():
         "DEMO_MODE": True,
         "app": "ClearBuild (SAQ QURYLYS)",
         "city": "Ust-Kamenogorsk",
+        "domain": "komputerny-oslik.site",
         "version": "1.0.0",
         "complexes_count": len(DB["complexes"]),
         "publications_count": len(DB["publications"]),
