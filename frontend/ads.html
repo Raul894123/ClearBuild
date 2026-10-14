@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Мониторинг рекламы и ИИ-детектор · SAQ QURYLYS</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Top Civic Header -->
+  <header class="civic-header no-print">
+    <div class="container header-inner">
+      <a href="index.html" class="brand-wrap">
+        <div class="brand-badge">🏛️</div>
+        <div>
+          <div class="brand-title">
+            <span>SAQ QURYLYS</span>
+            <span class="accent">·</span>
+            <span style="font-weight: 500; font-size: 0.9rem; color: var(--text-secondary);">ClearBuild</span>
+          </div>
+          <div class="brand-subtitle" id="i18n-header-sub">
+            Мониторинг строящегося жилья · Усть-Каменогорск
+          </div>
+        </div>
+      </a>
+
+      <!-- Main Navigation Menu (Desktop) -->
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link ">
+          <span>🗺️</span> <span>Карта</span>
+        </a>
+        <a href="registry.html" class="nav-link ">
+          <span>📋</span> <span>Реестр ЖК</span>
+        </a>
+        <a href="ads.html" class="nav-link active">
+          <span>📢</span> <span>Реклама и ИИ</span>
+        </a>
+        <a href="scoring.html" class="nav-link ">
+          <span>⚖️</span> <span>Матрица R1–R6</span>
+        </a>
+        <a href="signal.html" class="nav-link ">
+          <span>📑</span> <span>Сигнальный акт</span>
+        </a>
+        <a href="about.html" class="nav-link ">
+          <span>ℹ️</span> <span>О проекте</span>
+        </a>
+      </nav>
+
+      <!-- Right Controls: Domain, Theme, Language -->
+      <div class="header-tools">
+        <a href="https://komputerny-oslik.site" target="_blank" class="domain-link">
+          🌐 <span>komputerny-oslik.site</span>
+        </a>
+
+        <!-- Theme Toggle -->
+        <div class="pill-group" role="group" aria-label="Theme Switcher">
+          <button class="pill-btn" id="theme-btn-light" onclick="setTheme('light')">
+            ☀️ <span id="lbl-theme-light">Светлая</span>
+          </button>
+          <button class="pill-btn" id="theme-btn-dark" onclick="setTheme('dark')">
+            🌙 <span id="lbl-theme-dark">Тёмная</span>
+          </button>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="pill-group" role="group" aria-label="Language Switcher">
+          <button class="pill-btn" id="lang-btn-kz" onclick="setLanguage('kz')">ҚАЗ</button>
+          <button class="pill-btn active" id="lang-btn-ru" onclick="setLanguage('ru')">РУС</button>
+          <button class="pill-btn" id="lang-btn-en" onclick="setLanguage('en')">ENG</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Sub-Navigation Bar -->
+  <div class="mobile-nav-bar no-print">
+    <a href="index.html" class="nav-link ">🗺️ Карта</a>
+    <a href="registry.html" class="nav-link ">📋 Реестр</a>
+    <a href="ads.html" class="nav-link active">📢 Реклама</a>
+    <a href="scoring.html" class="nav-link ">⚖️ Матрица</a>
+    <a href="signal.html" class="nav-link ">📑 Акт</a>
+    <a href="about.html" class="nav-link ">ℹ️ О проекте</a>
+  </div>
+
+  <!-- Citizen Info Ribbon -->
+  <div class="civic-ribbon no-print">
+    <div class="container civic-ribbon-inner">
+      <div>
+        <span class="ribbon-tag">🛡️ <span id="i18n-ribbon-tag">Официальный реестр:</span></span>
+        <span id="i18n-ribbon-desc">Сверка строящихся объектов с базой разрешений МИО ВКО и договоров гарантии АО «КЖК».</span>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">
+        Codemasters Hackathon 8.0 · 2026
+      </div>
+    </div>
+  </div>
+
+
+  <main class="container" style="flex: 1; padding-top: 1.5rem;">
+    <div style="margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+      <div>
+        <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Мониторинг рекламы и детекция незаконного сбора средств</h1>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+          Автоматический парсинг объявлений с Krisha.kz, OLX, Instagram. Подсветка триггеров «платная бронь», «касса», «депозит» и расхождений готовности (R5).
+        </p>
+      </div>
+      <button class="btn btn-primary" onclick="openAddAdModal()">➕ Добавить объявление вручную</button>
+    </div>
+
+    <!-- Ad Table -->
+    <div class="civic-table-container">
+      <table class="civic-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Площадка / Дата</th>
+            <th>ЖК / Застройщик</th>
+            <th>Текст объявления и фиксация</th>
+            <th>Выявленные триггеры риска</th>
+            <th>Гипотеза ИИ</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="ads-table-body"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Add Ad Modal -->
+  <div class="modal-overlay" id="add-ad-modal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 800;">Добавить публикацию для анализа</h3>
+        <button onclick="closeAddAdModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Жилой комплекс</label>
+          <select id="new-ad-complex-id" class="search-input"></select>
+        </div>
+        <div>
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Площадка</label>
+          <select id="new-ad-platform" class="search-input">
+            <option value="Krisha.kz">Krisha.kz</option>
+            <option value="Instagram">Instagram (@realty_vko)</option>
+            <option value="OLX.kz">OLX.kz</option>
+            <option value="Telegram">Telegram канал</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Текст объявления</label>
+          <textarea id="new-ad-text" class="search-input" rows="4" placeholder="Вставьте текст объявления (например: «Готовность 80%! Бронирование с первоначальным взносом 20% в кассу»)..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAddAdModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="submitManualAd()">⚡ Проанализировать ИИ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Civic Footer -->
+  <footer class="civic-footer no-print">
+    <div class="container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <strong>SAQ QURYLYS</strong> · ClearBuild © 2026. Мониторинг законности долевого строительства г. Усть-Каменогорск.
+      </div>
+      <div style="font-size: 0.75rem;">
+        Данные обновлены: <span id="footer-update-time">15.10.2026</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Reusable Dossier Modal -->
+  <div class="modal-overlay" id="dossier-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;" id="modal-dossier-tag">Досье объекта</div>
+          <h3 style="font-size: 1.15rem; font-weight: 800;" id="modal-dossier-title">ЖК</h3>
+        </div>
+        <button onclick="closeDossierModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body" id="modal-dossier-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDossierModal()">Закрыть</button>
+        <button class="btn btn-primary" onclick="openSignalPage(SELECTED_COMPLEX_ID)">📄 Сформировать акт проверки</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/data.js"></script>
+  <script src="js/shared.js"></script>
+  <script>
+    function renderAdsTable() {
+      const tbody = document.getElementById('ads-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = adsList.map(a => {
+        const complex = complexes.find(c => c.id === a.complexId);
+        const compName = complex ? getLocalized(complex.names) : a.complexId;
+        const badgeClass = a.status === 'CONFIRMED' ? 'badge-red' : a.status === 'VERIFIED_OK' ? 'badge-green' : 'badge-yellow';
+
+        const adDate = a.date || a.pubDate || a.capturedAt || '14.10.2026';
+        const captureTime = a.capturedAt || a.date || a.pubDate || '14.10.2026, 12:00';
+        const adUrl = a.url || '#';
+
+        const raw = a.rawText || a.text || '';
+        let highlightedAdText = raw;
+        if (a.triggerSpan && raw.includes(a.triggerSpan)) {
+          highlightedAdText = raw.replace(a.triggerSpan, '<span class="highlight-risk">' + a.triggerSpan + '</span>');
+        } else if (a.triggers && a.triggers.length) {
+          a.triggers.forEach(tr => {
+            if (raw.includes(tr)) {
+              highlightedAdText = highlightedAdText.replaceAll(tr, '<span class="highlight-risk">' + tr + '</span>');
+            }
+          });
+        }
+
+        const triggersHtml = (a.triggers || []).map(tr => {
+          return `<span style="background: rgba(239,68,68,0.12); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">${tr}</span>`;
+        }).join(' ');
+
+        return `
+          <tr>
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-muted);">${a.id}</td>
+            <td>
+              <strong>${a.source}</strong>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${adDate}</div>
+            </td>
+            <td>
+              <strong>${compName}</strong>
+            </td>
+            <td style="max-width: 340px; font-size: 0.82rem; line-height: 1.45;">
+              <div>${highlightedAdText}</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📸 Фиксация: ${captureTime}</span>
+                <span>·</span>
+                <a href="${adUrl}" target="_blank" style="color: var(--brand-primary); text-decoration: underline;">🔗 Источник</a>
+              </div>
+            </td>
+            <td>${triggersHtml}</td>
+            <td style="font-size: 0.78rem; font-weight: 600; color: var(--brand-primary);">${a.aiHypothesis}</td>
+            <td>
+              <span class="status-badge ${badgeClass}">${a.status}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openAddAdModal() {
+      const sel = document.getElementById('new-ad-complex-id');
+      sel.innerHTML = complexes.map(c => {
+        return `<option value="${c.id}">${getLocalized(c.names)} (${c.code})</option>`;
+      }).join('');
+      document.getElementById('add-ad-modal').style.display = 'flex';
+    }
+
+    function closeAddAdModal() {
+      document.getElementById('add-ad-modal').style.display = 'none';
+    }
+
+    function submitManualAd() {
+      const complexId = document.getElementById('new-ad-complex-id').value;
+      const platform = document.getElementById('new-ad-platform').value;
+      const text = document.getElementById('new-ad-text').value.trim();
+
+      if (!text) {
+        alert('Введите текст объявления');
+        return;
+      }
+
+      const matchedComplex = complexes.find(c => c.id === complexId);
+      const lower = text.toLowerCase();
+      const triggers = [];
+      let hypothesisTitle = 'Информационная реклама';
+
+      if (lower.includes('бронь') || lower.includes('депозит') || lower.includes('взнос') || lower.includes('касс') || lower.includes('наличн')) {
+        triggers.push('признаки сбора средств до ДДУ');
+        hypothesisTitle = 'R2 (+25 баллов): Незаконный сбор денег';
+      }
+
+      // Check R5 readiness delta
+      const readinessMatch = text.match(/готовность(?:\s+объекта|\s+дома|\s+уже)?\s*(\d{1,3})\s*%/i);
+      if (readinessMatch && matchedComplex) {
+        const declaredPct = parseInt(readinessMatch[1], 10);
+        const factPct = matchedComplex.readinessFact || 0;
+        const delta = Math.abs(declaredPct - factPct);
+        if (delta >= 20) {
+          triggers.push(`расхождение готовности ${delta} п.п.`);
+          hypothesisTitle += ` + R5 (+10 б.): Разница готовности (заявлено ${declaredPct}%, факт ${factPct}%)`;
+          matchedComplex.factors.R5.status = 'CONFIRMED';
+          matchedComplex.readinessDeclared = declaredPct;
+        }
+      }
+
+      const newId = 'AD-' + (100 + adsList.length + 1);
+      const nowStr = new Date().toLocaleString();
+
+      adsList.unshift({
+        id: newId,
+        complexId,
+        source: platform,
+        date: "15.10.2026",
+        capturedAt: nowStr,
+        url: "https://clearbuild.kz/ads/" + newId,
+        rawText: text,
+        triggers: triggers.length ? triggers : ["проверка условий"],
+        aiHypothesis: hypothesisTitle,
+        status: "CONFIRMED"
+      });
+
+      auditLogEntries.unshift(`[${nowStr}] Добавлено объявление ${newId} для ${getLocalized(matchedComplex.names)}`);
+      saveState();
+
+      closeAddAdModal();
+      document.getElementById('new-ad-text').value = '';
+      renderAdsTable();
+      alert('Объявление добавлено и проанализировано ИИ!');
+    }
+
+    window.pageRefresh = function() {
+      renderAdsTable();
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAdsTable();
+    });
+  </script>
+</body>
+</html>
