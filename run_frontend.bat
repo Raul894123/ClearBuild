@@ -1,6 +1,6 @@
 @echo off
 title ClearBuild (SAQ QURYLYS) - Frontend
-cd /d "W:\Projects\Hackathon 8.0"
+cd /d "%~dp0"
 
 echo ========================================================
 echo  ClearBuild (SAQ QURYLYS) - Frontend
