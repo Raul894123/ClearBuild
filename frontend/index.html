@@ -113,6 +113,103 @@
     .btn-outline { background: #1e293b; color: #e2e8f0; border-color: #334155; }
     .btn-outline:hover { background: #334155; }
 
+    
+    /* Leaflet OpenStreetMap Custom Pins & Dark Popups */
+    #leaflet-map-container {
+      height: 520px;
+      min-height: 520px;
+      width: 100%;
+      border-radius: 0.5rem;
+      background: #091326;
+      position: relative;
+      z-index: 1;
+    }
+    .osm-custom-marker-wrapper {
+      background: transparent;
+      border: none;
+    }
+    .osm-risk-pin {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 11px;
+      border: 2.5px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+    .osm-risk-pin:hover {
+      transform: scale(1.22);
+      z-index: 1000 !important;
+    }
+    .osm-risk-pin.pin-selected {
+      transform: scale(1.28);
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.5), 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+    .osm-risk-pin.zone-red {
+      background: #ef4444;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.85);
+    }
+    .osm-risk-pin.zone-yellow {
+      background: #f59e0b;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.8);
+    }
+    .osm-risk-pin.zone-green {
+      background: #10b981;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.75);
+    }
+    .osm-pin-label {
+      position: absolute;
+      top: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .leaflet-popup-content-wrapper {
+      background: #111827 !important;
+      color: #f8fafc !important;
+      border: 1px solid #334155 !important;
+      border-radius: 0.65rem !important;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55) !important;
+      padding: 0 !important;
+      overflow: hidden;
+    }
+    .leaflet-popup-content {
+      margin: 12px 14px !important;
+      line-height: 1.45 !important;
+    }
+    .leaflet-popup-tip {
+      background: #111827 !important;
+    }
+    .leaflet-container {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+    .leaflet-bar a {
+      background-color: #0f172a !important;
+      color: #f8fafc !important;
+      border-bottom: 1px solid #1e293b !important;
+    }
+    .leaflet-bar a:hover {
+      background-color: #1e293b !important;
+      color: #38bdf8 !important;
+    }
+    
     /* Glowing Map Markers */
     .pin-marker {
       width: 22px;
@@ -385,19 +482,25 @@
 
         <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 1rem;">
           <!-- Map Container (Leaflet + Offline Tactical Vector Map Switcher) -->
-          <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 490px;">
-            <div style="padding: 0.7rem 1rem; background: #0f172a; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
-              <div style="font-size: 0.82rem; font-weight: 700; color: #e2e8f0;">
-                📍 Геомониторинг: г. Усть-Каменогорск (49.9483° N, 82.6278° E)
+          <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 540px;">
+            <div style="padding: 0.65rem 1rem; background: #0f172a; border-bottom: 1px solid #1e293b; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="badge badge-blue">🗺️ OpenStreetMap</span>
+                <span style="font-size: 0.82rem; font-weight: 700; color: #e2e8f0;">г. Усть-Каменогорск (49.9483° N, 82.6278° E)</span>
               </div>
-              <div style="display: flex; gap: 0.4rem;">
-                <button class="btn btn-outline" style="padding: 0.2rem 0.6rem; font-size: 0.73rem;" id="btn-map-vector" onclick="setMapMode('vector')">Схема города (Offline-Ready)</button>
-                <button class="btn btn-outline" style="padding: 0.2rem 0.6rem; font-size: 0.73rem;" id="btn-map-leaflet" onclick="setMapMode('leaflet')">Leaflet OSM</button>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;">
+                <button class="btn btn-primary" style="padding: 0.2rem 0.55rem; font-size: 0.73rem;" id="btn-map-leaflet" onclick="setMapMode('leaflet')">📍 OpenStreetMap (Основа)</button>
+                <button class="btn btn-outline" style="padding: 0.2rem 0.55rem; font-size: 0.73rem;" id="btn-osm-tile-dark" onclick="setOsmTileTheme('dark')">🌙 Тёмная</button>
+                <button class="btn btn-outline" style="padding: 0.2rem 0.55rem; font-size: 0.73rem;" id="btn-osm-tile-light" onclick="setOsmTileTheme('light')">☀️ Светлая</button>
+                <button class="btn btn-outline" style="padding: 0.2rem 0.55rem; font-size: 0.73rem;" id="btn-map-vector" onclick="setMapMode('vector')">📐 Схема города</button>
               </div>
             </div>
 
-            <!-- Interactive SVG Tactical Map of Ust-Kamenogorsk (100% works offline and online) -->
-            <div id="vector-map-container" style="position: relative; flex: 1; background: #091326; min-height: 430px; overflow: hidden;">
+            <!-- Primary Native Leaflet OpenStreetMap Container (Visible by Default) -->
+            <div id="leaflet-map-container" style="display: block; flex: 1; min-height: 480px; width: 100%;"></div>
+
+            <!-- Fallback Interactive SVG Tactical Map of Ust-Kamenogorsk -->
+            <div id="vector-map-container" style="display: none; position: relative; flex: 1; background: #091326; min-height: 480px; overflow: hidden;">
               <svg viewBox="0 0 800 500" style="width: 100%; height: 100%; display: block;" id="oskemen-svg-map">
                 <defs>
                   <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
@@ -416,52 +519,34 @@
                     <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.7" />
                   </pattern>
                 </defs>
-                <!-- Background Grid -->
                 <rect width="800" height="500" fill="url(#cityGrid)" />
-
-                <!-- District Polygons -->
                 <polygon points="80,60 360,50 420,210 120,240" fill="rgba(30,41,59,0.35)" stroke="#1e293b" stroke-dasharray="4,4" />
                 <text x="155" y="105" fill="#475569" font-size="12" font-weight="700">ПР. НАЗАРБАЕВА / КШТ СЕВЕР</text>
-
                 <polygon points="370,130 620,110 640,280 390,280" fill="rgba(30,41,59,0.4)" stroke="#1e293b" stroke-dasharray="4,4" />
                 <text x="450" y="185" fill="#475569" font-size="12" font-weight="700">ЦЕНТР / СТРЕЛКА / УЛЬБА</text>
-
                 <polygon points="410,310 750,310 760,475 430,475" fill="rgba(30,41,59,0.35)" stroke="#1e293b" stroke-dasharray="4,4" />
                 <text x="515" y="455" fill="#475569" font-size="12" font-weight="700">КШТ · ПР. К. САТПАЕВА · ЛЕВЫЙ БЕРЕГ</text>
-
-                <!-- Irtysh River (Река Иртыш) -->
                 <path d="M 40,260 Q 220,255 350,275 T 610,335 T 790,395" fill="none" stroke="#0284c7" stroke-width="26" stroke-linecap="round" opacity="0.35" />
                 <path d="M 40,260 Q 220,255 350,275 T 610,335 T 790,395" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="10,8" opacity="0.5" />
                 <text x="190" y="252" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="1.5">РЕКА ИРТЫШ (ЕРТІС)</text>
-
-                <!-- Ulba River (Река Ульба flowing into Irtysh at Strelka) -->
                 <path d="M 670,20 Q 560,120 490,190 T 365,275" fill="none" stroke="#0284c7" stroke-width="16" stroke-linecap="round" opacity="0.32" />
                 <text x="545" y="105" fill="#38bdf8" font-size="10" font-weight="700" transform="rotate(-33 545,105)">РЕКА УЛЬБА</text>
-
-                <!-- Major Roads & Bridges -->
                 <path d="M 210,70 L 365,270 L 520,410" fill="none" stroke="#475569" stroke-width="3.5" />
-                <path d="M 365,260 L 385,305" fill="none" stroke="#f8fafc" stroke-width="5" /> <!-- Irtysh Bridge -->
-                <path d="M 480,285 L 505,335" fill="none" stroke="#f8fafc" stroke-width="5" /> <!-- New Bridge -->
+                <path d="M 365,260 L 385,305" fill="none" stroke="#f8fafc" stroke-width="5" />
+                <path d="M 480,285 L 505,335" fill="none" stroke="#f8fafc" stroke-width="5" />
                 <path d="M 365,270 L 660,140" fill="none" stroke="#475569" stroke-width="3" />
                 <path d="M 380,305 L 710,430" fill="none" stroke="#475569" stroke-width="3.5" />
-
-                <!-- Dynamic Pins Group populated by JS -->
                 <g id="svg-pins-layer"></g>
               </svg>
-
-              <!-- Map Legend Overlay -->
               <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(15,23,42,0.92); border: 1px solid #334155; border-radius: 0.5rem; padding: 0.55rem 0.8rem; font-size: 0.74rem; display: flex; gap: 0.85rem;">
                 <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Красная (60+ и R1+R2)</span>
                 <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Жёлтая (25–59 / 60+ без R1+R2)</span>
                 <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span> Зелёная (0–24)</span>
               </div>
             </div>
-
-            <!-- Leaflet Map Container (toggled when user clicks Leaflet OSM) -->
-            <div id="leaflet-map-container" style="display: none; flex: 1; min-height: 430px; width: 100%;"></div>
           </div>
 
-          <!-- Right Column: Complexes Overview List & Quick Inspection -->
+          <!-- Right Column: Complexes Overview List<!-- Right Column: Complexes Overview List & Quick Inspection -->
           <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 510px; overflow-y: auto;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 0.55rem;">
               <span style="font-weight: 700; font-size: 0.92rem;">Приоритизация объектов (по риск-баллу)</span>
@@ -606,7 +691,12 @@
           <div class="card">
             <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.85rem;">
               <div>
-                <strong style="font-size: 0.95rem;">Лента зафиксированных рекламных публикаций (<span id="ads-count-label">12</span>)</strong>
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <strong style="font-size: 0.95rem;">Лента зафиксированных рекламных публикаций (<span id="ads-count-label">12</span>)</strong>
+                  <button class="btn btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-color: #38bdf8; color: #38bdf8;" onclick="toggleManualPubModal(true)">
+                    ➕ Добавить публикацию вручную
+                  </button>
+                </div>
                 <div style="font-size: 0.75rem; color: #94a3b8;">Каждая запись хранит локальную копию текста (snapshot) и время фиксации на случай удаления поста.</div>
               </div>
               <select id="ads-filter-status" onchange="renderAdsFeed()" style="background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.35rem 0.6rem; border-radius: 0.4rem; font-size: 0.78rem;">
@@ -793,7 +883,9 @@ let USE_MOCK_DATA = true;
 let CURRENT_LANG = 'ru';
 let CURRENT_ZONE_FILTER = 'ALL';
 let SELECTED_COMPLEX_ID = 'jk-1';
-let MAP_MODE = 'vector';
+let MAP_MODE = 'leaflet'; // OpenStreetMap по умолчанию
+let OSM_THEME = 'dark';
+let osmTileLayerInstance = null;
 let leafletMapInstance = null;
 let leafletMarkers = [];
 
@@ -1371,8 +1463,11 @@ function switchTab(tabId) {
   const targetNav = document.getElementById('nav-' + tabId);
   if (targetNav) targetNav.classList.add('active');
 
-  if (tabId === 'map' && MAP_MODE === 'leaflet' && leafletMapInstance) {
-    setTimeout(() => leafletMapInstance.invalidateSize(), 150);
+  if (tabId === 'map') {
+    if (MAP_MODE === 'leaflet') {
+      initLeafletIfNeeded();
+      setTimeout(() => leafletMapInstance && leafletMapInstance.invalidateSize(), 120);
+    }
   }
   if (tabId === 'scoring') {
     renderScoringView();
@@ -1446,8 +1541,9 @@ function renderSidebarAudit() {
 }
 
 // ============================================================================
-// 4. MAP RENDERING (VECTOR UST-KAMENOGORSK + LEAFLET)
+// 4. MAP RENDERING (OPENSTREETMAP LEAFLET NATIVE + VECTOR FALLBACK)
 // ============================================================================
+
 function setZoneFilter(zone) {
   CURRENT_ZONE_FILTER = zone;
   renderVectorMapPins();
@@ -1459,14 +1555,173 @@ function setMapMode(mode) {
   MAP_MODE = mode;
   const vec = document.getElementById('vector-map-container');
   const leaf = document.getElementById('leaflet-map-container');
+  const btnLeaf = document.getElementById('btn-map-leaflet');
+  const btnVec = document.getElementById('btn-map-vector');
+
   if (mode === 'leaflet') {
-    vec.style.display = 'none';
-    leaf.style.display = 'block';
+    if (vec) vec.style.display = 'none';
+    if (leaf) leaf.style.display = 'block';
+    if (btnLeaf) btnLeaf.className = 'btn btn-primary';
+    if (btnVec) btnVec.className = 'btn btn-outline';
     initLeafletIfNeeded();
   } else {
-    leaf.style.display = 'none';
-    vec.style.display = 'block';
+    if (leaf) leaf.style.display = 'none';
+    if (vec) vec.style.display = 'block';
+    if (btnLeaf) btnLeaf.className = 'btn btn-outline';
+    if (btnVec) btnVec.className = 'btn btn-primary';
+    renderVectorMapPins();
   }
+}
+
+function setOsmTileTheme(theme) {
+  OSM_THEME = theme;
+  const btnDark = document.getElementById('btn-osm-tile-dark');
+  const btnLight = document.getElementById('btn-osm-tile-light');
+  if (btnDark) btnDark.className = theme === 'dark' ? 'btn btn-primary' : 'btn btn-outline';
+  if (btnLight) btnLight.className = theme === 'light' ? 'btn btn-primary' : 'btn btn-outline';
+
+  if (MAP_MODE !== 'leaflet') {
+    setMapMode('leaflet');
+  } else {
+    applyOsmTileLayer();
+  }
+}
+
+function applyOsmTileLayer() {
+  if (!leafletMapInstance || typeof L === 'undefined') return;
+  if (osmTileLayerInstance) {
+    leafletMapInstance.removeLayer(osmTileLayerInstance);
+  }
+
+  if (OSM_THEME === 'dark') {
+    // Dark Matter OSM Tiles (powered by OpenStreetMap + CARTO)
+    osmTileLayerInstance = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; CARTO',
+      maxZoom: 19,
+      subdomains: 'abcd'
+    });
+  } else {
+    // Standard Crisp OpenStreetMap Tiles
+    osmTileLayerInstance = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    });
+  }
+  osmTileLayerInstance.addTo(leafletMapInstance);
+}
+
+function initLeafletIfNeeded() {
+  if (typeof L === 'undefined') {
+    console.warn('Leaflet library is loading or offline, switching to vector map fallback');
+    setMapMode('vector');
+    return;
+  }
+  const container = document.getElementById('leaflet-map-container');
+  if (!container) return;
+
+  if (!leafletMapInstance) {
+    leafletMapInstance = L.map('leaflet-map-container', {
+      center: [49.9483, 82.6278],
+      zoom: 12,
+      zoomControl: true
+    });
+    applyOsmTileLayer();
+    L.control.scale({ imperial: false }).addTo(leafletMapInstance);
+  }
+
+  renderLeafletMarkers();
+  setTimeout(() => {
+    if (leafletMapInstance) leafletMapInstance.invalidateSize();
+  }, 100);
+}
+
+function renderLeafletMarkers() {
+  if (!leafletMapInstance || typeof L === 'undefined') return;
+  leafletMarkers.forEach(item => leafletMapInstance.removeLayer(item.marker));
+  leafletMarkers = [];
+
+  complexes.forEach(c => {
+    const p = calculateRiskProfile(c);
+    if (CURRENT_ZONE_FILTER !== 'ALL' && p.zone !== CURRENT_ZONE_FILTER) return;
+
+    const isSelected = c.id === SELECTED_COMPLEX_ID;
+    const zoneClass = p.zone === 'RED' ? 'zone-red' : p.zone === 'YELLOW' ? 'zone-yellow' : 'zone-green';
+    const shortName = c.name.replace(/ЖК|«|»/g, '').split('(')[0].trim();
+
+    const customIcon = L.divIcon({
+      className: 'osm-custom-marker-wrapper',
+      html: `
+        <div class="osm-risk-pin ${zoneClass} ${isSelected ? 'pin-selected' : ''}" id="map-pin-${c.id}">
+          <span>${p.score}</span>
+          <div class="osm-pin-label">${shortName}</div>
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+      popupAnchor: [0, -20]
+    });
+
+    const marker = L.marker(c.coords, { icon: customIcon }).addTo(leafletMapInstance);
+
+    const popupHtml = `
+      <div style="font-family: inherit; min-width: 260px; line-height: 1.45;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">
+          <span class="badge ${p.zone === 'RED' ? 'badge-red' : p.zone === 'YELLOW' ? 'badge-yellow' : 'badge-green'}" style="font-size: 0.72rem;">
+            ${p.zone === 'RED' ? '🔴 Красная' : p.zone === 'YELLOW' ? '🟡 Жёлтая' : '🟢 Зелёная'} · ${p.score} б.
+          </span>
+          <span style="font-size: 0.7rem; color: #94a3b8;">${c.caseTag}</span>
+        </div>
+        <strong style="font-size: 0.95rem; color: #f8fafc; display: block; margin-bottom: 0.2rem;">${c.name}</strong>
+        <div style="font-size: 0.76rem; color: #94a3b8; margin-bottom: 0.4rem;">📍 ${c.district} · ${c.developer} (БИН ${c.bin})</div>
+        <div style="font-size: 0.76rem; background: #0f172a; padding: 0.4rem 0.55rem; border-radius: 0.35rem; border: 1px solid #1e293b; margin-bottom: 0.5rem;">
+          <div style="color: #cbd5e1;"><strong>Основание:</strong> ${c.legalBasisText}</div>
+          <div style="color: #94a3b8; font-size: 0.72rem; margin-top: 0.2rem;">Готовность: Факт ${c.confirmedReadiness.pct}% / Реклама ${c.declaredReadiness.pct}%</div>
+        </div>
+        <div style="display: flex; gap: 0.4rem;">
+          <button onclick="openComplexDetail('${c.id}')" class="btn btn-primary" style="flex: 1; padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+            🔎 В Реестр
+          </button>
+          <button onclick="quickInspectSignal('${c.id}')" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+            ⚡ Сигнал
+          </button>
+        </div>
+      </div>
+    `;
+
+    marker.bindPopup(popupHtml);
+    marker.on('click', () => {
+      selectComplexOnMap(c.id, false);
+    });
+
+    leafletMarkers.push({ id: c.id, marker });
+  });
+}
+
+function selectComplexOnMap(complexId, fly = true) {
+  SELECTED_COMPLEX_ID = complexId;
+  const c = complexes.find(item => item.id === complexId);
+  if (!c) return;
+
+  renderOverviewList();
+  updateTopKPIs();
+
+  if (MAP_MODE === 'leaflet' && leafletMapInstance) {
+    if (fly) {
+      leafletMapInstance.flyTo(c.coords, 14, { duration: 0.8 });
+    }
+    const found = leafletMarkers.find(item => item.id === complexId);
+    if (found) {
+      setTimeout(() => found.marker.openPopup(), fly ? 850 : 50);
+    }
+  } else {
+    renderVectorMapPins();
+  }
+}
+
+function quickInspectSignal(complexId) {
+  SELECTED_COMPLEX_ID = complexId;
+  refreshAllViews();
+  switchTab('signal');
 }
 
 function renderVectorMapPins() {
@@ -1485,7 +1740,7 @@ function renderVectorMapPins() {
     const isSelected = c.id === SELECTED_COMPLEX_ID;
     const shortName = c.name.replace('ЖК ', '').split(' (')[0];
     return `
-      <g style="cursor: pointer;" onclick="openComplexDetail('${c.id}')">
+      <g style="cursor: pointer;" onclick="selectComplexOnMap('${c.id}', false)">
         <circle cx="${c.svgPos.x}" cy="${c.svgPos.y}" r="${isSelected ? 34 : 24}" fill="${glow}" />
         <circle cx="${c.svgPos.x}" cy="${c.svgPos.y}" r="${isSelected ? 12 : 9}" fill="${color}" stroke="#ffffff" stroke-width="${isSelected ? 3 : 2}" />
         <text x="${c.svgPos.x}" y="${c.svgPos.y + 4}" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">${p.score}</text>
@@ -1494,49 +1749,6 @@ function renderVectorMapPins() {
       </g>
     `;
   }).join('');
-}
-
-function initLeafletIfNeeded() {
-  if (typeof L === 'undefined') return;
-  if (!leafletMapInstance) {
-    leafletMapInstance = L.map('leaflet-map-container').setView([49.9483, 82.6278], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors · Усть-Каменогорск'
-    }).addTo(leafletMapInstance);
-  }
-  renderLeafletMarkers();
-  setTimeout(() => leafletMapInstance.invalidateSize(), 120);
-}
-
-function renderLeafletMarkers() {
-  if (!leafletMapInstance || typeof L === 'undefined') return;
-  leafletMarkers.forEach(m => leafletMapInstance.removeLayer(m));
-  leafletMarkers = [];
-
-  complexes.forEach(c => {
-    const p = calculateRiskProfile(c);
-    if (CURRENT_ZONE_FILTER !== 'ALL' && p.zone !== CURRENT_ZONE_FILTER) return;
-    const color = p.zone === 'RED' ? '#ef4444' : p.zone === 'YELLOW' ? '#f59e0b' : '#10b981';
-    const marker = L.circleMarker(c.coords, {
-      radius: 11,
-      fillColor: color,
-      color: '#ffffff',
-      weight: 2.5,
-      opacity: 1,
-      fillOpacity: 0.9
-    }).addTo(leafletMapInstance);
-
-    marker.bindPopup(`
-      <div style="font-family: sans-serif; min-width: 210px;">
-        <strong>${c.name}</strong><br/>
-        <span style="font-size:12px;color:#475569;">${c.district}</span><br/>
-        <div style="margin:6px 0;font-weight:700;color:${color};">Зона: ${p.zoneLabel} (${p.score} баллов)</div>
-        <div style="font-size:12px;">Основание: ${c.legalBasisText}</div>
-        <button onclick="openComplexDetail('${c.id}')" style="margin-top:8px;background:#0284c7;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Открыть карточку</button>
-      </div>
-    `);
-    leafletMarkers.push(marker);
-  });
 }
 
 function renderOverviewList() {
@@ -1553,7 +1765,7 @@ function renderOverviewList() {
     const p = calculateRiskProfile(c);
     const isSel = c.id === SELECTED_COMPLEX_ID;
     return `
-      <div onclick="openComplexDetail('${c.id}')" style="background: ${isSel ? 'rgba(56,189,248,0.1)' : '#0f172a'}; border: 1px solid ${isSel ? '#38bdf8' : '#1e293b'}; border-radius: 0.6rem; padding: 0.75rem; cursor: pointer; transition: all 0.15s;">
+      <div onclick="selectComplexOnMap('${c.id}', true)" style="background: ${isSel ? 'rgba(56,189,248,0.12)' : '#0f172a'}; border: 1px solid ${isSel ? '#38bdf8' : '#1e293b'}; border-radius: 0.6rem; padding: 0.75rem; cursor: pointer; transition: all 0.15s;">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
           <div>
             <span class="badge badge-neutral" style="font-size: 0.68rem; margin-bottom: 0.25rem;">${c.caseTag}</span>
@@ -1563,23 +1775,17 @@ function renderOverviewList() {
         </div>
         <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.25rem;">📍 ${c.district} · ${c.developer}</div>
         <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin-top: 0.5rem; font-size: 0.75rem;">
-          <span style="color: #cbd5e1;">Факторы: <strong>${p.activeConfirmedCodes.length ? p.activeConfirmedCodes.join(', ') : 'Нет'}</strong></span>
-          ${p.aiHypothesisCodes.length ? `<span class="badge badge-purple">🤖 Гипотеза ИИ: ${p.aiHypothesisCodes.join(', ')} (Потенциал: ${p.potentialScore} б.)</span>` : ''}
-          ${p.unverifiedCodes.length ? `<span class="badge badge-yellow">⚠️ Нужна проверка: ${p.unverifiedCodes.join(', ')}</span>` : ''}
+          <span style="color: #cbd5e1;">Факторы: <strong>${p.activeConfirmedCodes.length ? p.activeConfirmedCodes.join(', ') : 'нет'}</strong></span>
+          ${p.aiHypothesisCodes.length ? `<span class="badge badge-purple">🤖 Гипотеза: ${p.aiHypothesisCodes.join(', ')}</span>` : ''}
+          <div style="display: flex; gap: 0.35rem;">
+            <button class="btn btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="event.stopPropagation(); openComplexDetail('${c.id}')">🔎 Карточка</button>
+            <button class="btn btn-primary" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="event.stopPropagation(); quickInspectSignal('${c.id}')">⚡ Сигнал</button>
+          </div>
         </div>
       </div>
     `;
   }).join('');
 }
-
-function openComplexDetail(complexId) {
-  SELECTED_COMPLEX_ID = complexId;
-  refreshAllViews();
-  switchTab('registry');
-  const detailEl = document.getElementById('registry-detail-card');
-  if (detailEl) detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
 // ============================================================================
 // 5. MODULE 02: REGISTRY TABLE & OBJECT DETAIL CARD
 // ============================================================================
@@ -2490,8 +2696,8 @@ async function toggleDataSourceMode(isMock) {
     try {
       const apiBase = 'http://localhost:8000/api/v1';
       const [compRes, pubRes] = await Promise.all([
-        fetch(${apiBase}/complexes),
-        fetch(${apiBase}/publications)
+        fetch(apiBase + '/complexes'),
+        fetch(apiBase + '/publications')
       ]);
       if (compRes.ok && pubRes.ok) {
         const compData = await compRes.json();
@@ -2535,11 +2741,154 @@ function setLang(lang) {
 }
 
 // Initialize on load
+
+// Manual Publication Modal & Handler (ТЗ Раздел 3 & 4)
+function toggleManualPubModal(show) {
+  const modal = document.getElementById('manual-pub-modal');
+  if (modal) modal.style.display = show ? 'flex' : 'none';
+  if (show) populateManualPubComplexSelect();
+}
+
+function populateManualPubComplexSelect() {
+  const sel = document.getElementById('manual-pub-complex');
+  if (!sel) return;
+  sel.innerHTML = '<option value="AUTO">🔍 Автоопределение по тексту/телефону</option>' +
+    complexes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+async function saveManualPublication() {
+  const platform = document.getElementById('manual-pub-platform').value;
+  const url = document.getElementById('manual-pub-url').value.trim() || 'https://krisha.kz/a/show/manual-' + Date.now();
+  const phone = document.getElementById('manual-pub-phone').value.trim();
+  const complexId = document.getElementById('manual-pub-complex').value;
+  const text = document.getElementById('manual-pub-text').value.trim();
+
+  if (!text) {
+    alert('Пожалуйста, введите текст рекламного объявления');
+    return;
+  }
+
+  const newId = 'AD-' + (100 + ads.length + 1);
+  const nowStr = '14.10.2026, ' + new Date().toTimeString().slice(0, 5);
+
+  const matchedId = complexId === 'AUTO'
+    ? (complexes.find(c => text.toLowerCase().includes(c.name.replace(/ЖК|«|»/g, '').split('(')[0].trim().toLowerCase()))?.id || complexes[0].id)
+    : complexId;
+
+  const newPub = {
+    id: newId,
+    complexId: matchedId,
+    platform: platform,
+    account: phone ? `Отдел продаж (${phone})` : 'Отдел продаж',
+    phone: phone || '+7 (705) 000-00-00',
+    date: nowStr,
+    url: url,
+    rawText: text,
+    riskTriggers: ['ручная фиксация объявления аналитиком'],
+    status: 'AI_HYPOTHESIS',
+    proposedFactor: 'R2',
+    evidenceTag: 'R2 (+25 б.)'
+  };
+
+  ads.unshift(newPub);
+
+  if (!USE_MOCK_DATA) {
+    try {
+      await fetch('http://localhost:8000/api/v1/publications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPub)
+      });
+    } catch (e) {
+      console.warn('Backend server offline, saved to in-memory store:', e);
+    }
+  }
+
+  // Load into AI analyzer and trigger live analysis
+  document.getElementById('ai-input-platform').value = platform;
+  document.getElementById('ai-input-phone').value = phone;
+  document.getElementById('ai-input-url').value = url;
+  document.getElementById('ai-input-complex').value = matchedId;
+  document.getElementById('ai-input-text').value = text;
+  runLiveAIAnalysis();
+
+  auditLog.unshift({
+    time: nowStr,
+    actor: 'Аналитик МИО ВКО',
+    action: `Вручную добавил публикацию ${newId} (${platform}) и запустил ИИ-анализ`
+  });
+
+  toggleManualPubModal(false);
+  refreshAllViews();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   refreshAllViews();
+  initLeafletIfNeeded();
   runLiveAIAnalysis();
   runBuiltInUnitTests();
+  window.addEventListener('resize', () => {
+    if (leafletMapInstance) leafletMapInstance.invalidateSize();
+  });
 });
 </script>
+
+  <!-- Modal: Manual Publication Form (ТЗ Раздел 3 и 4) -->
+  <div id="manual-pub-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="card" style="max-width: 620px; width: 100%; border-color: #38bdf8; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span class="badge badge-blue">ТЗ Раздел 3 & 4</span>
+          <strong style="font-size: 1.05rem;">Добавить публикацию вручную в мониторинг</strong>
+        </div>
+        <button onclick="toggleManualPubModal(false)" style="background: transparent; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer;">✕</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Площадка размещения</label>
+          <select id="manual-pub-platform" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.5rem; border-radius: 0.4rem; font-size: 0.83rem;">
+            <option value="Krisha.kz">Krisha.kz</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Telegram">Telegram</option>
+            <option value="OLX.kz">OLX.kz</option>
+            <option value="Facebook">Facebook</option>
+            <option value="TikTok">TikTok</option>
+            <option value="Наружная реклама">Наружная реклама / Билборд</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Привязка к объекту ЖК</label>
+          <select id="manual-pub-complex" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.5rem; border-radius: 0.4rem; font-size: 0.83rem;">
+            <option value="AUTO">🔍 Автоопределение по тексту/телефону</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">URL ссылка (если есть)</label>
+          <input type="text" id="manual-pub-url" placeholder="https://krisha.kz/a/show/..." style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.5rem; border-radius: 0.4rem; font-size: 0.83rem;" />
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Контактный телефон отдела продаж</label>
+          <input type="text" id="manual-pub-phone" placeholder="+7 (705) ..." style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.5rem; border-radius: 0.4rem; font-size: 0.83rem;" />
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Текст рекламного объявления (или результат OCR):</label>
+        <textarea id="manual-pub-text" rows="4" placeholder="Например: Платное бронирование квартир 400 000 тг в ЖК Сатпаев Сити Парк на этапе котлована..." style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.85rem; resize: vertical;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+        <button class="btn btn-outline" onclick="toggleManualPubModal(false)">Отмена</button>
+        <button class="btn btn-primary" onclick="saveManualPublication()">
+          💾 Сохранить и запустить ИИ-анализ
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

@@ -2,8 +2,8 @@
 
 Codemasters Hackathon 8.0 (г. Усть-Каменогорск).
 Предоставляет REST API для карточек объектов ЖК г. Усть-Каменогорска,
-рекламных публикаций, модуля объяснимого ИИ-анализа (Explainable AI)
-и подтверждения факторов риска аналитиком МИО (Human-in-the-Loop).
+рекламных публикаций, модуля объяснимого ИИ-анализа (Explainable AI),
+ручного добавления публикаций и подтверждения факторов риска аналитиком МИО (Human-in-the-Loop).
 """
 
 import json
@@ -78,6 +78,17 @@ class ConfirmFactorRequest(BaseModel):
     analyst: Optional[str] = Field("Ахметов Д.К. (Аналитик МИО)", description="ФИО специалиста МИО")
 
 
+class PublicationCreateRequest(BaseModel):
+    complexId: str = Field(..., description="ID жилого комплекса")
+    platform: str = Field("Krisha.kz", description="Платформа публикации")
+    account: str = Field("Отдел продаж", description="Аккаунт автора")
+    phone: str = Field("", description="Контактный телефон")
+    date: Optional[str] = Field(None, description="Дата публикации")
+    url: str = Field("", description="URL адрес объявления")
+    rawText: str = Field(..., description="Текст публикации")
+    status: Optional[str] = Field("AI_HYPOTHESIS", description="Статус верификации")
+
+
 # --------------------------------------------------------------------------
 # Эндпоинты API
 # --------------------------------------------------------------------------
@@ -118,6 +129,40 @@ def get_complex_by_id(complex_id: str):
 @app.get("/api/v1/publications", summary="Список рекламных объявлений")
 def get_publications():
     return DB["publications"]
+
+
+@app.post("/api/v1/publications", summary="Добавление нового рекламного объявления вручную")
+def create_publication(pub: PublicationCreateRequest):
+    new_id = f"AD-{100 + len(DB['publications']) + 1}"
+    date_str = pub.date or "14.10.2026, 18:40"
+
+    analysis = analyze_advertisement(AnalyzeRequest(
+        text=pub.rawText,
+        phone=pub.phone,
+        platform=pub.platform,
+        complex_id=pub.complexId,
+    ))
+
+    item = {
+        "id": new_id,
+        "complexId": pub.complexId,
+        "platform": pub.platform,
+        "account": pub.account,
+        "phone": pub.phone,
+        "date": date_str,
+        "url": pub.url,
+        "rawText": pub.rawText,
+        "riskTriggers": [analysis["triggerSpan"]] if analysis.get("triggerSpan") else [],
+        "status": pub.status or "AI_HYPOTHESIS",
+        "proposedFactor": analysis["proposedFactor"],
+        "evidenceTag": f"{analysis['proposedFactor']} (+{analysis['factorWeight']} б.)",
+    }
+    DB["publications"].insert(0, item)
+    return {
+        "status": "success",
+        "publication": item,
+        "analysis": analysis,
+    }
 
 
 @app.post("/api/v1/analyze", summary="ИИ-анализатор объявлений с извлечением триггеров и гипотезой фактора")
