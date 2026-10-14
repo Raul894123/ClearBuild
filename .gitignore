@@ -1,0 +1,14 @@
+# ClearBuild (SAQ QURYLYS) — Monorepo .gitignore
+# Безопасность и исключение локальных артефактов (Раздел 7 ТЗ)
+
+.env
+.env.local
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+dist/
+.DS_Store
+*.db

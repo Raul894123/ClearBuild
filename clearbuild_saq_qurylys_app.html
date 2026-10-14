@@ -1,0 +1,2545 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClearBuild · SAQ QURYLYS — Интеллектуальный мониторинг рисков ДЖС (Усть-Каменогорск)</title>
+  <!-- Tailwind CSS CDN (with fallback embedded utility styles for offline mode) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS (with built-in Interactive Vector Map fallback for 100% offline stability) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0b1120;
+      --bg-card: #111827;
+      --bg-elevated: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --zone-red: #ef4444;
+      --zone-yellow: #f59e0b;
+      --zone-green: #10b981;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.45;
+    }
+    /* Fallback layout utilities in case CDN is offline */
+    .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+    .main-layout { display: grid; grid-template-columns: 270px 1fr; flex: 1; }
+    @media (max-width: 1024px) {
+      .main-layout { grid-template-columns: 1fr; }
+    }
+    .sidebar {
+      background: #0f172a;
+      border-right: 1px solid #1e293b;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      text-align: left;
+      padding: 0.7rem 0.9rem;
+      border-radius: 0.5rem;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-btn:hover { background: #1e293b; color: #fff; }
+    .nav-btn.active {
+      background: rgba(56, 189, 248, 0.14);
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 0.75rem;
+      padding: 1.15rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-red { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.45); }
+    .badge-yellow { background: rgba(245, 158, 11, 0.18); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.45); }
+    .badge-green { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.45); }
+    .badge-blue { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .badge-purple { background: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45); }
+    .badge-neutral { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .btn-primary { background: #0284c7; color: #fff; border-color: #0369a1; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-success { background: #059669; color: #fff; border-color: #047857; }
+    .btn-success:hover { background: #047857; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.35); }
+    .btn-outline { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+    .btn-outline:hover { background: #334155; }
+
+    /* Glowing Map Markers */
+    .pin-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .pin-marker:hover { transform: scale(1.25); }
+    .pin-red { background: #ef4444; box-shadow: 0 0 14px #ef4444; }
+    .pin-yellow { background: #f59e0b; box-shadow: 0 0 14px #f59e0b; }
+    .pin-green { background: #10b981; box-shadow: 0 0 12px #10b981; }
+
+    .highlight-risk {
+      background: rgba(239, 68, 68, 0.28);
+      color: #fecaca;
+      border-bottom: 2px solid #ef4444;
+      padding: 0.05rem 0.3rem;
+      border-radius: 0.25rem;
+      font-weight: 600;
+    }
+    .highlight-promo {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+      border-bottom: 2px solid #f59e0b;
+      padding: 0.05rem 0.3rem;
+      border-radius: 0.25rem;
+    }
+
+    table.gov-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    table.gov-table th {
+      text-align: left;
+      padding: 0.65rem 0.75rem;
+      background: #0f172a;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.73rem;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid #1e293b;
+    }
+    table.gov-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #1e293b;
+      vertical-align: top;
+    }
+    table.gov-table tr:hover td {
+      background: rgba(30, 41, 59, 0.45);
+    }
+
+    /* Official Printable Signal Card */
+    .signal-print-sheet {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 0.75rem;
+      padding: 2rem;
+      border: 1px solid #cbd5e1;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .stamp-box {
+      border: 3px double #1e40af;
+      color: #1e40af;
+      padding: 0.5rem 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.8rem;
+      display: inline-block;
+      transform: rotate(-2deg);
+      background: rgba(219, 234, 254, 0.4);
+    }
+    .stamp-box.stamp-confirmed {
+      border-color: #b91c1c;
+      color: #b91c1c;
+      background: rgba(254, 226, 226, 0.45);
+    }
+    .stamp-box.stamp-returned {
+      border-color: #d97706;
+      color: #b45309;
+      background: rgba(254, 243, 199, 0.45);
+    }
+
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      .no-print { display: none !important; }
+      .main-layout { display: block !important; }
+      .signal-print-sheet {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- TOP DEMO & SECURITY BANNER -->
+  <div class="no-print" style="background: linear-gradient(90deg, #1e1b4b 0%, #0f172a 50%, #1e1b4b 100%); border-bottom: 1px solid #312e81; padding: 0.45rem 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.78rem;">
+    <div style="display: flex; align-items: center; gap: 0.6rem;">
+      <span class="badge badge-purple" id="demo-badge-label">DEMO MODE · Демонстрационный контур</span>
+      <span style="color: #cbd5e1;" id="disclaimer-top">
+        Все наименования ТОО, БИН и телефоны вымышлены (Раздел 7 ТЗ). Система формирует аналитический сигнал и не выносит юридический вердикт автоматически.
+      </span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <label style="display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; color: #94a3b8;">
+        <input type="checkbox" id="toggle-mock-mode" checked onchange="toggleDataSourceMode(this.checked)" />
+        <span>USE_MOCK_DATA = <strong id="mock-flag-text" style="color: #38bdf8;">true</strong></span>
+      </label>
+      <div style="display: inline-flex; border: 1px solid #334155; border-radius: 0.375rem; overflow: hidden;">
+        <button onclick="setLang('ru')" id="lang-ru" style="padding: 0.15rem 0.5rem; background: #0284c7; color: #fff; border: none; font-size: 0.75rem; font-weight: 700; cursor: pointer;">RU</button>
+        <button onclick="setLang('kz')" id="lang-kz" style="padding: 0.15rem 0.5rem; background: #1e293b; color: #94a3b8; border: none; font-size: 0.75rem; font-weight: 700; cursor: pointer;">KZ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER WITH KPI SUMMARY -->
+  <header class="no-print" style="background: #0f172a; border-bottom: 1px solid #1e293b; padding: 0.9rem 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
+    <div style="display: flex; align-items: center; gap: 0.9rem;">
+      <div style="width: 42px; height: 42px; border-radius: 0.65rem; background: linear-gradient(135deg, #0284c7, #2563eb); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.15rem; color: #fff; box-shadow: 0 0 15px rgba(2,132,199,0.4);">
+        CB
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <h1 style="margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em;">ClearBuild <span style="color: #38bdf8; font-weight: 400;">/ SAQ QURYLYS</span></h1>
+          <span class="badge badge-blue">Codemasters 8.0 · Усть-Каменогорск</span>
+        </div>
+        <p style="margin: 0.1rem 0 0 0; font-size: 0.8rem; color: #94a3b8;" id="header-subtitle">
+          Интеллектуальный мониторинг рисков в долевом жилищном строительстве (ВКО)
+        </p>
+      </div>
+    </div>
+
+    <!-- Top KPI Strip -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem;">
+      <div style="background: #111827; border: 1px solid #1e293b; padding: 0.4rem 0.8rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 0.75rem; color: #94a3b8;" data-i18n="kpi_total">Всего ЖК:</span>
+        <strong style="font-size: 1rem; color: #f8fafc;" id="kpi-total-count">8</strong>
+      </div>
+      <div style="background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); padding: 0.4rem 0.8rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+        <span style="font-size: 0.75rem; color: #fca5a5;" data-i18n="kpi_red">Красная зона:</span>
+        <strong style="font-size: 1rem; color: #fca5a5;" id="kpi-red-count">2</strong>
+      </div>
+      <div style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); padding: 0.4rem 0.8rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span>
+        <span style="font-size: 0.75rem; color: #fcd34d;" data-i18n="kpi_yellow">Жёлтая зона:</span>
+        <strong style="font-size: 1rem; color: #fcd34d;" id="kpi-yellow-count">3</strong>
+      </div>
+      <div style="background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.35); padding: 0.4rem 0.8rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 0.75rem; color: #d8b4fe;" data-i18n="kpi_ai">ИИ-гипотез на проверке:</span>
+        <strong style="font-size: 1rem; color: #d8b4fe;" id="kpi-ai-pending">4</strong>
+      </div>
+      <button class="btn btn-outline" onclick="switchTab('github')" title="Экспорт файлов для репозитория ClearBuild">
+        <span>📦 Код и файлы для GitHub</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN BODY -->
+  <div class="main-layout">
+    <!-- LEFT NAVIGATION SIDEBAR -->
+    <aside class="sidebar no-print">
+      <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; padding: 0.25rem 0.5rem; font-weight: 700;">
+        Обязательные модули MVP
+      </div>
+      <button class="nav-btn active" id="nav-map" onclick="switchTab('map')">
+        <span>01 · Карта и Обзор</span>
+        <span class="badge badge-blue">ВКО</span>
+      </button>
+      <button class="nav-btn" id="nav-registry" onclick="switchTab('registry')">
+        <span>02 · Реестр ЖК</span>
+        <span class="badge badge-neutral" id="nav-badge-complexes">8</span>
+      </button>
+      <button class="nav-btn" id="nav-ads" onclick="switchTab('ads')">
+        <span>03 · Мониторинг рекламы (AI)</span>
+        <span class="badge badge-purple" id="nav-badge-ads">12</span>
+      </button>
+      <button class="nav-btn" id="nav-scoring" onclick="switchTab('scoring')">
+        <span>04 · Риск-скоринг R1–R6</span>
+        <span class="badge badge-green">A/B/C</span>
+      </button>
+      <button class="nav-btn" id="nav-signal" onclick="switchTab('signal')">
+        <span>05 · Сигнальная карточка</span>
+        <span class="badge badge-red">PDF</span>
+      </button>
+
+      <div style="margin-top: 0.75rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; padding: 0.25rem 0.5rem; font-weight: 700;">
+        Инженерия и Бонус-фичи
+      </div>
+      <button class="nav-btn" id="nav-network" onclick="switchTab('network')">
+        <span>🕸️ Сеть телефонов / Коллизии</span>
+        <span class="badge badge-yellow">+5 б.</span>
+      </button>
+      <button class="nav-btn" id="nav-github" onclick="switchTab('github')">
+        <span>📦 Архитектура и GitHub</span>
+        <span class="badge badge-blue">Repo</span>
+      </button>
+
+      <!-- Quick Selected Complex Box -->
+      <div style="margin-top: auto; background: #111827; border: 1px solid #1e293b; border-radius: 0.65rem; padding: 0.85rem;">
+        <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Активный объект проверки:</div>
+        <div style="font-weight: 700; font-size: 0.92rem; margin-top: 0.25rem; color: #38bdf8;" id="sidebar-active-name">ЖК «Ертіс Рівер Тауэрс»</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.45rem;">
+          <span id="sidebar-active-zone" class="badge badge-red">Красная · 70 б.</span>
+          <button class="btn btn-outline" style="padding: 0.2rem 0.55rem; font-size: 0.73rem;" onclick="switchTab('signal')">Карточка →</button>
+        </div>
+      </div>
+
+      <!-- Recent Analyst Audit Log Mini -->
+      <div style="background: #111827; border: 1px solid #1e293b; border-radius: 0.65rem; padding: 0.85rem; max-height: 210px; overflow-y: auto;">
+        <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-bottom: 0.4rem;">Журнал решений аналитика</div>
+        <div id="sidebar-audit-log" style="display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.74rem; color: #cbd5e1;"></div>
+      </div>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <main style="padding: 1.25rem; overflow-y: auto;">
+
+      <!-- =========================================================
+           MODULE 01: MAP & OVERVIEW (УСТЬ-КАМЕНОГОРСК)
+           ========================================================= -->
+      <section id="tab-map" class="tab-panel">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">01 · Интерактивная карта рисков ДЖС г. Усть-Каменогорск</h2>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+              Выберите цветовую зону или эталонный тест-кейс (A, B, C), чтобы отфильтровать строящиеся ЖК и перейти к проверке доказательств.
+            </p>
+          </div>
+          <!-- Zone Filter Buttons -->
+          <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
+            <button class="btn btn-outline" id="filter-all" onclick="setZoneFilter('ALL')">Все (8)</button>
+            <button class="btn btn-danger" id="filter-red" onclick="setZoneFilter('RED')">🔴 Красная зона</button>
+            <button class="btn btn-outline" style="border-color: rgba(245,158,11,0.5); color: #fcd34d;" id="filter-yellow" onclick="setZoneFilter('YELLOW')">🟡 Жёлтая зона</button>
+            <button class="btn btn-outline" style="border-color: rgba(16,185,129,0.5); color: #6ee7b7;" id="filter-green" onclick="setZoneFilter('GREEN')">🟢 Зелёная зона</button>
+          </div>
+        </div>
+
+        <!-- Quick Demo Scenario Bar for Jury Presentation -->
+        <div class="card" style="margin-bottom: 1rem; background: linear-gradient(90deg, rgba(2,132,199,0.12), rgba(15,23,42,0.9)); border-color: rgba(56,189,248,0.35); padding: 0.85rem 1.1rem;">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span class="badge badge-blue">Сценарии защиты (Раздел 5 ТЗ)</span>
+              <span style="font-size: 0.84rem; color: #e2e8f0;">Быстрый переход к контрольным тест-кейсам жюри:</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <button class="btn btn-outline" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;" onclick="openComplexDetail('jk-2')">
+                🟡 Кейс A: «Сатпаев Сити Парк» (35 б. · R2+R3, основание не проверено)
+              </button>
+              <button class="btn btn-danger" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;" onclick="openComplexDetail('jk-1')">
+                🔴 Кейс B: «Ертіс Рівер Тауэрс» (70 б. · R1+R2+R3, нет разрешения + депозит)
+              </button>
+              <button class="btn btn-outline" style="font-size: 0.78rem; padding: 0.35rem 0.7rem; border-color: rgba(16,185,129,0.5); color: #6ee7b7;" onclick="openComplexDetail('jk-3')">
+                🟢 Кейс C: «Алтай Премиум» (10 б. · Гарантия КЖК + обычная реклама R3)
+              </button>
+              <button class="btn btn-outline" style="font-size: 0.78rem; padding: 0.35rem 0.7rem; border-color: rgba(168,85,247,0.5); color: #d8b4fe;" onclick="openComplexDetail('jk-5')">
+                ⚡ Граничный кейс: «Нурлы Жол» (60 б. без R2 = Жёлтая → Подтверди ИИ → Красная!)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.35fr 1fr; gap: 1rem;">
+          <!-- Map Container (Leaflet + Offline Tactical Vector Map Switcher) -->
+          <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; min-height: 490px;">
+            <div style="padding: 0.7rem 1rem; background: #0f172a; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 0.82rem; font-weight: 700; color: #e2e8f0;">
+                📍 Геомониторинг: г. Усть-Каменогорск (49.9483° N, 82.6278° E)
+              </div>
+              <div style="display: flex; gap: 0.4rem;">
+                <button class="btn btn-outline" style="padding: 0.2rem 0.6rem; font-size: 0.73rem;" id="btn-map-vector" onclick="setMapMode('vector')">Схема города (Offline-Ready)</button>
+                <button class="btn btn-outline" style="padding: 0.2rem 0.6rem; font-size: 0.73rem;" id="btn-map-leaflet" onclick="setMapMode('leaflet')">Leaflet OSM</button>
+              </div>
+            </div>
+
+            <!-- Interactive SVG Tactical Map of Ust-Kamenogorsk (100% works offline and online) -->
+            <div id="vector-map-container" style="position: relative; flex: 1; background: #091326; min-height: 430px; overflow: hidden;">
+              <svg viewBox="0 0 800 500" style="width: 100%; height: 100%; display: block;" id="oskemen-svg-map">
+                <defs>
+                  <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ef4444" stop-opacity="0.65"/>
+                    <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+                  </radialGradient>
+                  <radialGradient id="yellowGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.55"/>
+                    <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                  </radialGradient>
+                  <radialGradient id="greenGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.45"/>
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+                  </radialGradient>
+                  <pattern id="cityGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.7" />
+                  </pattern>
+                </defs>
+                <!-- Background Grid -->
+                <rect width="800" height="500" fill="url(#cityGrid)" />
+
+                <!-- District Polygons -->
+                <polygon points="80,60 360,50 420,210 120,240" fill="rgba(30,41,59,0.35)" stroke="#1e293b" stroke-dasharray="4,4" />
+                <text x="155" y="105" fill="#475569" font-size="12" font-weight="700">ПР. НАЗАРБАЕВА / КШТ СЕВЕР</text>
+
+                <polygon points="370,130 620,110 640,280 390,280" fill="rgba(30,41,59,0.4)" stroke="#1e293b" stroke-dasharray="4,4" />
+                <text x="450" y="185" fill="#475569" font-size="12" font-weight="700">ЦЕНТР / СТРЕЛКА / УЛЬБА</text>
+
+                <polygon points="410,310 750,310 760,475 430,475" fill="rgba(30,41,59,0.35)" stroke="#1e293b" stroke-dasharray="4,4" />
+                <text x="515" y="455" fill="#475569" font-size="12" font-weight="700">КШТ · ПР. К. САТПАЕВА · ЛЕВЫЙ БЕРЕГ</text>
+
+                <!-- Irtysh River (Река Иртыш) -->
+                <path d="M 40,260 Q 220,255 350,275 T 610,335 T 790,395" fill="none" stroke="#0284c7" stroke-width="26" stroke-linecap="round" opacity="0.35" />
+                <path d="M 40,260 Q 220,255 350,275 T 610,335 T 790,395" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="10,8" opacity="0.5" />
+                <text x="190" y="252" fill="#38bdf8" font-size="11" font-weight="700" letter-spacing="1.5">РЕКА ИРТЫШ (ЕРТІС)</text>
+
+                <!-- Ulba River (Река Ульба flowing into Irtysh at Strelka) -->
+                <path d="M 670,20 Q 560,120 490,190 T 365,275" fill="none" stroke="#0284c7" stroke-width="16" stroke-linecap="round" opacity="0.32" />
+                <text x="545" y="105" fill="#38bdf8" font-size="10" font-weight="700" transform="rotate(-33 545,105)">РЕКА УЛЬБА</text>
+
+                <!-- Major Roads & Bridges -->
+                <path d="M 210,70 L 365,270 L 520,410" fill="none" stroke="#475569" stroke-width="3.5" />
+                <path d="M 365,260 L 385,305" fill="none" stroke="#f8fafc" stroke-width="5" /> <!-- Irtysh Bridge -->
+                <path d="M 480,285 L 505,335" fill="none" stroke="#f8fafc" stroke-width="5" /> <!-- New Bridge -->
+                <path d="M 365,270 L 660,140" fill="none" stroke="#475569" stroke-width="3" />
+                <path d="M 380,305 L 710,430" fill="none" stroke="#475569" stroke-width="3.5" />
+
+                <!-- Dynamic Pins Group populated by JS -->
+                <g id="svg-pins-layer"></g>
+              </svg>
+
+              <!-- Map Legend Overlay -->
+              <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(15,23,42,0.92); border: 1px solid #334155; border-radius: 0.5rem; padding: 0.55rem 0.8rem; font-size: 0.74rem; display: flex; gap: 0.85rem;">
+                <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Красная (60+ и R1+R2)</span>
+                <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Жёлтая (25–59 / 60+ без R1+R2)</span>
+                <span style="display: flex; align-items: center; gap: 0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span> Зелёная (0–24)</span>
+              </div>
+            </div>
+
+            <!-- Leaflet Map Container (toggled when user clicks Leaflet OSM) -->
+            <div id="leaflet-map-container" style="display: none; flex: 1; min-height: 430px; width: 100%;"></div>
+          </div>
+
+          <!-- Right Column: Complexes Overview List & Quick Inspection -->
+          <div class="card" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 510px; overflow-y: auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 0.55rem;">
+              <span style="font-weight: 700; font-size: 0.92rem;">Приоритизация объектов (по риск-баллу)</span>
+              <span style="font-size: 0.75rem; color: #94a3b8;" id="map-list-counter">Показано: 8 из 8</span>
+            </div>
+            <div id="overview-complex-list" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           MODULE 02: REGISTRY OF RESIDENTIAL COMPLEXES (РЕЕСТР ЖК)
+           ========================================================= -->
+      <section id="tab-registry" class="tab-panel" style="display: none;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">02 · Реестр строящихся ЖК и правовых оснований</h2>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+              Сверка сведений о застройщиках (БИН), способах организации долевого участия (ст. 7, 8, 18 Закона РК) и динамике готовности.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="text" id="registry-search" oninput="renderRegistryTable()" placeholder="Поиск по ЖК, ТОО, БИН, адресу..." style="background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.45rem 0.8rem; border-radius: 0.5rem; font-size: 0.84rem; min-width: 250px;" />
+            <select id="registry-legal-filter" onchange="renderRegistryTable()" style="background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.45rem 0.75rem; border-radius: 0.5rem; font-size: 0.84rem;">
+              <option value="ALL">Все типы правовых оснований</option>
+              <option value="ABSENT">Установлено отсутствие основания (R1)</option>
+              <option value="UNVERIFIED">Не проверено · Нужна проверка (0 б.)</option>
+              <option value="KZH_GUARANTEE">Гарантия Единого оператора (АО «КЖК»)</option>
+              <option value="MIO_PERMIT">Разрешение МИО + Банк второго уровня</option>
+              <option value="COMMISSIONED">Введён в эксплуатацию</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 0; overflow-x: auto; margin-bottom: 1.2rem;">
+          <table class="gov-table">
+            <thead>
+              <tr>
+                <th>ID / Кейс</th>
+                <th>Объект ЖК и адрес</th>
+                <th>Застройщик и БИН</th>
+                <th>Правовое основание ДЖС</th>
+                <th>Готовность (Реклама / ГАСК)</th>
+                <th>Активные факторы</th>
+                <th>Риск-балл и Зона</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody id="registry-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Detailed Inspector Card for Selected Complex -->
+        <div id="registry-detail-card" class="card" style="border-color: #38bdf8;"></div>
+      </section>
+
+      <!-- =========================================================
+           MODULE 03: AI AD MONITORING & LIVE ANALYZER
+           ========================================================= -->
+      <section id="tab-ads" class="tab-panel" style="display: none;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">03 · Мониторинг рекламы и ИИ-детектор признаков привлечения средств</h2>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+              ИИ извлекает условия оплаты из новых объявлений или скриншотов, подсвечивает триггеры и формирует гипотезу. Балл меняется только после подтверждения человеком!
+            </p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.05fr 1.25fr; gap: 1rem; align-items: start;">
+          <!-- Left: Live AI Analyzer & OCR Box -->
+          <div class="card" style="border-color: rgba(168,85,247,0.5);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="badge badge-purple">🤖 AI-Analyzer + OCR v2.4</span>
+                <strong style="font-size: 0.95rem;">Проверить новое объявление / скриншот</strong>
+              </div>
+            </div>
+
+            <!-- Preset Selector for Fast Demo on Stage -->
+            <div style="margin-bottom: 0.75rem;">
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.35rem;">Быстрые пресеты для живой демонстрации жюри (или введите любой свой текст):</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                <button class="btn btn-outline" style="font-size: 0.73rem; padding: 0.25rem 0.55rem;" onclick="loadAdPreset(1)">
+                  🔥 Пресет 1: Платная бронь 500 000 ₸ (ЖК «Ертіс Рівер Тауэрс»)
+                </button>
+                <button class="btn btn-outline" style="font-size: 0.73rem; padding: 0.25rem 0.55rem;" onclick="loadAdPreset(2)">
+                  ⚡ Пресет 2: Депозит по ЖК «Нурлы Жол» (Перевод из Жёлтой в Красную!)
+                </button>
+                <button class="btn btn-outline" style="font-size: 0.73rem; padding: 0.25rem 0.55rem;" onclick="loadAdPreset(3)">
+                  ✅ Пресет 3: Законная реклама с гарантией КЖК (ЖК «Алтай Премиум»)
+                </button>
+                <button class="btn btn-outline" style="font-size: 0.73rem; padding: 0.25rem 0.55rem;" onclick="simulateScreenshotOCR()">
+                  📷 Симуляция OCR скриншота Instagram Stories
+                </button>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.6rem;">
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.2rem;">Площадка / Источник</label>
+                <select id="ai-input-platform" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.45rem; border-radius: 0.4rem; font-size: 0.83rem;">
+                  <option value="Instagram">Instagram (@oskemen_invest_flat)</option>
+                  <option value="Krisha.kz">Krisha.kz (Объявления ВКО)</option>
+                  <option value="Telegram">Telegram (@ukg_nedvizhimost)</option>
+                  <option value="OLX.kz">OLX.kz (Недвижимость Усть-Каменогорск)</option>
+                  <option value="TikTok">TikTok (@novostroyki_vko)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.2rem;">Привязка к ЖК (Авто или выбор)</label>
+                <select id="ai-input-complex" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.45rem; border-radius: 0.4rem; font-size: 0.83rem;">
+                  <option value="AUTO">🔍 Определить автоматически по тексту/телефону</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 0.6rem;">
+              <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.2rem;">Ссылка на публикацию (URL) и контактный телефон в рекламе</label>
+              <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 0.5rem;">
+                <input type="text" id="ai-input-url" value="https://krisha.kz/a/show/698112405-demo" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.45rem; border-radius: 0.4rem; font-size: 0.8rem;" />
+                <input type="text" id="ai-input-phone" value="+7 (705) 999-00-11" placeholder="+7 (705) ..." style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.45rem; border-radius: 0.4rem; font-size: 0.8rem;" />
+              </div>
+            </div>
+
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.2rem;">Текст рекламного объявления или распознанный OCR-текст скриншота:</label>
+              <textarea id="ai-input-text" rows="5" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.65rem; border-radius: 0.5rem; font-size: 0.85rem; resize: vertical;">🔥 СТАРТ ЗАКРЫТЫХ ПРОДАЖ в ЖК «Ертіс Рівер Тауэрс» на Стрелке! Успейте забронировать квартиру всего за 500 000 тг до официального открытия продаж! Первоначальный взнос 20% в кассу застройщика, рассрочка на 36 месяцев без банка. Готовность объекта уже 65%! Звоните: +7 (705) 999-00-11</textarea>
+            </div>
+
+            <div style="display: flex; gap: 0.6rem;">
+              <button class="btn btn-primary" style="flex: 1;" onclick="runLiveAIAnalysis()">
+                🔍 Анализировать текст и выделить факторы риска
+              </button>
+            </div>
+
+            <!-- AI Analysis Output Box -->
+            <div id="ai-analysis-result" style="margin-top: 1rem;"></div>
+          </div>
+
+          <!-- Right: Feed of 12 Advertisements with Snapshots & Statuses -->
+          <div class="card">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.85rem;">
+              <div>
+                <strong style="font-size: 0.95rem;">Лента зафиксированных рекламных публикаций (<span id="ads-count-label">12</span>)</strong>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Каждая запись хранит локальную копию текста (snapshot) и время фиксации на случай удаления поста.</div>
+              </div>
+              <select id="ads-filter-status" onchange="renderAdsFeed()" style="background: #0f172a; border: 1px solid #334155; color: #f8fafc; padding: 0.35rem 0.6rem; border-radius: 0.4rem; font-size: 0.78rem;">
+                <option value="ALL">Все публикации</option>
+                <option value="AI_HYPOTHESIS">🤖 Ожидают подтверждения аналитика</option>
+                <option value="CONFIRMED">✅ Подтверждённые факты</option>
+                <option value="REJECTED">❌ Отклонённые гипотезы</option>
+              </select>
+            </div>
+            <div id="ads-feed-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 640px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           MODULE 04: RISK SCORING R1-R6 & AUTOMATED TESTS (CASES A, B, C)
+           ========================================================= -->
+      <section id="tab-scoring" class="tab-panel" style="display: none;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">04 · Интерактивный калькулятор скоринга R1–R6 и Верификация кейсов A, B, C</h2>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+              Формула ТЗ: <code>Балл = min(100, сумма весов подтверждённых факторов)</code>. Неизвестные сведения = 0 баллов («Нужна проверка»). Гипотезы ИИ не начисляют балл до подтверждения человеком.
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.8rem; color: #94a3b8;">Выберите ЖК:</span>
+            <select id="scoring-complex-select" onchange="selectComplexForScoring(this.value)" style="background: #0f172a; border: 1px solid #38bdf8; color: #fff; padding: 0.45rem 0.8rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.85rem;"></select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 1rem; align-items: start;">
+          <!-- Interactive Factor Matrix for Selected Complex -->
+          <div class="card">
+            <div id="scoring-complex-header" style="margin-bottom: 1rem;"></div>
+            <div id="scoring-factors-list" style="display: flex; flex-direction: column; gap: 0.65rem;"></div>
+          </div>
+
+          <!-- Right: Control Test Scenarios A, B, C + Edge Case Runner -->
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="card" style="border-color: rgba(16,185,129,0.45);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <div>
+                  <span class="badge badge-green">Автотесты формулы риска (Раздел 5 ТЗ)</span>
+                  <h3 style="margin: 0.3rem 0 0 0; font-size: 1rem;">Контрольные тест-сценарии A, B, C</h3>
+                </div>
+                <button class="btn btn-success" onclick="runBuiltInUnitTests()">▶ Запустить проверку (4 теста)</button>
+              </div>
+              <div id="unit-tests-output" style="display: flex; flex-direction: column; gap: 0.55rem;"></div>
+            </div>
+
+            <!-- Rules Reference Card -->
+            <div class="card">
+              <h3 style="margin: 0 0 0.6rem 0; font-size: 0.95rem;">Правила определения цветовых зон и правовой нюанс РК</h3>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.82rem;">
+                <div style="padding: 0.55rem 0.75rem; border-radius: 0.45rem; background: rgba(16,185,129,0.1); border-left: 4px solid #10b981;">
+                  <strong>Зелёная зона (0–24 балла):</strong> Плановый мониторинг, сохранение истории. Действующая гарантия КЖК (ст. 7 Закона РК) является законным основанием и не требует отдельного разрешения МИО.
+                </div>
+                <div style="padding: 0.55rem 0.75rem; border-radius: 0.45rem; background: rgba(245,158,11,0.1); border-left: 4px solid #f59e0b;">
+                  <strong>Жёлтая зона (25–59 баллов, а также 60+ без R1+R2):</strong> Углублённая ручная проверка документов и публикаций. Отсутствие данных в открытом реестре помечается «Нужна проверка» (0 баллов), а не превращается автоматически в R1.
+                </div>
+                <div style="padding: 0.55rem 0.75rem; border-radius: 0.45rem; background: rgba(239,68,68,0.12); border-left: 4px solid #ef4444;">
+                  <strong>Красная зона (60+ баллов И одновременно подтверждены R1 и R2):</strong> Приоритетная сигнальная карточка для проверки аналитиком уполномоченного подразделения МИО.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           MODULE 05: SIGNAL CARD & ONE-CLICK PDF EXPORT
+           ========================================================= -->
+      <section id="tab-signal" class="tab-panel" style="display: none;">
+        <div class="no-print" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800;">05 · Официальная сигнальная карточка объекта</h2>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+              Контроль решений человеком: аналитик МИО подтверждает сигнал или возвращает на доработку, после чего выгружает карточку в PDF.
+            </p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;">
+            <select id="signal-complex-select" onchange="selectComplexForSignal(this.value)" style="background: #0f172a; border: 1px solid #38bdf8; color: #fff; padding: 0.45rem 0.8rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.85rem;"></select>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Скачать PDF / Печать карточки</button>
+            <button class="btn btn-outline" onclick="exportSignalJSON()">⬇️ Выгрузить JSON</button>
+          </div>
+        </div>
+
+        <!-- Analyst Decision Action Bar (No-Print) -->
+        <div class="card no-print" style="margin-bottom: 1.2rem; border-color: #334155;">
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 0.75rem; align-items: end;">
+            <div>
+              <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">ФИО и должность проверяющего аналитика МИО:</label>
+              <input type="text" id="analyst-name-input" value="Ахметов Д.К. — Главный специалист отдела мониторинга ДЖС (Усть-Каменогорск)" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.45rem 0.65rem; border-radius: 0.4rem; font-size: 0.83rem;" />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Резолюция / комментарий аналитика к сигнальной карточке:</label>
+              <input type="text" id="analyst-comment-input" value="Признаки привлечения средств (R2) без правового основания (R1) сверены с выпиской ГАСК и скриншотами рекламы. Рекомендуется включить в план внепланового рассмотрения." style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; padding: 0.45rem 0.65rem; border-radius: 0.4rem; font-size: 0.83rem;" />
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-success" onclick="updateSignalDecision('CONFIRMED')">✅ Подтвердить сигнал</button>
+              <button class="btn btn-danger" onclick="updateSignalDecision('RETURNED')">↩️ Вернуть на доработку</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Printable A4 Official Signal Card -->
+        <div id="signal-printable-area" class="signal-print-sheet"></div>
+      </section>
+
+      <!-- =========================================================
+           BONUS MODULE: PHONE/ACCOUNT COLLISION NETWORK (РАЗДЕЛ 11)
+           ========================================================= -->
+      <section id="tab-network" class="tab-panel" style="display: none;">
+        <div style="margin-bottom: 1rem;">
+          <span class="badge badge-yellow">Дополнительный сценарий · Раздел 11 ТЗ (Креативность +5 баллов)</span>
+          <h2 style="margin: 0.3rem 0 0 0; font-size: 1.25rem; font-weight: 800;">🕸️ Граф связанных рекламных аккаунтов и телефонов отделов продаж</h2>
+          <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+            Автоматическое выявление единых риелторских сетей и call-центров, которые продвигают сразу несколько проблемных строек под разными вывесками ТОО.
+          </p>
+        </div>
+        <div id="network-collisions-view" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;"></div>
+      </section>
+
+      <!-- =========================================================
+           GITHUB MONOREPO EXPORT & ARCHITECTURE MODULE
+           ========================================================= -->
+      <section id="tab-github" class="tab-panel" style="display: none;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <span class="badge badge-blue">Качество кода и GitHub · 20 баллов</span>
+            <h2 style="margin: 0.3rem 0 0 0; font-size: 1.25rem; font-weight: 800;">📦 Готовые файлы для репозитория ClearBuild (GitHub)</h2>
+            <p style="margin: 0.2rem 0 0 0; font-size: 0.84rem; color: #94a3b8;">
+              Скачайте готовые файлы <code>seed.json</code>, <code>mockData.js</code>, <code>test_scoring.py</code> (pytest для друга на бэкенде) и <code>README.md</code> в один клик.
+            </p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="downloadRepoFile('seed.json')">⬇️ seed.json (8 ЖК и 12 объявлений)</button>
+            <button class="btn btn-outline" onclick="downloadRepoFile('mockData.js')">⬇️ frontend/src/mocks/mockData.js</button>
+            <button class="btn btn-success" onclick="downloadRepoFile('test_scoring.py')">⬇️ backend/tests/test_scoring.py (pytest)</button>
+            <button class="btn btn-outline" onclick="downloadRepoFile('.env.example')">⬇️ .env.example</button>
+            <button class="btn btn-outline" onclick="downloadRepoFile('.gitignore')">⬇️ .gitignore</button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="card">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Структура монорепозитория <code>Raul894123/ClearBuild</code></h3>
+            <pre style="background: #090d16; padding: 0.85rem; border-radius: 0.5rem; font-size: 0.78rem; color: #38bdf8; overflow-x: auto; border: 1px solid #1e293b;">ClearBuild/
+├── backend/                  # Бэкенд (FastAPI, SQLite/PostgreSQL, pytest)
+│   ├── app/
+│   │   ├── main.py           # REST API эндпоинты (/api/complexes, /api/analyze)
+│   │   └── scoring.py        # Детерминированная формула R1–R6
+│   ├── tests/
+│   │   └── test_scoring.py   # Автотесты кейсов A, B, C + граничный 60+ без R1+R2
+│   ├── seed.json             # 8 демо-ЖК Усть-Каменогорска и 12 публикаций
+│   └── requirements.txt
+├── frontend/                 # Фронтенд (Mock-First дашборд аналитика МИО)
+│   ├── index.html            # Готовое веб-приложение SAQ QURYLYS
+│   └── src/
+│       ├── mocks/mockData.js # Локальные данные + переключатель USE_MOCK_DATA
+│       └── services/ai.js    # Извлечение триггеров оплаты и сверка с ЖК
+├── .env.example              # Шаблон без секретных ключей
+├── .gitignore                # Исключаем .env, __pycache__, node_modules
+└── README.md                 # Витрина проекта с Mermaid-схемой и таблицей тестов</pre>
+          </div>
+
+          <div class="card">
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Код автотестов <code>backend/tests/test_scoring.py</code> (pytest)</h3>
+            <pre id="pytest-preview-box" style="background: #090d16; padding: 0.85rem; border-radius: 0.5rem; font-size: 0.75rem; color: #a7f3d0; overflow-x: auto; max-height: 290px; border: 1px solid #1e293b;"></pre>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// 1. CONFIGURATION & MOCK-FIRST DATA STORE (8 ЖК Усть-Каменогорска + 12 объявлений)
+// ============================================================================
+let USE_MOCK_DATA = true;
+let CURRENT_LANG = 'ru';
+let CURRENT_ZONE_FILTER = 'ALL';
+let SELECTED_COMPLEX_ID = 'jk-1';
+let MAP_MODE = 'vector';
+let leafletMapInstance = null;
+let leafletMarkers = [];
+
+const FACTOR_DEFINITIONS = {
+  R1: {
+    code: 'R1',
+    weight: 35,
+    title: 'Установлено отсутствие применимого правового основания',
+    desc: 'Проверенными данными установлено отсутствие законного основания (разрешения МИО или гарантии КЖК). Отсутствие доступа к реестру или «нет данных» даёт 0 баллов («Нужна проверка»).'
+  },
+  R2: {
+    code: 'R2',
+    weight: 25,
+    title: 'Прямое предложение внести деньги',
+    desc: 'Зафиксирован текст или скриншот с предложением платной брони, депозита, первоначального взноса, резерва или рассрочки от застройщика до регистрации ДДУ.'
+  },
+  R3: {
+    code: 'R3',
+    weight: 10,
+    title: 'Активная реклама строящегося жилья',
+    desc: 'Зафиксирована публичная реклама о продаже или продвижении квартир до ввода объекта в эксплуатацию.'
+  },
+  R4: {
+    code: 'R4',
+    weight: 15,
+    title: 'Подтверждённое коллективное обращение',
+    desc: 'Имеется проверенное обращение граждан (например, через e-Otinish) о привлечении средств по данному объекту.'
+  },
+  R5: {
+    code: 'R5',
+    weight: 10,
+    title: 'Несовпадение заявленной и подтверждённой готовности',
+    desc: 'Разница от 20 процентных пунктов между готовностью в рекламе и данными тех. мониторинга МИО/ГАСК (с указанием дат и источников).'
+  },
+  R6: {
+    code: 'R6',
+    weight: 5,
+    title: 'Подтверждённый простой / значимая просрочка',
+    desc: 'Документированное существенное отклонение от заявленных сроков строительства либо длительный простой на площадке.'
+  }
+};
+
+// 8 Демонстрационных ЖК г. Усть-Каменогорск (включая эталонные кейсы A, B, C из Раздела 5 ТЗ)
+const INITIAL_COMPLEXES = [
+  {
+    id: 'jk-1',
+    caseTag: 'Кейс B (Эталон ТЗ)',
+    name: 'ЖК «Ертіс Рівер Тауэрс» (Ertis River Towers)',
+    district: 'Стрелка / Набережная Славского, уч. 44',
+    coords: [49.9465, 82.6142],
+    svgPos: { x: 350, y: 245 },
+    developer: 'ТОО «ВостокСтройИнвест-Демо»',
+    bin: '240540099102 (демо)',
+    stage: 'Возведение каркаса 3-го этажа из 16',
+    declaredReadiness: { pct: 65, source: 'Instagram @oskemen_invest_flat', date: '13.10.2026' },
+    confirmedReadiness: { pct: 30, source: 'Выездной мониторинг УГАСК ВКО №114', date: '08.10.2026' },
+    legalBasisType: 'ABSENT',
+    legalBasisText: 'Установлено отсутствие правового основания',
+    legalSource: 'Официальный ответ ГУ «Управление ГАСК ВКО» №04-12/881 от 10.10.2026: разрешение МИО не выдавалось, договор гарантии АО «КЖК» отсутствует.',
+    contactPhone: '+7 (705) 999-00-11',
+    salesAccount: '@oskemen_invest_flat',
+    signalStatus: 'PENDING_HUMAN',
+    signalAuthor: 'Ахметов Д.К. (Ожидает подписи)',
+    signalUpdatedAt: '14.10.2026, 16:40',
+    signalComment: 'Кейс B по ТЗ: подтверждены R1 (+35), R2 (+25) и R3 (+10) = 70 баллов (Красная зона). Имеется также ИИ-гипотеза по R5 (разница готовности 35 п.п.).',
+    factors: {
+      R1: { status: 'CONFIRMED', evidence: 'Ответ УГАСК ВКО №04-12/881 от 10.10.2026 и реестр АО «КЖК»: правовые основания для привлечения денег дольщиков отсутствуют.' },
+      R2: { status: 'CONFIRMED', evidence: 'Публикация AD-101 (Krisha.kz) и AD-102 (Instagram): прямое предложение внести платный депозит 500 000 ₸ и ПВ 20% в кассу до ДДУ.' },
+      R3: { status: 'CONFIRMED', evidence: 'Активная таргетированная реклама продажи квартир на стадии строительства (AD-101, AD-102).' },
+      R4: { status: 'NONE', evidence: 'Зарегистрированных коллективных обращений в e-Otinish на 14.10.2026 не поступало.' },
+      R5: { status: 'AI_HYPOTHESIS', evidence: 'Гипотеза ИИ (92%): в рекламе заявлена готовность 65%, тогда как по справке УГАСК №114 от 08.10.2026 фактическая готовность — 30% (разница 35 п.п.).' },
+      R6: { status: 'NONE', evidence: 'Работы на площадке ведутся, простоя не зафиксировано.' }
+    }
+  },
+  {
+    id: 'jk-2',
+    caseTag: 'Кейс A (Эталон ТЗ)',
+    name: 'ЖК «Сатпаев Сити Парк» (Satpayev City Park)',
+    district: 'КШТ, пр. Каныша Сатпаева, уч. 88',
+    coords: [49.9145, 82.6710],
+    svgPos: { x: 585, y: 390 },
+    developer: 'ТОО «QazaqDomOskemen-Демо»',
+    bin: '231140055219 (демо)',
+    stage: 'Устройство фундамента / котлован',
+    declaredReadiness: { pct: 20, source: 'Telegram @ukg_nedvizhimost', date: '12.10.2026' },
+    confirmedReadiness: { pct: 15, source: 'Фотофиксация МИО ВКО', date: '10.10.2026' },
+    legalBasisType: 'UNVERIFIED',
+    legalBasisText: 'Не проверено · Нужна проверка (0 баллов по R1)',
+    legalSource: 'Сведения в открытой выгрузке МИО отсутствуют; направлен межведомственный запрос №09-21/304 от 12.10.2026. По правилам Раздела 5 ТЗ «нет данных» НЕ считается R1.',
+    contactPhone: '+7 (777) 404-22-10',
+    salesAccount: '@satpayev_city_demo',
+    signalStatus: 'PENDING_HUMAN',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: '14.10.2026, 15:20',
+    signalComment: 'Кейс A по ТЗ: правовое основание ещё на проверке (R1 = 0 б.), но зафиксирована платная бронь R2 (+25) и реклама R3 (+10) = 35 баллов (Жёлтая зона).',
+    factors: {
+      R1: { status: 'UNVERIFIED', evidence: 'Статус «Нужна проверка»: ожидание ответа МИО ВКО по запросу №09-21/304. Балл не начисляется (0 б.).' },
+      R2: { status: 'CONFIRMED', evidence: 'Публикация AD-103 (Telegram): «Платная бронь квартиры за 300 000 ₸ с фиксацией цены на стадии котлована».' },
+      R3: { status: 'CONFIRMED', evidence: 'Реклама строящегося ЖК в Telegram и Instagram (AD-103, AD-104).' },
+      R4: { status: 'NONE', evidence: 'Обращений граждан не зафиксировано.' },
+      R5: { status: 'NONE', evidence: 'Разница готовности составляет 5 п.п. (менее порога в 20 п.п.).' },
+      R6: { status: 'NONE', evidence: 'Сроки в рамках начального этапа.' }
+    }
+  },
+  {
+    id: 'jk-3',
+    caseTag: 'Кейс C (Эталон ТЗ)',
+    name: 'ЖК «Алтай Премиум Резиденс» (Altai Premium)',
+    district: 'Левый берег, ул. Жибек Жолы, 14',
+    coords: [49.9268, 82.6395],
+    svgPos: { x: 460, y: 365 },
+    developer: 'ТОО «AltaiBuildGroup-Демо»',
+    bin: '210340011844 (демо)',
+    stage: 'Монтаж 8-го этажа из 12',
+    declaredReadiness: { pct: 60, source: 'Официальный сайт застройщика', date: '11.10.2026' },
+    confirmedReadiness: { pct: 58, source: 'Отчёт инжиниринговой компании АО «КЖК»', date: '05.10.2026' },
+    legalBasisType: 'KZH_GUARANTEE',
+    legalBasisText: 'Действующая гарантия Единого оператора (АО «КЖК»)',
+    legalSource: 'Договор о предоставлении гарантии АО «Казахстанская Жилищная Компания» №ГД-2026/049 от 15.05.2026 (проверено в реестре КЖК). По ст. 7 Закона РК отдельное разрешение МИО не требуется.',
+    contactPhone: '+7 (7232) 70-05-05',
+    salesAccount: '@altaipremium_ukg',
+    signalStatus: 'CONFIRMED',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: '14.10.2026, 14:10',
+    signalComment: 'Кейс C по ТЗ: действующая гарантия КЖК подтверждена (R1 = 0 б.), серого сбора денег нет (R2 = 0 б.), есть только обычная реклама строящегося ЖК R3 (+10) = 10 баллов (Зелёная зона).',
+    factors: {
+      R1: { status: 'NONE', evidence: 'Законное основание подтверждено: гарантия Единого оператора АО «КЖК» №ГД-2026/049. Отсутствие отдельного разрешения МИО не является нарушением.' },
+      R2: { status: 'NONE', evidence: 'В рекламе (AD-105) указано оформление исключительно через ДДУ после регистрации в Казреестре.' },
+      R3: { status: 'CONFIRMED', evidence: 'Публикация AD-105 (Krisha.kz): штатная информационная реклама строящегося жилого комплекса.' },
+      R4: { status: 'NONE', evidence: 'Жалоб и обращений нет.' },
+      R5: { status: 'NONE', evidence: 'Заявленная готовность (60%) соответствует отчёту инжиниринговой компании (58%).' },
+      R6: { status: 'NONE', evidence: 'Строительство идёт по графику.' }
+    }
+  },
+  {
+    id: 'jk-4',
+    caseTag: 'Красная · Макс. риск',
+    name: 'ЖК «Ульба Гарденс» (Ulba Gardens)',
+    district: 'Центр, ул. Протозанова / Набережная Ульбы, 91',
+    coords: [49.9542, 82.6215],
+    svgPos: { x: 465, y: 215 },
+    developer: 'ТОО «УльбаИнвестГрупп-Демо»',
+    bin: '220840077310 (демо)',
+    stage: 'Каркас на уровне 4-го этажа (работы остановлены)',
+    declaredReadiness: { pct: 80, source: 'OLX.kz и буклет отдела продаж', date: '09.10.2026' },
+    confirmedReadiness: { pct: 35, source: 'Акт осмотра МИО и УГАСК ВКО №89', date: '07.10.2026' },
+    legalBasisType: 'ABSENT',
+    legalBasisText: 'Установлено отсутствие правового основания',
+    legalSource: 'Отказ МИО ВКО в выдаче разрешения №19-04/412 от 02.09.2026; гарантия КЖК отсутствует.',
+    contactPhone: '+7 (705) 999-00-11',
+    salesAccount: '@oskemen_invest_flat',
+    signalStatus: 'CONFIRMED',
+    signalAuthor: 'Ахметов Д.К. — Главный специалист МИО',
+    signalUpdatedAt: '14.10.2026, 16:05',
+    signalComment: 'Критический сигнал (100 баллов): подтверждены все 6 факторов R1–R6, включая коллективное обращение дольщиков в e-Otinish и совпадение телефона отдела продаж с ЖК «Ертіс Рівер Тауэрс».',
+    factors: {
+      R1: { status: 'CONFIRMED', evidence: 'Официальный отказ МИО ВКО №19-04/412 от 02.09.2026; в реестре КЖК объект отсутствует.' },
+      R2: { status: 'CONFIRMED', evidence: 'Публикации AD-106, AD-107: сбор первоначального взноса 30% по «предварительным договорам инвестирования».' },
+      R3: { status: 'CONFIRMED', evidence: 'Агрессивная реклама в OLX.kz и Instagram со скидками за наличный расчёт до ввода в эксплуатацию.' },
+      R4: { status: 'CONFIRMED', evidence: 'Коллективное обращение 14 граждан в системе e-Otinish №ЖТ-2026-089112 от 04.10.2026 о привлечении наличных средств.' },
+      R5: { status: 'CONFIRMED', evidence: 'В рекламе заявлено 80% готовности (09.10.2026), по акту УГАСК №89 (07.10.2026) фактическая готовность — 35% (разница 45 п.п. >= 20 п.п.).' },
+      R6: { status: 'CONFIRMED', evidence: 'Документированный простой башенного крана более 4 месяцев; перенос заявленного срока сдачи с II кв. 2026 на IV кв. 2027.' }
+    }
+  },
+  {
+    id: 'jk-5',
+    caseTag: 'Граничный 60+ без R2',
+    name: 'ЖК «Нурлы Жол Оскемен» (Nurly Zhol Oskemen)',
+    district: 'пр. Нурсултана Назарбаева, 112',
+    coords: [49.9690, 82.5985],
+    svgPos: { x: 245, y: 145 },
+    developer: 'ТОО «ШыгысМонолит-Демо»',
+    bin: '200940033418 (демо)',
+    stage: 'Кладка стен 5-го этажа',
+    declaredReadiness: { pct: 75, source: 'Instagram @nurly_zhol_ukg', date: '13.10.2026' },
+    confirmedReadiness: { pct: 45, source: 'Справка мониторинга МИО ВКО №67', date: '06.10.2026' },
+    legalBasisType: 'ABSENT',
+    legalBasisText: 'Установлено отсутствие правового основания',
+    legalSource: 'По данным МИО ВКО от 01.10.2026 разрешение на привлечение средств дольщиков не оформлено.',
+    contactPhone: '+7 (705) 999-00-11',
+    salesAccount: '@nurly_zhol_ukg',
+    signalStatus: 'PENDING_HUMAN',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: '14.10.2026, 16:50',
+    signalComment: 'Демонстрация правила ТЗ: сейчас подтверждены R1(35)+R3(10)+R5(10)+R6(5) = 60 баллов, но без подтверждённого R2 объект остаётся в Жёлтой зоне! Если подтвердить ИИ-гипотезу по объявлению AD-108 (+25 б.), объект перейдёт в Красную зону (85 б.).',
+    factors: {
+      R1: { status: 'CONFIRMED', evidence: 'Справка МИО ВКО от 01.10.2026: разрешение на привлечение денег дольщиков отсутствует.' },
+      R2: { status: 'AI_HYPOTHESIS', evidence: 'Гипотеза ИИ (95%) по объявлению AD-108: найдена фраза «Внесите депозит 400 000 тг по договору резервирования сегодня». Ожидает подтверждения аналитиком!' },
+      R3: { status: 'CONFIRMED', evidence: 'Реклама продажи квартир в строящемся блоке Б (AD-108, AD-109).' },
+      R4: { status: 'NONE', evidence: 'Подтверждённых коллективных обращений нет.' },
+      R5: { status: 'CONFIRMED', evidence: 'Заявлено в рекламе 75% (13.10.2026), подтверждено МИО 45% (06.10.2026) — расхождение 30 п.п.' },
+      R6: { status: 'CONFIRMED', evidence: 'Зафиксировано отставание от графика строительства более чем на 6 месяцев.' }
+    }
+  },
+  {
+    id: 'jk-6',
+    caseTag: 'Жёлтая · 25 баллов',
+    name: 'ЖК «КШТ Эко Квартал» (KShT Eco Quarter)',
+    district: 'мкр. 19, ул. Увалиева, 22',
+    coords: [49.9080, 82.6840],
+    svgPos: { x: 675, y: 425 },
+    developer: 'ТОО «EcoStroyVKO-Демо»',
+    bin: '240140066501 (демо)',
+    stage: 'Фасадные работы и остекление',
+    declaredReadiness: { pct: 90, source: 'Krisha.kz объявление AD-110', date: '10.10.2026' },
+    confirmedReadiness: { pct: 65, source: 'Отчёт инжиниринга БВУ №41', date: '03.10.2026' },
+    legalBasisType: 'MIO_PERMIT',
+    legalBasisText: 'Разрешение МИО ВКО + проект БВУ',
+    legalSource: 'Разрешение акимата г. Усть-Каменогорска №РД-2026/18 от 20.03.2026 (с участием банка второго уровня).',
+    contactPhone: '+7 (701) 555-88-99',
+    salesAccount: '@ecostroy_vko',
+    signalStatus: 'PENDING_HUMAN',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: '13.10.2026, 11:30',
+    signalComment: 'Разрешение МИО имеется (R1 = 0), но выявлено завышение готовности в рекламе на 25 п.п. (R5 +10) и перенос сроков сдачи (R6 +5) при активной рекламе (R3 +10) = 25 баллов (Жёлтая зона).',
+    factors: {
+      R1: { status: 'NONE', evidence: 'Действующее разрешение МИО №РД-2026/18 от 20.03.2026 проверено.' },
+      R2: { status: 'NONE', evidence: 'Оплата принимается строго на спецсчёт в БВУ по зарегистрированным ДДУ.' },
+      R3: { status: 'CONFIRMED', evidence: 'Публикация AD-110 на Krisha.kz о продаже квартир до ввода в эксплуатацию.' },
+      R4: { status: 'NONE', evidence: 'Коллективных жалоб о незаконном сборе средств нет.' },
+      R5: { status: 'CONFIRMED', evidence: 'В рекламе указано 90% готовности (10.10.2026), по отчёту банка №41 (03.10.2026) — 65% (разница 25 п.п.).' },
+      R6: { status: 'CONFIRMED', evidence: 'Перенос планового ввода с III кв. 2026 на I кв. 2027 (простой подрядчика по фасадам).' }
+    }
+  },
+  {
+    id: 'jk-7',
+    caseTag: 'Зелёная · Норма',
+    name: 'ЖК «Иртыш Плаза» (Irtysh Plaza)',
+    district: 'Центр, ул. Казахстан, 75',
+    coords: [49.9510, 82.6290],
+    svgPos: { x: 430, y: 250 },
+    developer: 'ТОО «OskemenDevelopment-Демо»',
+    bin: '190740022109 (демо)',
+    stage: 'Внутренняя отделка и благоустройство',
+    declaredReadiness: { pct: 85, source: 'Krisha.kz AD-111', date: '12.10.2026' },
+    confirmedReadiness: { pct: 82, source: 'Мониторинг МИО ВКО', date: '09.10.2026' },
+    legalBasisType: 'MIO_PERMIT',
+    legalBasisText: 'Разрешение МИО ВКО + проект БВУ',
+    legalSource: 'Разрешение МИО ВКО №РД-2025/94 от 14.11.2025, проверено в реестре Казреестра.',
+    contactPhone: '+7 (7232) 55-12-34',
+    salesAccount: '@irtysh_plaza_official',
+    signalStatus: 'CONFIRMED',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: '12.10.2026, 17:00',
+    signalComment: 'Плановый мониторинг: все реквизиты разрешения МИО указаны в рекламе корректно. Балл 10 (Зелёная зона).',
+    factors: {
+      R1: { status: 'NONE', evidence: 'Разрешение МИО №РД-2025/94 действующее.' },
+      R2: { status: 'NONE', evidence: 'Предложений серой брони или оплаты мимо ДДУ не обнаружено.' },
+      R3: { status: 'CONFIRMED', evidence: 'Штатная публикация AD-111 о продаже строящихся квартир.' },
+      R4: { status: 'NONE', evidence: 'Обращений нет.' },
+      R5: { status: 'NONE', evidence: 'Разница готовности 3 п.п. (в пределах нормы).' },
+      R6: { status: 'NONE', evidence: 'Работы идут по графику.' }
+    }
+  },
+  {
+    id: 'jk-8',
+    caseTag: 'Зелёная · 0 баллов',
+    name: 'ЖК «Согра Парк» (Sogra Park)',
+    district: 'Восток, пос. Новая Согра, ул. Егорова, 18',
+    coords: [49.9850, 82.7050],
+    svgPos: { x: 690, y: 115 },
+    developer: 'ТОО «СограДомСтрой-Демо»',
+    bin: '180440088712 (демо)',
+    stage: 'Введён в эксплуатацию (Готовый дом)',
+    declaredReadiness: { pct: 100, source: 'Krisha.kz AD-112', date: '01.10.2026' },
+    confirmedReadiness: { pct: 100, source: 'Акт приёмки объекта в эксплуатацию №АВ-2026/77', date: '25.09.2026' },
+    legalBasisType: 'COMMISSIONED',
+    legalBasisText: 'Объект введён в эксплуатацию (Акт зарегистрирован)',
+    legalSource: 'Акт ввода в эксплуатацию №АВ-2026/77 от 25.09.2026. Продажа готовых квартир по договорам купли-продажи.',
+    contactPhone: '+7 (7232) 61-00-99',
+    salesAccount: '@sogra_park_dom',
+    signalStatus: 'CONFIRMED',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: '10.10.2026, 10:15',
+    signalComment: 'Объект сдан в эксплуатацию, рисков долевого участия нет (0 баллов).',
+    factors: {
+      R1: { status: 'NONE', evidence: 'Дом введён в эксплуатацию, разрешение на ДЖС не требуется.' },
+      R2: { status: 'NONE', evidence: 'Обычная продажа готового жилья.' },
+      R3: { status: 'NONE', evidence: 'Реклама относится к готовому введённому дому (не строящееся жильё).' },
+      R4: { status: 'NONE', evidence: 'Обращений нет.' },
+      R5: { status: 'NONE', evidence: '100% готовность подтверждена актом.' },
+      R6: { status: 'NONE', evidence: 'Просрочек нет.' }
+    }
+  }
+];
+
+// 12 Демонстрационных рекламных публикаций (Раздел 4 ТЗ)
+const INITIAL_ADS = [
+  {
+    id: 'AD-101',
+    complexId: 'jk-1',
+    platform: 'Krisha.kz',
+    account: 'Отдел продаж (@oskemen_invest_flat)',
+    phone: '+7 (705) 999-00-11',
+    url: 'https://krisha.kz/a/show/698100101-demo',
+    pubDate: '13.10.2026',
+    capturedAt: '14.10.2026, 09:15 (Snapshot #101)',
+    text: 'ЖК «Ертіс Рівер Тауэрс» на Стрелке! Видовые квартиры на Иртыш. Успейте внести платный депозит 500 000 тг по договору бронирования до старта официальных продаж! Первоначальный взнос 20% в кассу застройщика, рассрочка от застройщика на 36 мес.',
+    triggerSpan: 'внести платный депозит 500 000 тг по договору бронирования до старта официальных продаж! Первоначальный взнос 20% в кассу застройщика',
+    proposedFactor: 'R2',
+    confidence: 96,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-102',
+    complexId: 'jk-1',
+    platform: 'Instagram',
+    account: '@oskemen_invest_flat',
+    phone: '+7 (705) 999-00-11',
+    url: 'https://instagram.com/p/C8demoErtis102',
+    pubDate: '13.10.2026',
+    capturedAt: '14.10.2026, 09:42 (Snapshot #102 · OCR Stories)',
+    text: 'Сторис ЖК Ертіс Рівер Тауэрс: Готовность объекта уже 65%! Осталось 4 квартиры по акционной цене 390 000 тг/м² при оплате первоначального взноса наличными сегодня!',
+    triggerSpan: 'Готовность объекта уже 65%! ... при оплате первоначального взноса наличными сегодня',
+    proposedFactor: 'R5',
+    confidence: 92,
+    status: 'AI_HYPOTHESIS'
+  },
+  {
+    id: 'AD-103',
+    complexId: 'jk-2',
+    platform: 'Telegram',
+    account: '@ukg_nedvizhimost / @satpayev_city_demo',
+    phone: '+7 (777) 404-22-10',
+    url: 'https://t.me/ukg_nedvizhimost/4812-demo',
+    pubDate: '12.10.2026',
+    capturedAt: '13.10.2026, 14:20 (Snapshot #103)',
+    text: 'Новый ЖК «Сатпаев Сити Парк» на КШТ! Старт котлована! Доступна платная бронь квартиры за 300 000 тг с жёсткой фиксацией цены за квадрат. Оформляем предварительное соглашение.',
+    triggerSpan: 'платная бронь квартиры за 300 000 тг с жёсткой фиксацией цены за квадрат',
+    proposedFactor: 'R2',
+    confidence: 95,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-104',
+    complexId: 'jk-2',
+    platform: 'Instagram',
+    account: '@satpayev_city_demo',
+    phone: '+7 (777) 404-22-10',
+    url: 'https://instagram.com/p/C8demoSatpayev104',
+    pubDate: '12.10.2026',
+    capturedAt: '13.10.2026, 14:25 (Snapshot #104)',
+    text: 'Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 88). Сдача во II квартале 2028 года.',
+    triggerSpan: 'в строящемся ЖК «Сатпаев Сити Парк» ... Сдача во II квартале 2028 года',
+    proposedFactor: 'R3',
+    confidence: 98,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-105',
+    complexId: 'jk-3',
+    platform: 'Krisha.kz',
+    account: '@altaipremium_ukg',
+    phone: '+7 (7232) 70-05-05',
+    url: 'https://krisha.kz/a/show/698100105-demo',
+    pubDate: '11.10.2026',
+    capturedAt: '12.10.2026, 11:00 (Snapshot #105)',
+    text: 'ЖК «Алтай Премиум Резиденс» (Левый берег). Строительство защищено гарантией АО «КЖК» №ГД-2026/049. Заключение официальных ДДУ через Казреестр, ипотека Отбасы Банка.',
+    triggerSpan: 'Строительство защищено гарантией АО «КЖК» №ГД-2026/049. Заключение официальных ДДУ',
+    proposedFactor: 'R3',
+    confidence: 99,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-106',
+    complexId: 'jk-4',
+    platform: 'OLX.kz',
+    account: '@oskemen_invest_flat',
+    phone: '+7 (705) 999-00-11',
+    url: 'https://olx.kz/d/obyavlenie/ulba-gardens-demo-106',
+    pubDate: '09.10.2026',
+    capturedAt: '10.10.2026, 16:40 (Snapshot #106)',
+    text: 'Срочная продажа от инвестора и застройщика в ЖК «Ульба Гарденс»! Первоначальный взнос 30% по предварительному договору инвестирования, остальное в рассрочку до сдачи дома. Готовность дома 80%!',
+    triggerSpan: 'Первоначальный взнос 30% по предварительному договору инвестирования',
+    proposedFactor: 'R2',
+    confidence: 97,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-107',
+    complexId: 'jk-4',
+    platform: 'Instagram',
+    account: '@oskemen_invest_flat',
+    phone: '+7 (705) 999-00-11',
+    url: 'https://instagram.com/p/C8demoUlba107',
+    pubDate: '10.10.2026',
+    capturedAt: '11.10.2026, 10:05 (Snapshot #107)',
+    text: 'ЖК «Ульба Гарденс» на Протозанова! Внесите 1 000 000 тг сегодня для резерва квартиры с видом на Ульбу без участия банков и лишних справок!',
+    triggerSpan: 'Внесите 1 000 000 тг сегодня для резерва квартиры ... без участия банков',
+    proposedFactor: 'R2',
+    confidence: 94,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-108',
+    complexId: 'jk-5',
+    platform: 'Telegram',
+    account: '@nurly_zhol_ukg',
+    phone: '+7 (705) 999-00-11',
+    url: 'https://t.me/ukg_nedvizhimost/5108-demo',
+    pubDate: '13.10.2026',
+    capturedAt: '14.10.2026, 10:30 (Snapshot #108)',
+    text: 'ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 112). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!',
+    triggerSpan: 'Внесите депозит 400 000 тг по договору резервирования сегодня',
+    proposedFactor: 'R2',
+    confidence: 95,
+    status: 'AI_HYPOTHESIS'
+  },
+  {
+    id: 'AD-109',
+    complexId: 'jk-5',
+    platform: 'Instagram',
+    account: '@nurly_zhol_ukg',
+    phone: '+7 (705) 999-00-11',
+    url: 'https://instagram.com/p/C8demoNurly109',
+    pubDate: '13.10.2026',
+    capturedAt: '14.10.2026, 10:35 (Snapshot #109)',
+    text: 'Строительство ЖК «Нурлы Жол Оскемен» идёт полным ходом, готовность уже 75%! Открыта продажа 2-комнатных квартир на стадии строительства.',
+    triggerSpan: 'готовность уже 75%! Открыта продажа 2-комнатных квартир на стадии строительства',
+    proposedFactor: 'R5',
+    confidence: 91,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-110',
+    complexId: 'jk-6',
+    platform: 'Krisha.kz',
+    account: '@ecostroy_vko',
+    phone: '+7 (701) 555-88-99',
+    url: 'https://krisha.kz/a/show/698100110-demo',
+    pubDate: '10.10.2026',
+    capturedAt: '11.10.2026, 12:15 (Snapshot #110)',
+    text: 'ЖК «КШТ Эко Квартал» (ул. Увалиева). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!',
+    triggerSpan: 'Дом почти готов — готовность 90% (по отчёту БВУ 65%)',
+    proposedFactor: 'R5',
+    confidence: 89,
+    status: 'AI_HYPOTHESIS'
+  },
+  {
+    id: 'AD-111',
+    complexId: 'jk-7',
+    platform: 'Krisha.kz',
+    account: '@irtysh_plaza_official',
+    phone: '+7 (7232) 55-12-34',
+    url: 'https://krisha.kz/a/show/698100111-demo',
+    pubDate: '12.10.2026',
+    capturedAt: '12.10.2026, 15:00 (Snapshot #111)',
+    text: 'ЖК «Иртыш Плаза», ул. Казахстан, 75. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.',
+    triggerSpan: 'Продажа квартир исключительно по ДДУ через уполномоченный банк',
+    proposedFactor: 'R3',
+    confidence: 97,
+    status: 'CONFIRMED'
+  },
+  {
+    id: 'AD-112',
+    complexId: 'jk-8',
+    platform: 'Krisha.kz',
+    account: '@sogra_park_dom',
+    phone: '+7 (7232) 61-00-99',
+    url: 'https://krisha.kz/a/show/698100112-demo',
+    pubDate: '01.10.2026',
+    capturedAt: '05.10.2026, 13:10 (Snapshot #112)',
+    text: 'ЖК «Согра Парк» — ДОМ СДАН! Акт ввода в эксплуатацию №АВ-2026/77. Ключи в день сделки, подходят все виды ипотеки. Звоните в отдел продаж, торг за наличный расчёт.',
+    triggerSpan: 'торг за наличный расчёт (ИИ пометил слово «наличный», но дом уже введён в эксплуатацию — ложноположительное срабатывание отклонено)',
+    proposedFactor: 'R2',
+    confidence: 62,
+    status: 'REJECTED'
+  }
+];
+
+let complexes = JSON.parse(JSON.stringify(INITIAL_COMPLEXES));
+let ads = JSON.parse(JSON.stringify(INITIAL_ADS));
+let auditLog = [
+  { time: '14.10.2026 16:40', actor: 'Ахметов Д.К.', action: 'Подтверждён фактор R2 (+25) по ЖК «Ертіс Рівер Тауэрс» (Кейс B → 70 б., Красная зона)' },
+  { time: '14.10.2026 15:20', actor: 'Ахметов Д.К.', action: 'Отмечен статус «Нужна проверка» (0 б.) по R1 для ЖК «Сатпаев Сити Парк» (Кейс A → 35 б., Жёлтая зона)' },
+  { time: '14.10.2026 14:10', actor: 'Ахметов Д.К.', action: 'Проверена гарантия АО «КЖК» №ГД-2026/049 по ЖК «Алтай Премиум» (Кейс C → 10 б., Зелёная зона)' },
+  { time: '14.10.2026 11:05', actor: 'Ахметов Д.К.', action: 'Отклонена гипотеза ИИ (62%) по AD-112 («Согра Парк»): дом уже введён в эксплуатацию' }
+];
+
+// ============================================================================
+// 2. DETERMINISTIC SCORING ENGINE (R1–R6 + ZONES + CASES A, B, C)
+// ============================================================================
+function calculateRiskProfile(complex) {
+  let confirmedScore = 0;
+  let potentialScore = 0;
+  const activeConfirmedCodes = [];
+  const aiHypothesisCodes = [];
+  const unverifiedCodes = [];
+
+  for (const code of ['R1', 'R2', 'R3', 'R4', 'R5', 'R6']) {
+    const fState = complex.factors[code];
+    const weight = FACTOR_DEFINITIONS[code].weight;
+    if (!fState) continue;
+    if (fState.status === 'CONFIRMED') {
+      confirmedScore += weight;
+      potentialScore += weight;
+      activeConfirmedCodes.push(code);
+    } else if (fState.status === 'AI_HYPOTHESIS') {
+      potentialScore += weight;
+      aiHypothesisCodes.push(code);
+    } else if (fState.status === 'UNVERIFIED') {
+      unverifiedCodes.push(code);
+    }
+  }
+
+  confirmedScore = Math.min(100, confirmedScore);
+  potentialScore = Math.min(100, potentialScore);
+
+  const hasR1 = activeConfirmedCodes.includes('R1');
+  const hasR2 = activeConfirmedCodes.includes('R2');
+
+  // Exact Zone Rule from Section 5 of SAQ QURYLYS Spec:
+  // RED: score >= 60 AND simultaneously confirmed R1 and R2
+  // YELLOW: 25-59, OR 60+ without R1+R2 combination
+  // GREEN: 0-24
+  let zone = 'GREEN';
+  let zoneLabel = 'Зелёная';
+  let zoneAction = 'Плановый мониторинг, сохранение истории.';
+  let zoneReason = 'Балл 0–24: существенных подтверждённых рисков не выявлено.';
+
+  if (confirmedScore >= 60 && hasR1 && hasR2) {
+    zone = 'RED';
+    zoneLabel = 'Красная';
+    zoneAction = 'Приоритетная сигнальная карточка для проверки аналитиком.';
+    zoneReason = `Балл ${confirmedScore} (≥60) и одновременно подтверждены R1 (нет основания) + R2 (сбор денег).`;
+  } else if (confirmedScore >= 25) {
+    zone = 'YELLOW';
+    zoneLabel = 'Жёлтая';
+    zoneAction = 'Углублённая ручная проверка документов и публикаций.';
+    if (confirmedScore >= 60) {
+      zoneReason = `Балл ${confirmedScore} (≥60), но отсутствует одновременная комбинация подтверждённых R1+R2 — по правилу Раздела 5 ТЗ присвоена Жёлтая зона.`;
+    } else {
+      zoneReason = `Балл ${confirmedScore} в диапазоне 25–59 баллов.`;
+    }
+  }
+
+  return {
+    score: confirmedScore,
+    potentialScore,
+    zone,
+    zoneLabel,
+    zoneAction,
+    zoneReason,
+    hasR1,
+    hasR2,
+    activeConfirmedCodes,
+    aiHypothesisCodes,
+    unverifiedCodes
+  };
+}
+
+function getZoneBadgeHTML(profile) {
+  if (profile.zone === 'RED') {
+    return `<span class="badge badge-red">🔴 Красная · ${profile.score} б.</span>`;
+  }
+  if (profile.zone === 'YELLOW') {
+    return `<span class="badge badge-yellow">🟡 Жёлтая · ${profile.score} б.</span>`;
+  }
+  return `<span class="badge badge-green">🟢 Зелёная · ${profile.score} б.</span>`;
+}
+
+// ============================================================================
+// 3. UI RENDERERS & NAVIGATION
+// ============================================================================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(el => {
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  const targetPanel = document.getElementById('tab-' + tabId);
+  if (targetPanel) targetPanel.style.display = 'block';
+  const targetNav = document.getElementById('nav-' + tabId);
+  if (targetNav) targetNav.classList.add('active');
+
+  if (tabId === 'map' && MAP_MODE === 'leaflet' && leafletMapInstance) {
+    setTimeout(() => leafletMapInstance.invalidateSize(), 150);
+  }
+  if (tabId === 'scoring') {
+    renderScoringView();
+    runBuiltInUnitTests();
+  }
+  if (tabId === 'signal') {
+    renderSignalCard();
+  }
+  if (tabId === 'network') {
+    renderNetworkCollisions();
+  }
+  if (tabId === 'github') {
+    renderPytestPreview();
+  }
+}
+
+function refreshAllViews() {
+  updateTopKPIs();
+  renderSidebarAudit();
+  renderVectorMapPins();
+  renderLeafletMarkers();
+  renderOverviewList();
+  renderRegistryTable();
+  renderRegistryDetail(SELECTED_COMPLEX_ID);
+  populateComplexSelects();
+  renderAdsFeed();
+  renderScoringView();
+  renderSignalCard();
+  renderNetworkCollisions();
+}
+
+function updateTopKPIs() {
+  let redCount = 0;
+  let yellowCount = 0;
+  let aiPending = 0;
+
+  complexes.forEach(c => {
+    const p = calculateRiskProfile(c);
+    if (p.zone === 'RED') redCount++;
+    if (p.zone === 'YELLOW') yellowCount++;
+    aiPending += p.aiHypothesisCodes.length;
+  });
+
+  ads.forEach(a => {
+    if (a.status === 'AI_HYPOTHESIS') aiPending++;
+  });
+
+  document.getElementById('kpi-total-count').textContent = complexes.length;
+  document.getElementById('kpi-red-count').textContent = redCount;
+  document.getElementById('kpi-yellow-count').textContent = yellowCount;
+  document.getElementById('kpi-ai-pending').textContent = aiPending;
+  document.getElementById('nav-badge-complexes').textContent = complexes.length;
+  document.getElementById('nav-badge-ads').textContent = ads.length;
+
+  const activeObj = complexes.find(c => c.id === SELECTED_COMPLEX_ID) || complexes[0];
+  const activeProf = calculateRiskProfile(activeObj);
+  document.getElementById('sidebar-active-name').textContent = activeObj.name;
+  const sbZone = document.getElementById('sidebar-active-zone');
+  sbZone.className = 'badge ' + (activeProf.zone === 'RED' ? 'badge-red' : activeProf.zone === 'YELLOW' ? 'badge-yellow' : 'badge-green');
+  sbZone.textContent = `${activeProf.zoneLabel} · ${activeProf.score} б.`;
+}
+
+function renderSidebarAudit() {
+  const container = document.getElementById('sidebar-audit-log');
+  container.innerHTML = auditLog.slice(0, 6).map(item => `
+    <div style="border-left: 2px solid #38bdf8; padding-left: 0.5rem;">
+      <div style="color: #64748b; font-size: 0.68rem;">${item.time} · ${item.actor}</div>
+      <div>${item.action}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
+// 4. MAP RENDERING (VECTOR UST-KAMENOGORSK + LEAFLET)
+// ============================================================================
+function setZoneFilter(zone) {
+  CURRENT_ZONE_FILTER = zone;
+  renderVectorMapPins();
+  renderLeafletMarkers();
+  renderOverviewList();
+}
+
+function setMapMode(mode) {
+  MAP_MODE = mode;
+  const vec = document.getElementById('vector-map-container');
+  const leaf = document.getElementById('leaflet-map-container');
+  if (mode === 'leaflet') {
+    vec.style.display = 'none';
+    leaf.style.display = 'block';
+    initLeafletIfNeeded();
+  } else {
+    leaf.style.display = 'none';
+    vec.style.display = 'block';
+  }
+}
+
+function renderVectorMapPins() {
+  const layer = document.getElementById('svg-pins-layer');
+  if (!layer) return;
+
+  const filtered = complexes.filter(c => {
+    if (CURRENT_ZONE_FILTER === 'ALL') return true;
+    return calculateRiskProfile(c).zone === CURRENT_ZONE_FILTER;
+  });
+
+  layer.innerHTML = filtered.map(c => {
+    const p = calculateRiskProfile(c);
+    const color = p.zone === 'RED' ? '#ef4444' : p.zone === 'YELLOW' ? '#f59e0b' : '#10b981';
+    const glow = p.zone === 'RED' ? 'url(#redGlow)' : p.zone === 'YELLOW' ? 'url(#yellowGlow)' : 'url(#greenGlow)';
+    const isSelected = c.id === SELECTED_COMPLEX_ID;
+    const shortName = c.name.replace('ЖК ', '').split(' (')[0];
+    return `
+      <g style="cursor: pointer;" onclick="openComplexDetail('${c.id}')">
+        <circle cx="${c.svgPos.x}" cy="${c.svgPos.y}" r="${isSelected ? 34 : 24}" fill="${glow}" />
+        <circle cx="${c.svgPos.x}" cy="${c.svgPos.y}" r="${isSelected ? 12 : 9}" fill="${color}" stroke="#ffffff" stroke-width="${isSelected ? 3 : 2}" />
+        <text x="${c.svgPos.x}" y="${c.svgPos.y + 4}" text-anchor="middle" fill="#fff" font-size="9" font-weight="800">${p.score}</text>
+        <rect x="${c.svgPos.x - 68}" y="${c.svgPos.y - 34}" width="136" height="19" rx="4" fill="rgba(15,23,42,0.9)" stroke="${color}" stroke-width="1" />
+        <text x="${c.svgPos.x}" y="${c.svgPos.y - 21}" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="700">${shortName}</text>
+      </g>
+    `;
+  }).join('');
+}
+
+function initLeafletIfNeeded() {
+  if (typeof L === 'undefined') return;
+  if (!leafletMapInstance) {
+    leafletMapInstance = L.map('leaflet-map-container').setView([49.9483, 82.6278], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors · Усть-Каменогорск'
+    }).addTo(leafletMapInstance);
+  }
+  renderLeafletMarkers();
+  setTimeout(() => leafletMapInstance.invalidateSize(), 120);
+}
+
+function renderLeafletMarkers() {
+  if (!leafletMapInstance || typeof L === 'undefined') return;
+  leafletMarkers.forEach(m => leafletMapInstance.removeLayer(m));
+  leafletMarkers = [];
+
+  complexes.forEach(c => {
+    const p = calculateRiskProfile(c);
+    if (CURRENT_ZONE_FILTER !== 'ALL' && p.zone !== CURRENT_ZONE_FILTER) return;
+    const color = p.zone === 'RED' ? '#ef4444' : p.zone === 'YELLOW' ? '#f59e0b' : '#10b981';
+    const marker = L.circleMarker(c.coords, {
+      radius: 11,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2.5,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(leafletMapInstance);
+
+    marker.bindPopup(`
+      <div style="font-family: sans-serif; min-width: 210px;">
+        <strong>${c.name}</strong><br/>
+        <span style="font-size:12px;color:#475569;">${c.district}</span><br/>
+        <div style="margin:6px 0;font-weight:700;color:${color};">Зона: ${p.zoneLabel} (${p.score} баллов)</div>
+        <div style="font-size:12px;">Основание: ${c.legalBasisText}</div>
+        <button onclick="openComplexDetail('${c.id}')" style="margin-top:8px;background:#0284c7;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;">Открыть карточку</button>
+      </div>
+    `);
+    leafletMarkers.push(marker);
+  });
+}
+
+function renderOverviewList() {
+  const container = document.getElementById('overview-complex-list');
+  const sorted = [...complexes].sort((a, b) => calculateRiskProfile(b).score - calculateRiskProfile(a).score);
+  const filtered = sorted.filter(c => {
+    if (CURRENT_ZONE_FILTER === 'ALL') return true;
+    return calculateRiskProfile(c).zone === CURRENT_ZONE_FILTER;
+  });
+
+  document.getElementById('map-list-counter').textContent = `Показано: ${filtered.length} из ${complexes.length}`;
+
+  container.innerHTML = filtered.map(c => {
+    const p = calculateRiskProfile(c);
+    const isSel = c.id === SELECTED_COMPLEX_ID;
+    return `
+      <div onclick="openComplexDetail('${c.id}')" style="background: ${isSel ? 'rgba(56,189,248,0.1)' : '#0f172a'}; border: 1px solid ${isSel ? '#38bdf8' : '#1e293b'}; border-radius: 0.6rem; padding: 0.75rem; cursor: pointer; transition: all 0.15s;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+          <div>
+            <span class="badge badge-neutral" style="font-size: 0.68rem; margin-bottom: 0.25rem;">${c.caseTag}</span>
+            <div style="font-weight: 700; font-size: 0.92rem; color: #f8fafc;">${c.name}</div>
+          </div>
+          ${getZoneBadgeHTML(p)}
+        </div>
+        <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.25rem;">📍 ${c.district} · ${c.developer}</div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin-top: 0.5rem; font-size: 0.75rem;">
+          <span style="color: #cbd5e1;">Факторы: <strong>${p.activeConfirmedCodes.length ? p.activeConfirmedCodes.join(', ') : 'Нет'}</strong></span>
+          ${p.aiHypothesisCodes.length ? `<span class="badge badge-purple">🤖 Гипотеза ИИ: ${p.aiHypothesisCodes.join(', ')} (Потенциал: ${p.potentialScore} б.)</span>` : ''}
+          ${p.unverifiedCodes.length ? `<span class="badge badge-yellow">⚠️ Нужна проверка: ${p.unverifiedCodes.join(', ')}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openComplexDetail(complexId) {
+  SELECTED_COMPLEX_ID = complexId;
+  refreshAllViews();
+  switchTab('registry');
+  const detailEl = document.getElementById('registry-detail-card');
+  if (detailEl) detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ============================================================================
+// 5. MODULE 02: REGISTRY TABLE & OBJECT DETAIL CARD
+// ============================================================================
+function renderRegistryTable() {
+  const tbody = document.getElementById('registry-tbody');
+  const q = (document.getElementById('registry-search')?.value || '').toLowerCase().trim();
+  const legalFilter = document.getElementById('registry-legal-filter')?.value || 'ALL';
+
+  const rows = complexes.filter(c => {
+    if (legalFilter !== 'ALL' && c.legalBasisType !== legalFilter) return false;
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.developer.toLowerCase().includes(q) ||
+      c.bin.toLowerCase().includes(q) ||
+      c.district.toLowerCase().includes(q) ||
+      c.contactPhone.toLowerCase().includes(q)
+    );
+  });
+
+  tbody.innerHTML = rows.map(c => {
+    const p = calculateRiskProfile(c);
+    const diff = Math.abs(c.declaredReadiness.pct - c.confirmedReadiness.pct);
+    return `
+      <tr style="${c.id === SELECTED_COMPLEX_ID ? 'background: rgba(56,189,248,0.08);' : ''}">
+        <td>
+          <div style="font-weight: 700; color: #38bdf8;">${c.id.toUpperCase()}</div>
+          <span class="badge badge-neutral" style="font-size: 0.68rem; margin-top: 0.2rem;">${c.caseTag}</span>
+        </td>
+        <td>
+          <div style="font-weight: 700; color: #f8fafc;">${c.name}</div>
+          <div style="font-size: 0.77rem; color: #94a3b8;">${c.district}</div>
+          <div style="font-size: 0.74rem; color: #64748b;">Стадия: ${c.stage}</div>
+        </td>
+        <td>
+          <div style="font-weight: 600;">${c.developer}</div>
+          <div style="font-size: 0.76rem; color: #94a3b8;">БИН: ${c.bin}</div>
+          <div style="font-size: 0.75rem; color: #38bdf8;">📞 ${c.contactPhone}</div>
+        </td>
+        <td>
+          <div style="font-weight: 600; color: ${c.legalBasisType === 'ABSENT' ? '#fca5a5' : c.legalBasisType === 'UNVERIFIED' ? '#fcd34d' : '#6ee7b7'};">
+            ${c.legalBasisText}
+          </div>
+          <div style="font-size: 0.73rem; color: #94a3b8; margin-top: 0.15rem;">${c.legalSource}</div>
+        </td>
+        <td>
+          <div>Реклама: <strong>${c.declaredReadiness.pct}%</strong> / Факт: <strong>${c.confirmedReadiness.pct}%</strong></div>
+          <div style="font-size: 0.73rem; color: ${diff >= 20 ? '#fca5a5' : '#94a3b8'};">
+            Разница: ${diff} п.п. ${diff >= 20 ? '(Порог R5 ≥ 20 п.п.!)' : '(Норма)'}
+          </div>
+        </td>
+        <td>
+          <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+            ${p.activeConfirmedCodes.map(code => `<span class="badge badge-red">${code} (+${FACTOR_DEFINITIONS[code].weight})</span>`).join('')}
+            ${p.aiHypothesisCodes.map(code => `<span class="badge badge-purple">🤖 ${code}?</span>`).join('')}
+            ${p.unverifiedCodes.map(code => `<span class="badge badge-yellow">⚠️ ${code} (0 б.)</span>`).join('')}
+            ${(!p.activeConfirmedCodes.length && !p.aiHypothesisCodes.length) ? '<span class="badge badge-green">Нет рисков</span>' : ''}
+          </div>
+        </td>
+        <td>
+          ${getZoneBadgeHTML(p)}
+          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">${p.zoneReason}</div>
+        </td>
+        <td>
+          <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <button class="btn btn-outline" style="padding: 0.3rem 0.55rem; font-size: 0.75rem;" onclick="renderRegistryDetail('${c.id}')">🔍 Карточка</button>
+            <button class="btn btn-primary" style="padding: 0.3rem 0.55rem; font-size: 0.75rem;" onclick="SELECTED_COMPLEX_ID='${c.id}'; refreshAllViews(); switchTab('signal');">📄 Сигнал PDF</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderRegistryDetail(complexId) {
+  SELECTED_COMPLEX_ID = complexId;
+  const c = complexes.find(item => item.id === complexId) || complexes[0];
+  const p = calculateRiskProfile(c);
+  const linkedAds = ads.filter(a => a.complexId === c.id);
+  const container = document.getElementById('registry-detail-card');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.85rem; margin-bottom: 1rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span class="badge badge-blue">Паспорт объекта ${c.id.toUpperCase()}</span>
+          <span class="badge badge-neutral">${c.caseTag}</span>
+          ${getZoneBadgeHTML(p)}
+        </div>
+        <h3 style="margin: 0.35rem 0 0 0; font-size: 1.15rem;">${c.name} — ${c.district}</h3>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-outline" onclick="switchTab('scoring')">⚙️ Настроить факторы R1–R6</button>
+        <button class="btn btn-primary" onclick="switchTab('signal')">🖨️ Сформировать сигнальную карточку</button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.9rem; margin-bottom: 1rem;">
+      <div style="background: #0f172a; padding: 0.8rem; border-radius: 0.5rem; border: 1px solid #1e293b;">
+        <div style="font-size: 0.73rem; color: #94a3b8; text-transform: uppercase;">Застройщик и контакты продаж</div>
+        <div style="font-weight: 700; margin-top: 0.25rem;">${c.developer}</div>
+        <div style="font-size: 0.8rem; color: #cbd5e1;">БИН: ${c.bin}</div>
+        <div style="font-size: 0.8rem; color: #38bdf8; margin-top: 0.25rem;">Телефон в рекламе: ${c.contactPhone} (${c.salesAccount})</div>
+      </div>
+
+      <div style="background: #0f172a; padding: 0.8rem; border-radius: 0.5rem; border: 1px solid #1e293b;">
+        <div style="font-size: 0.73rem; color: #94a3b8; text-transform: uppercase;">Правовое основание привлечения денег</div>
+        <div style="font-weight: 700; margin-top: 0.25rem; color: ${c.legalBasisType === 'ABSENT' ? '#fca5a5' : c.legalBasisType === 'UNVERIFIED' ? '#fcd34d' : '#6ee7b7'};">${c.legalBasisText}</div>
+        <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 0.25rem;">Источник: ${c.legalSource}</div>
+      </div>
+
+      <div style="background: #0f172a; padding: 0.8rem; border-radius: 0.5rem; border: 1px solid #1e293b;">
+        <div style="font-size: 0.73rem; color: #94a3b8; text-transform: uppercase;">Сверка готовности (Фактор R5)</div>
+        <div style="font-size: 0.82rem; margin-top: 0.25rem;">В рекламе: <strong>${c.declaredReadiness.pct}%</strong> <span style="color:#94a3b8;">(${c.declaredReadiness.source}, ${c.declaredReadiness.date})</span></div>
+        <div style="font-size: 0.82rem; margin-top: 0.15rem;">Подтверждено: <strong>${c.confirmedReadiness.pct}%</strong> <span style="color:#94a3b8;">(${c.confirmedReadiness.source}, ${c.confirmedReadiness.date})</span></div>
+        <div style="font-size: 0.78rem; margin-top: 0.25rem; color: #38bdf8;">Текущий этап: ${c.stage}</div>
+      </div>
+    </div>
+
+    <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 0.5rem;">Связанные рекламные публикации и доказательства (${linkedAds.length}):</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+      ${linkedAds.map(ad => `
+        <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 0.5rem; padding: 0.75rem; font-size: 0.8rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <strong>${ad.id} · ${ad.platform} (${ad.account})</strong>
+            <span class="badge ${ad.status === 'CONFIRMED' ? 'badge-red' : ad.status === 'AI_HYPOTHESIS' ? 'badge-purple' : 'badge-neutral'}">
+              ${ad.status === 'CONFIRMED' ? 'Подтверждён (' + ad.proposedFactor + ')' : ad.status === 'AI_HYPOTHESIS' ? 'Гипотеза ИИ (' + ad.proposedFactor + ' · ' + ad.confidence + '%)' : 'Отклонено'}
+            </span>
+          </div>
+          <div style="color: #cbd5e1; margin-bottom: 0.35rem;">«${ad.text}»</div>
+          <div style="font-size: 0.73rem; color: #64748b;">Фиксация: ${ad.capturedAt} · <a href="${ad.url}" target="_blank" style="color: #38bdf8;">Исходный URL</a></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============================================================================
+// 6. MODULE 03: AI AD ANALYZER & FEED
+// ============================================================================
+function populateComplexSelects() {
+  const aiSelect = document.getElementById('ai-input-complex');
+  const scoringSelect = document.getElementById('scoring-complex-select');
+  const signalSelect = document.getElementById('signal-complex-select');
+
+  if (aiSelect) {
+    aiSelect.innerHTML = `<option value="AUTO">🔍 Определить автоматически по тексту / телефону</option>` +
+      complexes.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  }
+  if (scoringSelect) {
+    scoringSelect.innerHTML = complexes.map(c => {
+      const p = calculateRiskProfile(c);
+      return `<option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>${c.name} (${p.zoneLabel} · ${p.score} б.)</option>`;
+    }).join('');
+  }
+  if (signalSelect) {
+    signalSelect.innerHTML = complexes.map(c => {
+      const p = calculateRiskProfile(c);
+      return `<option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>${c.name} (${p.zoneLabel} · ${p.score} б.)</option>`;
+    }).join('');
+  }
+}
+
+function loadAdPreset(num) {
+  const textEl = document.getElementById('ai-input-text');
+  const phoneEl = document.getElementById('ai-input-phone');
+  const platformEl = document.getElementById('ai-input-platform');
+  const urlEl = document.getElementById('ai-input-url');
+  const complexEl = document.getElementById('ai-input-complex');
+  complexEl.value = 'AUTO';
+
+  if (num === 1) {
+    platformEl.value = 'Instagram';
+    phoneEl.value = '+7 (705) 999-00-11';
+    urlEl.value = 'https://instagram.com/p/C8demoErtisNew';
+    textEl.value = '🔥 СТАРТ ЗАКРЫТЫХ ПРОДАЖ в ЖК «Ертіс Рівер Тауэрс» на Стрелке! Успейте забронировать квартиру всего за 500 000 тг до официального открытия продаж! Первоначальный взнос 20% в кассу застройщика, рассрочка на 36 месяцев без банка. Готовность объекта уже 65%! Звоните: +7 (705) 999-00-11';
+  } else if (num === 2) {
+    platformEl.value = 'Telegram';
+    phoneEl.value = '+7 (705) 999-00-11';
+    urlEl.value = 'https://t.me/ukg_nedvizhimost/5990-demo';
+    textEl.value = 'Эксклюзивное предложение в ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 112)! Внесите депозит 400 000 тг по договору резервирования сегодня, первоначальный взнос 15% до получения разрешения МИО! Тел: +7 (705) 999-00-11';
+  } else if (num === 3) {
+    platformEl.value = 'Krisha.kz';
+    phoneEl.value = '+7 (7232) 70-05-05';
+    urlEl.value = 'https://krisha.kz/a/show/698999111-demo';
+    textEl.value = 'ЖК «Алтай Премиум Резиденс» на Левом берегу. Строительство ведётся с гарантией Единого оператора АО «КЖК» №ГД-2026/049. Оформление строго по договорам долевого участия (ДДУ) после регистрации в Казреестре.';
+  }
+  runLiveAIAnalysis();
+}
+
+function simulateScreenshotOCR() {
+  document.getElementById('ai-input-platform').value = 'Instagram';
+  document.getElementById('ai-input-phone').value = '+7 (777) 404-22-10';
+  document.getElementById('ai-input-url').value = 'ocr://screenshot_stories_satpayev_2026_10_14.png';
+  document.getElementById('ai-input-text').value = '[OCR РАСПОЗНАНО С ИЗОБРАЖЕНИЯ STORIES · 98.4% точность]: ЖК «Сатпаев Сити Парк» КШТ! Осенняя акция: платная бронь квартиры 250 000 тенге на 14 дней, первоначальный взнос 10% по предварительному договору! Пишите в Direct или WhatsApp +7 (777) 404-22-10';
+  runLiveAIAnalysis();
+}
+
+function runLiveAIAnalysis() {
+  const rawText = document.getElementById('ai-input-text').value.trim();
+  const phone = document.getElementById('ai-input-phone').value.trim();
+  const platform = document.getElementById('ai-input-platform').value;
+  const url = document.getElementById('ai-input-url').value.trim();
+  const selectedComplexVal = document.getElementById('ai-input-complex').value;
+
+  if (!rawText) return;
+
+  // 1. Match complex automatically by name keywords or phone number
+  let matchedComplex = null;
+  if (selectedComplexVal !== 'AUTO') {
+    matchedComplex = complexes.find(c => c.id === selectedComplexVal);
+  } else {
+    const lower = rawText.toLowerCase();
+    matchedComplex = complexes.find(c => {
+      const cleanName = c.name.replace(/ЖК|«|»/g, '').split('(')[0].trim().toLowerCase();
+      return lower.includes(cleanName) || (phone && c.contactPhone === phone);
+    }) || complexes[0];
+  }
+
+  // 2. Detect R2 payment triggers (бронь, депозит, первоначальный взнос, в кассу, резерв, предварительный договор)
+  const r2Regex = /((?:платн[а-я]+\s+брон[а-я]+|забронировать\s+квартиру[^.!?;]*|внес[а-я]+\s+(?:платный\s+)?депозит[^.!?;]*|первоначальн[а-я]+\s+взнос[^.!?;]*|по\s+договору\s+(?:резервирования|бронирования|инвестирования)[^.!?;]*|в\s+кассу\s+застройщика[^.!?;]*|рассрочк[а-я]+\s+на\s+\d+\s+мес[^.!?;]*))/gi;
+  const r2Matches = rawText.match(r2Regex) || [];
+
+  // 3. Detect Official DDU / KZH Guarantee safe phrases
+  const safeDduRegex = /(гаранти[а-я]+\s+(?:единого\s+оператора|ао\s+«?кжк»?)[^.!?;]*|оформление\s+(?:строго\s+)?по\s+(?:официальным\s+)?(?:договорам\s+долевого\s+участия|дду)[^.!?;]*)/gi;
+  const safeMatches = rawText.match(safeDduRegex) || [];
+
+  // 4. Detect Readiness % in text for R5 comparison
+  const readinessMatch = rawText.match(/готовность(?:\s+объекта|\s+дома|\s+уже)?\s*(\d{1,3})\s*%/i);
+  let r5Detected = false;
+  let declaredPctFromAd = null;
+  if (readinessMatch && matchedComplex) {
+    declaredPctFromAd = parseInt(readinessMatch[1], 10);
+    if (Math.abs(declaredPctFromAd - matchedComplex.confirmedReadiness.pct) >= 20) {
+      r5Detected = true;
+    }
+  }
+
+  // Highlight text
+  let highlightedHTML = rawText
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  if (r2Matches.length > 0) {
+    highlightedHTML = highlightedHTML.replace(r2Regex, '<span class="highlight-risk">$1</span>');
+  }
+  if (readinessMatch) {
+    highlightedHTML = highlightedHTML.replace(/(готовность(?:\s+объекта|\s+дома|\s+уже)?\s*\d{1,3}\s*%)/gi, '<span class="highlight-promo">$1</span>');
+  }
+
+  // Determine Primary Proposed Factor & Confidence
+  let proposedFactor = 'R3';
+  let confidence = 88;
+  let explanation = 'Обнаружена стандартная реклама строящегося объекта до ввода в эксплуатацию (R3 +10 баллов). Признаков незаконного сбора денег в обход ДДУ не выявлено.';
+
+  if (r2Matches.length > 0 && safeMatches.length === 0) {
+    proposedFactor = 'R2';
+    confidence = 94;
+    explanation = `ИИ обнаружил прямое предложение внести деньги до проверки правовых оснований: «${r2Matches[0]}». Рекомендуется начислить фактор R2 (+25 баллов)${r5Detected ? ` и проверить R5 (+10 баллов: в тексте заявлено ${declaredPctFromAd}%, по данным УГАСК ${matchedComplex.confirmedReadiness.pct}%)` : ''}.`;
+  } else if (r5Detected) {
+    proposedFactor = 'R5';
+    confidence = 91;
+    explanation = `ИИ обнаружил расхождение готовности ≥20 п.п.: в объявлении заявлено ${declaredPctFromAd}%, подтверждённая готовность по данным МИО/ГАСК — ${matchedComplex.confirmedReadiness.pct}%. Рекомендуется фактор R5 (+10 баллов).`;
+  }
+
+  // Check phone collision across multiple complexes
+  const samePhoneComplexes = complexes.filter(c => c.contactPhone === phone);
+
+  const resultBox = document.getElementById('ai-analysis-result');
+  const encodedSpan = encodeURIComponent(r2Matches[0] || (readinessMatch ? readinessMatch[0] : rawText.slice(0, 90)));
+  const encodedText = encodeURIComponent(rawText);
+
+  resultBox.innerHTML = `
+    <div style="background: #0f172a; border: 1px solid ${proposedFactor === 'R2' ? '#ef4444' : '#38bdf8'}; border-radius: 0.65rem; padding: 0.95rem;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem;">
+        <div style="display: flex; align-items: center; gap: 0.45rem;">
+          <span class="badge ${proposedFactor === 'R2' ? 'badge-red' : 'badge-blue'}">Гипотеза ИИ: ${proposedFactor} (+${FACTOR_DEFINITIONS[proposedFactor].weight} б.)</span>
+          <span class="badge badge-purple">Уверенность модели: ${confidence}%</span>
+        </div>
+        <span style="font-size: 0.75rem; color: #94a3b8;">Объект: <strong style="color:#fff;">${matchedComplex.name}</strong></span>
+      </div>
+
+      <div style="font-size: 0.83rem; background: #111827; padding: 0.7rem; border-radius: 0.45rem; border: 1px solid #1e293b; margin-bottom: 0.65rem; line-height: 1.55;">
+        ${highlightedHTML}
+      </div>
+
+      <div style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.65rem;">
+        <strong>Объяснение ИИ (Explainable AI):</strong> ${explanation}
+      </div>
+
+      ${samePhoneComplexes.length > 1 ? `
+        <div style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.4); border-radius: 0.45rem; padding: 0.5rem 0.7rem; font-size: 0.76rem; color: #fcd34d; margin-bottom: 0.7rem;">
+          🕸️ <strong>Детектор сетевых коллизий:</strong> Номер <code>${phone}</code> фигурирует сразу в ${samePhoneComplexes.length} строящихся ЖК (${samePhoneComplexes.map(x => x.name).join(', ')}).
+        </div>
+      ` : ''}
+
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <button class="btn btn-success" onclick="commitNewAdAnalysis('${matchedComplex.id}', '${proposedFactor}', ${confidence}, '${platform}', '${phone}', '${url}', '${encodedText}', '${encodedSpan}', 'CONFIRMED')">
+          ✅ Подтвердить факт (+${FACTOR_DEFINITIONS[proposedFactor].weight} б. в скоринг)
+        </button>
+        <button class="btn btn-outline" onclick="commitNewAdAnalysis('${matchedComplex.id}', '${proposedFactor}', ${confidence}, '${platform}', '${phone}', '${url}', '${encodedText}', '${encodedSpan}', 'AI_HYPOTHESIS')">
+          🕒 Сохранить как гипотезу ИИ (0 б. до проверки)
+        </button>
+        <button class="btn btn-danger" onclick="commitNewAdAnalysis('${matchedComplex.id}', '${proposedFactor}', ${confidence}, '${platform}', '${phone}', '${url}', '${encodedText}', '${encodedSpan}', 'REJECTED')">
+          ❌ Отклонить гипотезу
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function commitNewAdAnalysis(complexId, factorCode, confidence, platform, phone, url, encodedText, encodedSpan, decisionStatus) {
+  const text = decodeURIComponent(encodedText);
+  const triggerSpan = decodeURIComponent(encodedSpan);
+  const newAdId = 'AD-' + (101 + ads.length);
+  const nowStr = '14.10.2026, ' + new Date().toTimeString().slice(0, 5);
+
+  ads.unshift({
+    id: newAdId,
+    complexId,
+    platform,
+    account: phone || '@demo_account',
+    phone,
+    url,
+    pubDate: '14.10.2026',
+    capturedAt: `${nowStr} (Snapshot #${101 + ads.length})`,
+    text,
+    triggerSpan,
+    proposedFactor: factorCode,
+    confidence,
+    status: decisionStatus
+  });
+
+  const targetComplex = complexes.find(c => c.id === complexId);
+  if (targetComplex) {
+    if (decisionStatus === 'CONFIRMED') {
+      targetComplex.factors[factorCode] = {
+        status: 'CONFIRMED',
+        evidence: `Подтверждено аналитиком по публикации ${newAdId} (${platform}): «${triggerSpan}»`
+      };
+      // Also confirm R3 if it's an ad for an uncommissioned building
+      if (targetComplex.legalBasisType !== 'COMMISSIONED' && targetComplex.factors.R3.status !== 'CONFIRMED') {
+        targetComplex.factors.R3 = {
+          status: 'CONFIRMED',
+          evidence: `Активная реклама строящегося объекта (${newAdId})`
+        };
+      }
+      const newProfile = calculateRiskProfile(targetComplex);
+      auditLog.unshift({
+        time: nowStr,
+        actor: 'Ахметов Д.К.',
+        action: `Подтвердил факт ${factorCode} (+${FACTOR_DEFINITIONS[factorCode].weight} б.) из ${newAdId} для ${targetComplex.name} → Балл: ${newProfile.score} (${newProfile.zoneLabel})`
+      });
+    } else if (decisionStatus === 'AI_HYPOTHESIS') {
+      if (targetComplex.factors[factorCode].status !== 'CONFIRMED') {
+        targetComplex.factors[factorCode] = {
+          status: 'AI_HYPOTHESIS',
+          evidence: `Гипотеза ИИ (${confidence}%) по ${newAdId}: «${triggerSpan}»`
+        };
+      }
+      auditLog.unshift({
+        time: nowStr,
+        actor: 'AI-Модуль',
+        action: `Добавлена гипотеза ИИ ${factorCode} (${confidence}%) по ${newAdId} для ${targetComplex.name} (ожидает решения человека)`
+      });
+    } else {
+      auditLog.unshift({
+        time: nowStr,
+        actor: 'Ахметов Д.К.',
+        action: `Отклонил гипотезу ИИ ${factorCode} по публикации ${newAdId} (${targetComplex.name})`
+      });
+    }
+  }
+
+  SELECTED_COMPLEX_ID = complexId;
+  refreshAllViews();
+}
+
+function renderAdsFeed() {
+  const container = document.getElementById('ads-feed-list');
+  const filterVal = document.getElementById('ads-filter-status')?.value || 'ALL';
+  const filtered = ads.filter(a => filterVal === 'ALL' ? true : a.status === filterVal);
+
+  document.getElementById('ads-count-label').textContent = filtered.length;
+
+  container.innerHTML = filtered.map(ad => {
+    const comp = complexes.find(c => c.id === ad.complexId);
+    const compName = comp ? comp.name : ad.complexId;
+    return `
+      <div style="background: #0f172a; border: 1px solid ${ad.status === 'AI_HYPOTHESIS' ? 'rgba(168,85,247,0.5)' : '#1e293b'}; border-radius: 0.6rem; padding: 0.85rem;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.4rem;">
+          <div style="display: flex; align-items: center; gap: 0.45rem;">
+            <strong style="color: #38bdf8; font-size: 0.85rem;">${ad.id}</strong>
+            <span class="badge badge-neutral">${ad.platform}</span>
+            <span style="font-size: 0.78rem; color: #cbd5e1;">${ad.account} · 📞 ${ad.phone}</span>
+          </div>
+          <span class="badge ${ad.status === 'CONFIRMED' ? 'badge-green' : ad.status === 'AI_HYPOTHESIS' ? 'badge-purple' : 'badge-neutral'}">
+            ${ad.status === 'CONFIRMED' ? '✅ Подтверждён факт ' + ad.proposedFactor : ad.status === 'AI_HYPOTHESIS' ? '🤖 Гипотеза ИИ: ' + ad.proposedFactor + ' (' + ad.confidence + '%)' : '❌ Отклонено аналитиком'}
+          </span>
+        </div>
+
+        <div style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.3rem;">
+          Объект: <span style="color: #38bdf8; cursor: pointer;" onclick="openComplexDetail('${ad.complexId}')">${compName}</span>
+        </div>
+
+        <div style="font-size: 0.82rem; color: #cbd5e1; background: #111827; padding: 0.55rem 0.7rem; border-radius: 0.4rem; margin-bottom: 0.45rem;">
+          ${ad.text.replace(ad.triggerSpan, `<span class="highlight-risk">${ad.triggerSpan}</span>`)}
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.74rem; color: #64748b;">
+          <span>📸 Фиксация: ${ad.capturedAt}</span>
+          <div style="display: flex; gap: 0.4rem;">
+            ${ad.status === 'AI_HYPOTHESIS' ? `
+              <button class="btn btn-success" style="padding: 0.2rem 0.55rem; font-size: 0.72rem;" onclick="resolveAdHypothesis('${ad.id}', 'CONFIRMED')">✅ Подтвердить (+${FACTOR_DEFINITIONS[ad.proposedFactor].weight} б.)</button>
+              <button class="btn btn-danger" style="padding: 0.2rem 0.55rem; font-size: 0.72rem;" onclick="resolveAdHypothesis('${ad.id}', 'REJECTED')">❌ Отклонить</button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function resolveAdHypothesis(adId, newStatus) {
+  const ad = ads.find(a => a.id === adId);
+  if (!ad) return;
+  ad.status = newStatus;
+  const comp = complexes.find(c => c.id === ad.complexId);
+  const nowStr = '14.10.2026, ' + new Date().toTimeString().slice(0, 5);
+
+  if (comp) {
+    if (newStatus === 'CONFIRMED') {
+      comp.factors[ad.proposedFactor] = {
+        status: 'CONFIRMED',
+        evidence: `Подтверждено аналитиком по ${ad.id} (${ad.platform}): «${ad.triggerSpan}»`
+      };
+      const prof = calculateRiskProfile(comp);
+      auditLog.unshift({
+        time: nowStr,
+        actor: 'Ахметов Д.К.',
+        action: `Подтвердил гипотезу ИИ по ${ad.id} (${ad.proposedFactor} +${FACTOR_DEFINITIONS[ad.proposedFactor].weight} б.) для ${comp.name} → Балл: ${prof.score} (${prof.zoneLabel})`
+      });
+    } else {
+      if (comp.factors[ad.proposedFactor]?.status === 'AI_HYPOTHESIS') {
+        comp.factors[ad.proposedFactor].status = 'NONE';
+      }
+      auditLog.unshift({
+        time: nowStr,
+        actor: 'Ахметов Д.К.',
+        action: `Отклонил гипотезу ИИ по ${ad.id} (${ad.proposedFactor}) для ${comp.name}`
+      });
+    }
+  }
+  refreshAllViews();
+}
+
+// ============================================================================
+// 7. MODULE 04: INTERACTIVE SCORING MATRIX & BUILT-IN UNIT TESTS
+// ============================================================================
+function selectComplexForScoring(complexId) {
+  SELECTED_COMPLEX_ID = complexId;
+  refreshAllViews();
+}
+
+function renderScoringView() {
+  const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID) || complexes[0];
+  const p = calculateRiskProfile(c);
+  const headerEl = document.getElementById('scoring-complex-header');
+  const listEl = document.getElementById('scoring-factors-list');
+  if (!headerEl || !listEl) return;
+
+  headerEl.innerHTML = `
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; background: #0f172a; padding: 0.9rem; border-radius: 0.6rem; border: 1px solid #1e293b;">
+      <div>
+        <span class="badge badge-neutral">${c.caseTag}</span>
+        <h3 style="margin: 0.25rem 0 0 0; font-size: 1.05rem;">${c.name}</h3>
+        <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.15rem;">${p.zoneReason}</div>
+      </div>
+      <div style="text-align: right;">
+        ${getZoneBadgeHTML(p)}
+        <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 0.25rem;">
+          Потенциальный балл (с гипотезами ИИ): <strong>${p.potentialScore}</strong> / 100
+        </div>
+      </div>
+    </div>
+  `;
+
+  listEl.innerHTML = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6'].map(code => {
+    const def = FACTOR_DEFINITIONS[code];
+    const fState = c.factors[code] || { status: 'NONE', evidence: '' };
+    return `
+      <div style="background: #0f172a; border: 1px solid ${fState.status === 'CONFIRMED' ? 'rgba(239,68,68,0.5)' : fState.status === 'AI_HYPOTHESIS' ? 'rgba(168,85,247,0.5)' : '#1e293b'}; border-radius: 0.55rem; padding: 0.8rem;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem;">
+          <div>
+            <span class="badge ${fState.status === 'CONFIRMED' ? 'badge-red' : 'badge-neutral'}">${def.code} · +${def.weight} баллов</span>
+            <strong style="margin-left: 0.4rem; font-size: 0.9rem;">${def.title}</strong>
+          </div>
+          <select onchange="changeFactorStatus('${c.id}', '${code}', this.value)" style="background: #111827; border: 1px solid #334155; color: #f8fafc; padding: 0.3rem 0.55rem; border-radius: 0.4rem; font-size: 0.78rem; font-weight: 600;">
+            <option value="CONFIRMED" ${fState.status === 'CONFIRMED' ? 'selected' : ''}>✅ Подтверждён (+${def.weight} б.)</option>
+            <option value="AI_HYPOTHESIS" ${fState.status === 'AI_HYPOTHESIS' ? 'selected' : ''}>🤖 Гипотеза ИИ (0 б. до проверки)</option>
+            <option value="UNVERIFIED" ${fState.status === 'UNVERIFIED' ? 'selected' : ''}>⚠️ Неизвестно / Нужна проверка (0 б.)</option>
+            <option value="NONE" ${fState.status === 'NONE' ? 'selected' : ''}>⚪ Не выявлено (0 б.)</option>
+          </select>
+        </div>
+        <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 0.3rem;">${def.desc}</div>
+        <div style="font-size: 0.78rem; color: #e2e8f0; margin-top: 0.4rem; background: #111827; padding: 0.45rem 0.65rem; border-radius: 0.35rem;">
+          <strong>Основание / Свидетельство:</strong> ${fState.evidence || 'Свидетельство не прикреплено'}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function changeFactorStatus(complexId, factorCode, newStatus) {
+  const c = complexes.find(item => item.id === complexId);
+  if (!c) return;
+  c.factors[factorCode].status = newStatus;
+  const p = calculateRiskProfile(c);
+  const nowStr = '14.10.2026, ' + new Date().toTimeString().slice(0, 5);
+  auditLog.unshift({
+    time: nowStr,
+    actor: 'Ахметов Д.К.',
+    action: `Изменил статус фактора ${factorCode} на «${newStatus}» для ${c.name} → Балл: ${p.score} (${p.zoneLabel})`
+  });
+  refreshAllViews();
+}
+
+function runBuiltInUnitTests() {
+  const out = document.getElementById('unit-tests-output');
+  if (!out) return;
+
+  const testCases = [
+    {
+      name: 'Кейс A (Основание не проверено + платная бронь)',
+      mock: {
+        factors: {
+          R1: { status: 'UNVERIFIED' },
+          R2: { status: 'CONFIRMED' },
+          R3: { status: 'CONFIRMED' },
+          R4: { status: 'NONE' },
+          R5: { status: 'NONE' },
+          R6: { status: 'NONE' }
+        }
+      },
+      expectedScore: 35,
+      expectedZone: 'YELLOW',
+      note: 'R2 (25) + R3 (10) = 35 → Жёлтая; отсутствие данных (UNVERIFIED) даёт 0 б. и не превращается в R1.'
+    },
+    {
+      name: 'Кейс B (Установлено отсутствие основания + депозит)',
+      mock: {
+        factors: {
+          R1: { status: 'CONFIRMED' },
+          R2: { status: 'CONFIRMED' },
+          R3: { status: 'CONFIRMED' },
+          R4: { status: 'NONE' },
+          R5: { status: 'AI_HYPOTHESIS' },
+          R6: { status: 'NONE' }
+        }
+      },
+      expectedScore: 70,
+      expectedZone: 'RED',
+      note: 'R1 (35) + R2 (25) + R3 (10) = 70 → Красная зона (и гипотеза ИИ по R5 не завышает балл без человека).'
+    },
+    {
+      name: 'Кейс C (Действующая гарантия КЖК подтверждена + обычная реклама)',
+      mock: {
+        factors: {
+          R1: { status: 'NONE' },
+          R2: { status: 'NONE' },
+          R3: { status: 'CONFIRMED' },
+          R4: { status: 'NONE' },
+          R5: { status: 'NONE' },
+          R6: { status: 'NONE' }
+        }
+      },
+      expectedScore: 10,
+      expectedZone: 'GREEN',
+      note: 'R3 (10) = 10 → Зелёная зона (гарантия Единого оператора КЖК законна без отдельного разрешения МИО).'
+    },
+    {
+      name: 'Граничный тест (60+ баллов БЕЗ одновременной комбинации R1+R2)',
+      mock: {
+        factors: {
+          R1: { status: 'CONFIRMED' },
+          R2: { status: 'AI_HYPOTHESIS' },
+          R3: { status: 'CONFIRMED' },
+          R4: { status: 'NONE' },
+          R5: { status: 'CONFIRMED' },
+          R6: { status: 'CONFIRMED' }
+        }
+      },
+      expectedScore: 60,
+      expectedZone: 'YELLOW',
+      note: 'R1(35)+R3(10)+R5(10)+R6(5) = 60 → Жёлтая зона (так как R2 пока лишь гипотеза ИИ, а не подтверждённый факт).'
+    }
+  ];
+
+  out.innerHTML = testCases.map(tc => {
+    const res = calculateRiskProfile(tc.mock);
+    const passed = res.score === tc.expectedScore && res.zone === tc.expectedZone;
+    return `
+      <div style="background: #0f172a; border: 1px solid ${passed ? 'rgba(16,185,129,0.45)' : '#ef4444'}; border-radius: 0.45rem; padding: 0.6rem 0.75rem; font-size: 0.79rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <strong>${tc.name}</strong>
+          <span class="badge ${passed ? 'badge-green' : 'badge-red'}">${passed ? 'PASSED ✓' : 'FAILED ✗'} (${res.score} б. · ${res.zoneLabel})</span>
+        </div>
+        <div style="color: #94a3b8; font-size: 0.74rem; margin-top: 0.2rem;">${tc.note}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================================
+// 8. MODULE 05: OFFICIAL SIGNAL CARD & PDF PRINT
+// ============================================================================
+function selectComplexForSignal(complexId) {
+  SELECTED_COMPLEX_ID = complexId;
+  refreshAllViews();
+}
+
+function updateSignalDecision(decision) {
+  const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID);
+  if (!c) return;
+  const author = document.getElementById('analyst-name-input').value.trim() || 'Аналитик МИО ВКО';
+  const comment = document.getElementById('analyst-comment-input').value.trim();
+  const nowStr = '14.10.2026, ' + new Date().toTimeString().slice(0, 5);
+
+  c.signalStatus = decision;
+  c.signalAuthor = author;
+  c.signalUpdatedAt = nowStr;
+  c.signalComment = comment;
+
+  auditLog.unshift({
+    time: nowStr,
+    actor: author,
+    action: `${decision === 'CONFIRMED' ? 'Подтвердил сигнальную карточку' : 'Вернул карточку на доработку'} по объекту ${c.name}`
+  });
+  refreshAllViews();
+}
+
+function renderSignalCard() {
+  const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID) || complexes[0];
+  const p = calculateRiskProfile(c);
+  const linkedAds = ads.filter(a => a.complexId === c.id);
+  const sheet = document.getElementById('signal-printable-area');
+  if (!sheet) return;
+
+  const stampClass = c.signalStatus === 'CONFIRMED' ? 'stamp-confirmed' : c.signalStatus === 'RETURNED' ? 'stamp-returned' : '';
+  const stampText = c.signalStatus === 'CONFIRMED'
+    ? 'СИГНАЛ ПОДТВЕРЖДЁН АНАЛИТИКОМ МИО'
+    : c.signalStatus === 'RETURNED'
+      ? 'ВОЗВРАЩЕНО НА ДОПОЛНИТЕЛЬНУЮ ПРОВЕРКУ'
+      : 'ОЖИДАЕТ РЕШЕНИЯ ЧЕЛОВЕКА (ЧЕРНОВИК)';
+
+  sheet.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.15rem;">
+      <div>
+        <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em;">
+          Информационно-аналитическая система «ClearBuild · SAQ QURYLYS» · ВКО, г. Усть-Каменогорск
+        </div>
+        <h2 style="margin: 0.25rem 0; font-size: 1.35rem; font-weight: 800; color: #0f172a;">
+          СИГНАЛЬНАЯ КАРТОЧКА МОНИТОРИНГА РИСКОВ ДЖС №SIG-2026-${c.id.toUpperCase()}
+        </h2>
+        <div style="font-size: 0.8rem; color: #334155;">
+          Дата формирования: <strong>${c.signalUpdatedAt}</strong> · Контур: <strong>ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ (Codemasters 8.0)</strong>
+        </div>
+      </div>
+      <div class="stamp-box ${stampClass}">
+        ${stampText}
+      </div>
+    </div>
+
+    <!-- Object Metadata Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.9rem; margin-bottom: 1rem; font-size: 0.84rem;">
+      <div>
+        <div><strong>Наименование объекта:</strong> ${c.name}</div>
+        <div style="margin-top: 0.25rem;"><strong>Адрес и координаты:</strong> г. Усть-Каменогорск, ${c.district} (${c.coords.join(', ')})</div>
+        <div style="margin-top: 0.25rem;"><strong>Застройщик / БИН:</strong> ${c.developer} · БИН ${c.bin}</div>
+        <div style="margin-top: 0.25rem;"><strong>Контакты отдела продаж в рекламе:</strong> ${c.contactPhone} (${c.salesAccount})</div>
+      </div>
+      <div>
+        <div><strong>Правовое основание ДЖС:</strong> ${c.legalBasisText}</div>
+        <div style="margin-top: 0.25rem;"><strong>Источник проверки:</strong> ${c.legalSource}</div>
+        <div style="margin-top: 0.25rem;"><strong>Сверка готовности:</strong> Заявлено ${c.declaredReadiness.pct}% (${c.declaredReadiness.source}) / Факт ${c.confirmedReadiness.pct}% (${c.confirmedReadiness.source})</div>
+        <div style="margin-top: 0.25rem;"><strong>Итоговый риск-балл и зона:</strong> <span style="font-weight: 800; color: ${p.zone === 'RED' ? '#b91c1c' : p.zone === 'YELLOW' ? '#b45309' : '#047857'};">${p.score} из 100 баллов — ${p.zoneLabel} зона</span></div>
+      </div>
+    </div>
+
+    <!-- Scoring Breakdown Table -->
+    <h3 style="margin: 0 0 0.45rem 0; font-size: 0.95rem; text-transform: uppercase; color: #1e293b;">1. Расчёт факторов риска (Модель R1–R6)</h3>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 1.1rem;">
+      <thead>
+        <tr style="background: #e2e8f0; color: #0f172a;">
+          <th style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: left;">Код и фактор риска</th>
+          <th style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: center;">Вес</th>
+          <th style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: center;">Статус верификации</th>
+          <th style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: center;">Начислено</th>
+          <th style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: left;">Подтверждающий документ / фрагмент-основание</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${['R1', 'R2', 'R3', 'R4', 'R5', 'R6'].map(code => {
+          const def = FACTOR_DEFINITIONS[code];
+          const st = c.factors[code];
+          const pts = st.status === 'CONFIRMED' ? '+' + def.weight : '0';
+          const statusRu = st.status === 'CONFIRMED' ? 'Подтверждён факт' : st.status === 'AI_HYPOTHESIS' ? 'Гипотеза ИИ (не учтена)' : st.status === 'UNVERIFIED' ? 'Нужна проверка (0 б.)' : 'Не выявлено';
+          return `
+            <tr>
+              <td style="border: 1px solid #cbd5e1; padding: 0.45rem;"><strong>${code}</strong> · ${def.title}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: center;">${def.weight}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: center; font-weight: 600;">${statusRu}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 0.45rem; text-align: center; font-weight: 700;">${pts}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 0.45rem;">${st.evidence}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+
+    <!-- Linked Ad Evidences -->
+    <h3 style="margin: 0 0 0.45rem 0; font-size: 0.95rem; text-transform: uppercase; color: #1e293b;">2. Зафиксированные рекламные материалы и цитаты (${linkedAds.length})</h3>
+    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1.1rem; font-size: 0.8rem;">
+      ${linkedAds.map(ad => `
+        <div style="border: 1px solid #cbd5e1; border-radius: 0.35rem; padding: 0.5rem 0.7rem; background: #fff;">
+          <div><strong>${ad.id} (${ad.platform} · ${ad.account})</strong> · Дата фиксации: ${ad.capturedAt} · URL: ${ad.url}</div>
+          <div style="margin-top: 0.2rem; color: #334155;">Цитата-основание: <em>«${ad.triggerSpan}»</em> (Статус: ${ad.status})</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Analyst Resolution & Legal Disclaimer -->
+    <div style="background: #f1f5f9; border: 1px solid #94a3b8; border-radius: 0.45rem; padding: 0.8rem; font-size: 0.82rem; margin-bottom: 1rem;">
+      <div><strong>Резолюция проверяющего аналитика:</strong> ${c.signalComment}</div>
+      <div style="margin-top: 0.45rem; display: flex; justify-content: space-between;">
+        <span><strong>ФИО и должность:</strong> ${c.signalAuthor}</span>
+        <span><strong>Подпись / Штамп времени:</strong> ________________ / ${c.signalUpdatedAt}</span>
+      </div>
+    </div>
+
+    <div style="font-size: 0.72rem; color: #475569; border-top: 1px solid #cbd5e1; padding-top: 0.5rem;">
+      <strong>Правовое уведомление (Раздел 2 и 5 ТЗ SAQ QURYLYS):</strong> Настоящая сигнальная карточка сформирована на демонстрационных данных для приоритизации проверок аналитиком МИО. Система подсвечивает признаки риска (Закон РК «О долевом участии в жилищном строительстве», ст. 7, 8, 18), но не устанавливает юридический факт правонарушения и не отправляет материалы в государственные органы автоматически.
+    </div>
+  `;
+}
+
+function exportSignalJSON() {
+  const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID) || complexes[0];
+  const p = calculateRiskProfile(c);
+  const payload = {
+    signalId: `SIG-2026-${c.id.toUpperCase()}`,
+    generatedAt: c.signalUpdatedAt,
+    demoMode: true,
+    complex: c,
+    riskScoring: p,
+    linkedAds: ads.filter(a => a.complexId === c.id)
+  };
+  triggerDownload(`signal_${c.id}.json`, JSON.stringify(payload, null, 2), 'application/json');
+}
+
+// ============================================================================
+// 9. BONUS MODULE: PHONE / ACCOUNT COLLISION GRAPH
+// ============================================================================
+function renderNetworkCollisions() {
+  const container = document.getElementById('network-collisions-view');
+  if (!container) return;
+
+  const phoneMap = {};
+  complexes.forEach(c => {
+    if (!phoneMap[c.contactPhone]) phoneMap[c.contactPhone] = [];
+    phoneMap[c.contactPhone].push(c);
+  });
+
+  container.innerHTML = Object.entries(phoneMap).map(([phone, list]) => {
+    const isCollision = list.length > 1;
+    return `
+      <div class="card" style="border-color: ${isCollision ? '#ef4444' : '#1e293b'};">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+          <strong style="font-size: 1rem; color: #38bdf8;">📞 ${phone}</strong>
+          <span class="badge ${isCollision ? 'badge-red' : 'badge-green'}">
+            ${isCollision ? `⚠️ Коллизия: ${list.length} ЖК на одном номере!` : '1 ЖК (Уникальный номер)'}
+          </span>
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.6rem;">
+          ${isCollision
+            ? 'Обнаружен признак единого серого отдела продаж, продвигающего объекты разных юридических лиц (ТОО) без правовых оснований:'
+            : 'Стандартный выделенный отдел продаж застройщика:'}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+          ${list.map(c => {
+            const p = calculateRiskProfile(c);
+            return `
+              <div onclick="openComplexDetail('${c.id}')" style="background: #0f172a; padding: 0.55rem 0.75rem; border-radius: 0.45rem; border: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                <div>
+                  <div style="font-weight: 700; font-size: 0.85rem;">${c.name}</div>
+                  <div style="font-size: 0.74rem; color: #94a3b8;">${c.developer} · Аккаунт: ${c.salesAccount}</div>
+                </div>
+                ${getZoneBadgeHTML(p)}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================================
+// 10. GITHUB REPO FILE GENERATOR & PYTEST SUITE
+// ============================================================================
+const PYTEST_FILE_CONTENT = `import pytest
+
+WEIGHTS = {"R1": 35, "R2": 25, "R3": 10, "R4": 15, "R5": 10, "R6": 5}
+
+def calculate_risk(confirmed_factors: list[str]) -> dict:
+    # Формула Раздела 5 ТЗ SAQ QURYLYS: Балл = min(100, сумма подтверждённых факторов)
+    unique = set(confirmed_factors)
+    score = min(100, sum(WEIGHTS.get(code, 0) for code in unique))
+    has_r1 = "R1" in unique
+    has_r2 = "R2" in unique
+
+    if score >= 60 and has_r1 and has_r2:
+        zone = "RED"
+    elif score >= 25:
+        zone = "YELLOW"
+    else:
+        zone = "GREEN"
+
+    return {"score": score, "zone": zone}
+
+def test_case_a_unverified_basis_with_paid_booking():
+    # Кейс A: Основание не проверено (не R1!), есть платная бронь R2 (25) + реклама R3 (10) = 35 (Жёлтая)
+    res = calculate_risk(["R2", "R3"])
+    assert res["score"] == 35
+    assert res["zone"] == "YELLOW"
+
+def test_case_b_absent_basis_with_deposit():
+    # Кейс B: Установлено отсутствие законного основания R1 (35) + депозит R2 (25) + реклама R3 (10) = 70 (Красная)
+    res = calculate_risk(["R1", "R2", "R3"])
+    assert res["score"] == 70
+    assert res["zone"] == "RED"
+
+def test_case_c_valid_kzh_guarantee_with_regular_ad():
+    # Кейс C: Действующая гарантия КЖК подтверждена, есть обычная реклама R3 (10) = 10 (Зелёная)
+    res = calculate_risk(["R3"])
+    assert res["score"] == 10
+    assert res["zone"] == "GREEN"
+
+def test_edge_case_60_plus_without_r1_and_r2_stays_yellow():
+    # Граничное правило: 60+ баллов БЕЗ комбинации R1+R2 остаётся в Жёлтой зоне
+    res = calculate_risk(["R1", "R3", "R5", "R6"])  # 35 + 10 + 10 + 5 = 60, но нет R2
+    assert res["score"] == 60
+    assert res["zone"] == "YELLOW"
+`;
+
+function renderPytestPreview() {
+  const el = document.getElementById('pytest-preview-box');
+  if (el) el.textContent = PYTEST_FILE_CONTENT;
+}
+
+function downloadRepoFile(filename) {
+  if (filename === 'seed.json') {
+    const seed = {
+      meta: {
+        project: 'ClearBuild / SAQ QURYLYS',
+        hackathon: 'Codemasters Hackathon 8.0 (Ust-Kamenogorsk)',
+        demoNotice: 'Все данные демонстрационные. Названия ТОО и БИН вымышлены.'
+      },
+      complexes: INITIAL_COMPLEXES,
+      publications: INITIAL_ADS
+    };
+    triggerDownload('seed.json', JSON.stringify(seed, null, 2), 'application/json');
+  } else if (filename === 'mockData.js') {
+    const js = `// ClearBuild (SAQ QURYLYS) — Mock-First Data Store\nexport const USE_MOCK_DATA = true;\nexport const COMPLEXES = ${JSON.stringify(INITIAL_COMPLEXES, null, 2)};\nexport const PUBLICATIONS = ${JSON.stringify(INITIAL_ADS, null, 2)};\n`;
+    triggerDownload('mockData.js', js, 'text/javascript');
+  } else if (filename === 'test_scoring.py') {
+    triggerDownload('test_scoring.py', PYTEST_FILE_CONTENT, 'text/x-python');
+  } else if (filename === '.env.example') {
+    const env = `# ClearBuild (SAQ QURYLYS) — Шаблон переменных окружения (БЕЗ секретных ключей)\nVITE_USE_MOCK_DATA=true\nVITE_API_BASE_URL=http://localhost:8000/api/v1\nVITE_DEFAULT_CITY_LAT=49.9483\nVITE_DEFAULT_CITY_LNG=82.6278\nBACKEND_DB_URL=sqlite:///./clearbuild_demo.db\nAI_PROVIDER_MODE=rule_hybrid_explainable\n`;
+    triggerDownload('.env.example', env, 'text/plain');
+  } else if (filename === '.gitignore') {
+    const gi = `# ClearBuild Monorepo .gitignore\n.env\n.env.local\n__pycache__/\n*.py[cod]\n.pytest_cache/\n.venv/\nvenv/\nnode_modules/\ndist/\n.DS_Store\n`;
+    triggerDownload('.gitignore', gi, 'text/plain');
+  }
+}
+
+function triggerDownload(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function toggleDataSourceMode(isMock) {
+  USE_MOCK_DATA = isMock;
+  const flagText = document.getElementById('mock-flag-text');
+  if (flagText) {
+    flagText.textContent = isMock ? 'true' : 'false (API http://localhost:8000)';
+    flagText.style.color = isMock ? '#38bdf8' : '#fcd34d';
+  }
+
+  if (!isMock) {
+    try {
+      const apiBase = 'http://localhost:8000/api/v1';
+      const [compRes, pubRes] = await Promise.all([
+        fetch(${apiBase}/complexes),
+        fetch(${apiBase}/publications)
+      ]);
+      if (compRes.ok && pubRes.ok) {
+        const compData = await compRes.json();
+        const pubData = await pubRes.json();
+        complexes = compData;
+        ads = pubData;
+        console.log('✓ Данные успешно загружены из FastAPI backend:', { complexes: complexes.length, publications: ads.length });
+        refreshAllViews();
+        return;
+      }
+    } catch (err) {
+      console.warn('FastAPI backend недоступен по http://localhost:8000. Включён безопасный откат (fallback) на локальные INITIAL_COMPLEXES:', err);
+    }
+    // Fallback: безопасный откат при недоступности локального бэкенда
+    complexes = JSON.parse(JSON.stringify(INITIAL_COMPLEXES));
+    ads = JSON.parse(JSON.stringify(INITIAL_ADS));
+    refreshAllViews();
+  } else {
+    complexes = JSON.parse(JSON.stringify(INITIAL_COMPLEXES));
+    ads = JSON.parse(JSON.stringify(INITIAL_ADS));
+    refreshAllViews();
+  }
+}
+
+function setLang(lang) {
+  CURRENT_LANG = lang;
+  document.getElementById('lang-ru').style.background = lang === 'ru' ? '#0284c7' : '#1e293b';
+  document.getElementById('lang-ru').style.color = lang === 'ru' ? '#fff' : '#94a3b8';
+  document.getElementById('lang-kz').style.background = lang === 'kz' ? '#0284c7' : '#1e293b';
+  document.getElementById('lang-kz').style.color = lang === 'kz' ? '#fff' : '#94a3b8';
+
+  const subtitle = document.getElementById('header-subtitle');
+  const disclaimer = document.getElementById('disclaimer-top');
+  if (lang === 'kz') {
+    subtitle.textContent = 'Тұрғын үй құрылысына үлестік қатысу тәуекелдерін зияткерлік мониторингілеу (ШҚО, Өскемен қ.)';
+    disclaimer.textContent = 'Барлық ЖШС атаулары мен БСН демонстрациялық болып табылады. Жүйе аналитикалық сигнал қалыптастырады, бірақ заңды үкім шығармайды.';
+  } else {
+    subtitle.textContent = 'Интеллектуальный мониторинг рисков в долевом жилищном строительстве (ВКО)';
+    disclaimer.textContent = 'Все наименования ТОО, БИН и телефоны вымышлены (Раздел 7 ТЗ). Система формирует аналитический сигнал и не выносит юридический вердикт автоматически.';
+  }
+}
+
+// Initialize on load
+window.addEventListener('DOMContentLoaded', () => {
+  refreshAllViews();
+  runLiveAIAnalysis();
+  runBuiltInUnitTests();
+});
+</script>
+</body>
+</html>
