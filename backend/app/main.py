@@ -317,3 +317,78 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest):
         "risk_profile": new_risk,
         "complex": target,
     }
+
+
+class SignalDecisionRequest(BaseModel):
+    decision: str = Field(..., description="Резолюция: CONFIRMED, REJECTED, RETURNED")
+    comment: Optional[str] = Field(None, description="Комментарий аналитика")
+    author: Optional[str] = Field("Ахметов Д.К.", description="ФИО уполномоченного лица")
+
+
+class ComplexCreateRequest(BaseModel):
+    name: str = Field(..., description="Название жилого комплекса")
+    developer: str = Field(..., description="Наименование застройщика")
+    bin: str = Field(..., description="БИН организации")
+    district: Optional[str] = Field("г. Усть-Каменогорск", description="Адрес или район")
+    coords: Optional[List[float]] = Field([49.95, 82.61], description="Широта и долгота")
+    stage: Optional[str] = Field("Строительно-монтажные работы", description="Стадия")
+    legalBasisType: Optional[str] = Field("UNVERIFIED", description="Правовое основание")
+
+
+@app.post("/api/v1/complexes", summary="Добавление нового проверяемого ЖК в реестр")
+def create_complex(req: ComplexCreateRequest):
+    new_id = f"jk-{len(DB['complexes']) + 1}"
+    new_item = {
+        "id": new_id,
+        "name": req.name,
+        "district": req.district,
+        "coords": req.coords or [49.95, 82.61],
+        "developer": req.developer,
+        "bin": req.bin,
+        "stage": req.stage,
+        "legalBasisType": req.legalBasisType,
+        "legalBasisText": "Не проверено · В процессе проверки",
+        "legalSource": "Добавлено аналитиком МИО через веб-интерфейс",
+        "contactPhone": "+7 (7232) 00-00-00",
+        "salesAccount": "@new_developer",
+        "signalStatus": "PENDING_HUMAN",
+        "signalAuthor": "Ахметов Д.К.",
+        "signalUpdatedAt": "15.10.2026, 12:00",
+        "factors": {
+            "R1": {"status": "UNVERIFIED" if req.legalBasisType == "UNVERIFIED" else "NONE", "evidence": "Требуется проверка"},
+            "R2": {"status": "NONE", "evidence": "Не выявлено"},
+            "R3": {"status": "NONE", "evidence": "Не выявлено"},
+            "R4": {"status": "NONE", "evidence": "Не выявлено"},
+            "R5": {"status": "NONE", "evidence": "Не выявлено"},
+            "R6": {"status": "NONE", "evidence": "Не выявлено"},
+        }
+    }
+    DB["complexes"].append(new_item)
+    return {"status": "success", "complex": new_item}
+
+
+@app.post("/api/v1/complexes/{complex_id}/signal-decision", summary="Утверждение или возврат Сигнальной карточки")
+def signal_decision(complex_id: str, req: SignalDecisionRequest):
+    target = None
+    for c in DB["complexes"]:
+        if c.get("id") == complex_id:
+            target = c
+            break
+
+    if not target:
+        raise HTTPException(status_code=404, detail=f"Комплекс {complex_id} не найден")
+
+    target["signalStatus"] = req.decision
+    if req.comment:
+        target["signalComment"] = req.comment
+    target["signalAuthor"] = req.author or "Ахметов Д.К."
+    target["signalUpdatedAt"] = "15.10.2026, 12:00"
+
+    return {
+        "status": "success",
+        "complex_id": complex_id,
+        "signalStatus": target["signalStatus"],
+        "signalAuthor": target["signalAuthor"],
+        "complex": target,
+    }
+

@@ -41,27 +41,34 @@
       <!-- Main Navigation Menu (Desktop Tabs) -->
       <nav class="main-nav">
         <a href="javascript:void(0)" onclick="switchTab('map')" class="nav-link active" id="tab-nav-map">
-          <span>🗺️</span> <span id="lbl-nav-map">Карта</span>
+          <span>🗺️</span> <span id="lbl-nav-map">01 · Карта и Обзор</span>
         </a>
         <a href="javascript:void(0)" onclick="switchTab('registry')" class="nav-link" id="tab-nav-registry">
-          <span>📋</span> <span id="lbl-nav-registry">Реестр ЖК</span>
+          <span>📋</span> <span id="lbl-nav-registry">02 · Реестр ЖК</span>
         </a>
         <a href="javascript:void(0)" onclick="switchTab('ads')" class="nav-link" id="tab-nav-ads">
-          <span>📢</span> <span id="lbl-nav-ads">Реклама и ИИ</span>
+          <span>📢</span> <span id="lbl-nav-ads">03 · Мониторинг рекламы (AI)</span>
         </a>
         <a href="javascript:void(0)" onclick="switchTab('scoring')" class="nav-link" id="tab-nav-scoring">
-          <span>⚖️</span> <span id="lbl-nav-scoring">Матрица R1–R6</span>
+          <span>⚖️</span> <span id="lbl-nav-scoring">04 · Риск-скоринг R1–R6</span>
         </a>
         <a href="javascript:void(0)" onclick="switchTab('signal')" class="nav-link" id="tab-nav-signal">
-          <span>📑</span> <span id="lbl-nav-signal">Сигнальный акт</span>
+          <span>📑</span> <span id="lbl-nav-signal">05 · Сигнальный акт (PDF)</span>
         </a>
-        <a href="javascript:void(0)" onclick="switchTab('registries')" class="nav-link" id="tab-nav-registries">
-          <span>🏛️</span> <span id="lbl-nav-registries">11 Госреестров</span>
+        <a href="javascript:void(0)" onclick="switchTab('network')" class="nav-link" id="tab-nav-network">
+          <span>🕸️</span> <span id="lbl-nav-network">Сеть телефонов / Коллизии</span>
         </a>
       </nav>
 
-      <!-- Right Controls: Reset Demo, Domain, Theme, Language -->
+      <!-- Right Controls: Backend API, Reset Demo, Domain, Theme, Language -->
       <div class="header-tools">
+        <!-- Backend API Connection Button -->
+        <button class="api-btn" onclick="openApiModal()" id="api-status-btn" title="Настройка подключения к Backend API (FastAPI)">
+          <span id="api-status-dot" class="status-dot dot-yellow"></span>
+          <span>🔌 API Бэкенда</span>
+        </button>
+
+        <!-- Reset Demo Data -->
         <button class="reset-btn" onclick="resetDemoData()" title="Сбросить все демонстрационные данные к эталону (8 ЖК и 12 объявлений)">
           🔄 <span>Сброс демо</span>
         </button>
@@ -97,7 +104,7 @@
     <a href="javascript:void(0)" onclick="switchTab('ads')" class="nav-link" id="mob-nav-ads">📢 Реклама</a>
     <a href="javascript:void(0)" onclick="switchTab('scoring')" class="nav-link" id="mob-nav-scoring">⚖️ Матрица</a>
     <a href="javascript:void(0)" onclick="switchTab('signal')" class="nav-link" id="mob-nav-signal">📑 Акт</a>
-    <a href="javascript:void(0)" onclick="switchTab('registries')" class="nav-link" id="mob-nav-registries">🏛️ Реестры</a>
+    <a href="javascript:void(0)" onclick="switchTab('network')" class="nav-link" id="mob-nav-network">🕸️ Сеть связей</a>
   </div>
 
   <!-- Citizen Info Ribbon -->
@@ -139,113 +146,113 @@
       </div>
       <div class="kpi-card kpi-red" onclick="switchTab('registry'); setRegFilter('RED');" style="cursor: pointer;">
         <div>
-          <div class="kpi-title">Нарушения / Без разрешения</div>
+          <div class="kpi-title">Высокий риск (Сбор денег без ДДУ)</div>
           <div class="kpi-value" id="kpi-val-red">2</div>
         </div>
-        <div class="kpi-icon-wrap">🚨</div>
+        <div class="kpi-icon-wrap">⛔</div>
       </div>
     </div>
   </section>
 
-  <!-- Main Content Body (Tabs) -->
-  <main class="container" style="flex: 1; padding-top: 0.75rem; padding-bottom: 2rem;">
+  <!-- Main View Container -->
+  <main class="container app-main">
 
     <!-- ======================================================================
-         TAB 1: MAP VIEW (MODULE 01)
+         TAB 1: MAP & OVERVIEW (MODULE 01)
          ====================================================================== -->
     <section id="tab-map" class="tab-content active">
-      <!-- Filter Toolbar -->
-      <div class="filter-toolbar no-print">
-        <div class="search-input-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="main-search-input" class="search-input" placeholder="Поиск по названию ЖК, застройщику, БИН или адресу..." oninput="handleSearch(this.value)" />
-          <button id="search-clear-btn" onclick="clearSearch()" style="display: none; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0 0.5rem;">✕</button>
-        </div>
-
-        <div class="filter-chips">
-          <button class="chip-btn active" id="chip-all" onclick="setZoneFilter('ALL')">Все (<span id="chip-cnt-all">8</span>)</button>
-          <button class="chip-btn chip-green" id="chip-green" onclick="setZoneFilter('GREEN')">🟢 Безопасно (<span id="chip-cnt-green">3</span>)</button>
-          <button class="chip-btn chip-yellow" id="chip-yellow" onclick="setZoneFilter('YELLOW')">🟡 Внимание (<span id="chip-cnt-yellow">3</span>)</button>
-          <button class="chip-btn chip-red" id="chip-red" onclick="setZoneFilter('RED')">🔴 Опасно (<span id="chip-cnt-red">2</span>)</button>
-        </div>
-      </div>
-
-      <!-- Map & Cards Layout -->
       <div class="map-layout">
-        <!-- Left Column: Map Container -->
-        <div class="map-container-wrap">
-          <div class="map-controls-bar no-print">
-            <div style="display: flex; gap: 0.4rem;">
-              <button class="map-action-btn" id="btn-map-layer" onclick="toggleMapTiles()">🗺️ OSM Гуманитарная</button>
-              <button class="map-action-btn" onclick="centerMapOskemen()">🎯 Усть-Каменогорск</button>
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
-              © OpenStreetMap (100% бесплатно)
+        <!-- Left Sidebar: Search & Complexes List -->
+        <div class="map-sidebar">
+          <div class="filter-box">
+            <input 
+              type="text" 
+              id="map-search-input" 
+              class="search-input" 
+              placeholder="Поиск по названию ЖК, застройщику, улице..." 
+              oninput="handleMapSearch(this.value)"
+            />
+            
+            <div class="filter-chips">
+              <button class="chip active" data-filter="ALL" onclick="setMapFilter('ALL')">Все (<span id="chip-cnt-all">8</span>)</button>
+              <button class="chip chip-green" data-filter="GREEN" onclick="setMapFilter('GREEN')">Зелёная (<span id="chip-cnt-green">3</span>)</button>
+              <button class="chip chip-yellow" data-filter="YELLOW" onclick="setMapFilter('YELLOW')">Жёлтая (<span id="chip-cnt-yellow">3</span>)</button>
+              <button class="chip chip-red" data-filter="RED" onclick="setMapFilter('RED')">Красная (<span id="chip-cnt-red">2</span>)</button>
             </div>
           </div>
-          <div id="leaflet-map"></div>
+
+          <!-- Cards Scroll Container -->
+          <div class="complexes-list" id="map-cards-list">
+            <!-- Rendered by JS -->
+          </div>
         </div>
 
-        <!-- Right Column: Scrollable List of Cards -->
-        <div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem;">
-            <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);" id="cards-header-count">
-              Показано: 8 ЖК
-            </div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
-              Приоритизация по уровню риска
-            </div>
+        <!-- Right: OpenStreetMap Container -->
+        <div class="map-container-wrap">
+          <div id="leaflet-map" class="leaflet-map-canvas"></div>
+          
+          <!-- Map Overlay Controls -->
+          <div class="map-floating-controls no-print">
+            <button class="map-action-btn" onclick="fitMapToAllMarkers()" title="Показать все 8 объектов">🎯 Центр</button>
+            <button class="map-action-btn" onclick="toggleMapTiles()" title="Сменить стиль тайлов OSM">🗺️ Слой карты</button>
           </div>
-          <div class="cards-column" id="complex-cards-list"></div>
+
+          <!-- Map Legend -->
+          <div class="map-legend no-print">
+            <div class="legend-item"><span class="legend-dot dot-green"></span> 0–24: Законное строительство</div>
+            <div class="legend-item"><span class="legend-dot dot-yellow"></span> 25–59: Документы на проверке</div>
+            <div class="legend-item"><span class="legend-dot dot-red"></span> 60–100: Незаконный сбор средств</div>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- ======================================================================
-         TAB 2: REGISTRY VIEW (MODULE 02)
+         TAB 2: REGISTRY OF RESIDENTIAL COMPLEXES (MODULE 02)
          ====================================================================== -->
     <section id="tab-registry" class="tab-content">
       <div style="margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
         <div>
-          <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Официальный реестр строящихся объектов (г. Усть-Каменогорск)</h1>
+          <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Реестр строящихся объектов и досье застройщиков</h1>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-            Верифицированная база данных застройщиков, БИН, правовых оснований (гарантия КЖК / разрешение МИО) и памятка для покупателя простым языком.
+            Официальный свод строящихся многоквартирных домов г. Усть-Каменогорска со статусом правовых оснований по Закону РК о ДЖС.
           </p>
         </div>
-        <button class="btn btn-secondary" onclick="exportRegistryCSV()">📥 Экспорт реестра в CSV</button>
-      </div>
-
-      <!-- Filter toolbar -->
-      <div class="filter-toolbar no-print">
-        <div class="search-input-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="reg-search-input" class="search-input" placeholder="Поиск по названию ЖК, застройщику, БИН или адресу..." oninput="handleRegSearch(this.value)" />
-        </div>
-        <div class="filter-chips">
-          <button class="chip-btn active" id="reg-chip-all" onclick="setRegFilter('ALL')">Все (8)</button>
-          <button class="chip-btn chip-green" id="reg-chip-green" onclick="setRegFilter('GREEN')">🟢 Безопасно (3)</button>
-          <button class="chip-btn chip-yellow" id="reg-chip-yellow" onclick="setRegFilter('YELLOW')">🟡 Внимание (3)</button>
-          <button class="chip-btn chip-red" id="reg-chip-red" onclick="setRegFilter('RED')">🔴 Опасно (2)</button>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <input type="text" id="reg-search-input" class="search-input" placeholder="Фильтр по названию, БИН или застройщику..." oninput="handleRegSearch(this.value)" style="width: 280px;" />
+          <select id="reg-zone-select" class="search-input" style="width: auto; padding: 0.4rem 0.8rem;" onchange="setRegFilter(this.value)">
+            <option value="ALL">Все зоны риска</option>
+            <option value="GREEN">🟢 Только Зелёная (Законно)</option>
+            <option value="YELLOW">🟡 Только Жёлтая (Проверка)</option>
+            <option value="RED">🔴 Только Красная (Опасно)</option>
+          </select>
         </div>
       </div>
 
-      <!-- Table Container -->
-      <div class="civic-table-container">
-        <table class="civic-table">
-          <thead>
-            <tr>
-              <th>Код / ЖК</th>
-              <th>Застройщик / БИН</th>
-              <th>Адрес / Район</th>
-              <th>Правовое основание и вердикт</th>
-              <th>Стадия / Готовность</th>
-              <th>Факторы риска</th>
-              <th>Зона риска</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody id="registry-table-body"></tbody>
-        </table>
+      <!-- Main Registry Split: Table & Detail Pane -->
+      <div class="registry-split-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+        <!-- Left: Table of Complexes -->
+        <div class="civic-table-container">
+          <table class="civic-table">
+            <thead>
+              <tr>
+                <th>Объект ЖК</th>
+                <th>Застройщик / БИН</th>
+                <th>Правовое основание</th>
+                <th>Зона / Балл</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody id="registry-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Selected Complex Detailed Card with 11 Registries Block -->
+        <div id="registry-detail-pane" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem;">
+          <!-- Rendered by JS -->
+        </div>
       </div>
     </section>
 
@@ -257,7 +264,7 @@
         <div>
           <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Мониторинг рекламы и детекция незаконного сбора средств</h1>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-            Автоматический парсинг объявлений с Krisha.kz, OLX, Instagram. Подсветка триггеров «платная бронь», «касса», «депозит» и расхождений готовности (R5).
+            Автоматический парсинг объявлений с Krisha.kz, OLX, Instagram. Подсветка триггеров «платная бронь», «касса», «депозит» и расхождений готовности (R5 ≥ 20 п.п.).
           </p>
         </div>
         <button class="btn btn-primary" onclick="openAddAdModal()">➕ Добавить объявление вручную</button>
@@ -290,7 +297,7 @@
         <div>
           <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Модель риск-скоринга R1–R6 (Раздел 5 ТЗ)</h1>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-            Интерактивная панель управления факторами. Аналитик или жюри может переключать статусы и редактировать обоснования в реальном времени.
+            Интерактивная панель управления факторами. Аналитик переключает статусы и редактирует обоснования в реальном времени.
           </p>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -374,6 +381,8 @@
           <select id="signal-select-complex" class="search-input" style="width: auto; padding: 0.45rem 1rem;" onchange="renderSignalCard(this.value)">
           </select>
 
+          <button class="btn btn-secondary" onclick="recordSignalDecision(SELECTED_COMPLEX_ID, 'CONFIRMED')">✅ Утвердить акт</button>
+          <button class="btn btn-secondary" onclick="recordSignalDecision(SELECTED_COMPLEX_ID, 'RETURNED')">↩️ На доработку</button>
           <button class="btn btn-primary" onclick="window.print()">🖨️ Распечатать акт (PDF)</button>
         </div>
       </div>
@@ -383,59 +392,88 @@
     </section>
 
     <!-- ======================================================================
-         TAB 6: 11 STATE REGISTRIES & SETTINGS (MODULE 06)
+         TAB 6: NETWORK COLLISIONS & PHONES (BONUS MODULE 11 TZ)
          ====================================================================== -->
-    <section id="tab-registries" class="tab-content">
+    <section id="tab-network" class="tab-content">
       <div style="margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
         <div>
-          <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Интеграция с 11 государственными реестрами Республики Казахстан</h1>
+          <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">🕸️ Анализ сетевых связей и коллизий номеров телефонов (Раздел 11 ТЗ)</h1>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-            Автоматическая перекрёстная сверка объектов строительства с базами данных КЖК, МИО, ГАСК, e-Otinish, Кадастра и Судебного кабинета.
+            Автоматическое выявление зонтичных продаж, риелторских сетей и дубликатов контактов отделов продаж.
           </p>
         </div>
-        <button class="btn btn-primary" onclick="triggerCrossRegistryCheck()">⚡ Запустить перекрёстную сверку 8 ЖК</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary" onclick="renderNetworkView()">🔄 Обновить связи</button>
+        </div>
       </div>
 
-      <!-- 11 Registries Cards Grid -->
-      <div class="registries-grid" id="registries-cards-grid"></div>
-
-      <!-- App Settings Box -->
-      <div style="margin-top: 2rem; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
-        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--text-main);">⚙️ Параметры и настройки платформы ClearBuild</h3>
-        <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
-          Конфигурация режима работы, слоя картографии и локального хранилища (версия хранилища: <code>clearbuild_state_v2</code>).
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; font-size: 0.82rem;">
-          <div style="background: var(--bg-surface-hover); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <strong>Режим работы приложения:</strong>
-            <div style="margin-top: 0.35rem; color: var(--text-secondary);">
-              🟢 <strong>Автономный клиентский режим (Client-Side Storage)</strong>. Все алгоритмы R1–R6, OpenStreetMap и генератор PDF работают прямо в браузере без обязательного внешнего сервера.
-            </div>
-            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
-              Локальный тестовый FastAPI сервер запускается через <code>run_backend.bat</code> (порт 8000).
-            </div>
+      <!-- Summary KPI cards for Network -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="kpi-card">
+          <div>
+            <div class="kpi-title">Уникальных номеров в мониторинге</div>
+            <div class="kpi-value" id="net-kpi-phones">6</div>
           </div>
-
-          <div style="background: var(--bg-surface-hover); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <strong>Картографический провайдер:</strong>
-            <div style="margin-top: 0.35rem; color: var(--text-secondary);">
-              OpenStreetMap (OSM Standard / Humanitarian). Нулевой бюджет на инфраструктуру, без коммерческих лимитов и платных API-ключей.
-            </div>
-            <div style="margin-top: 0.65rem;">
-              <button class="btn btn-secondary btn-sm" onclick="toggleMapTiles()">Переключить слой тайлов OSM</button>
-            </div>
+          <div class="kpi-icon-wrap">📞</div>
+        </div>
+        <div class="kpi-card kpi-red">
+          <div>
+            <div class="kpi-title">Обнаружено подозрительных сетей</div>
+            <div class="kpi-value" id="net-kpi-collisions">1</div>
           </div>
-
-          <div style="background: var(--bg-surface-hover); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <strong>Управление демонстрационной базой:</strong>
-            <div style="margin-top: 0.35rem; color: var(--text-secondary);">
-              Очистка всех локальных изменений аналитика и восстановление эталонных 8 ЖК и 12 зафиксированных объявлений (Кейсы A, B, C).
-            </div>
-            <div style="margin-top: 0.65rem;">
-              <button class="reset-btn" onclick="resetDemoData()">🔄 Сбросить данные к эталону</button>
-            </div>
+          <div class="kpi-icon-wrap">⚠️</div>
+        </div>
+        <div class="kpi-card">
+          <div>
+            <div class="kpi-title">Максимум объектов на 1 номер</div>
+            <div class="kpi-value">3 ЖК</div>
           </div>
+          <div class="kpi-icon-wrap">🏢</div>
+        </div>
+      </div>
+
+      <!-- Critical Collision Warning Box -->
+      <div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; padding: 1.15rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.85rem;">
+        <span style="font-size: 1.6rem; line-height: 1;">⛔</span>
+        <div style="flex: 1;">
+          <h3 style="font-size: 0.95rem; font-weight: 800; color: #991b1b; margin-bottom: 0.25rem;">
+            Обнаружена критическая зонтичная коллизия контактов отдела продаж!
+          </h3>
+          <p style="font-size: 0.82rem; color: #7f1d1d; line-height: 1.45;">
+            Номер <strong>+7 (705) 999-00-11</strong> одновременно указан в рекламе объекта <strong>ЖК «Ертіс Рівер Тауэрс»</strong> (Красная зона / ABSENT / ст. 7), 
+            <strong>ЖК «Нурлы Жол»</strong> (Красная зона / предписание ГАСК) и <strong>ЖК «Ульба Гарденс»</strong> (Жёлтая зона). 
+            Это классический признак недобросовестной риелторской «воронки продаж», когда покупателей привлекают на один объект, а договоры заключают на объект без документов.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interactive Network Diagram & Collision Table Grid -->
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; align-items: start;">
+        <!-- Left: SVG Network Graph -->
+        <div class="network-graph-container">
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; display: flex; justify-content: space-between;">
+            <span>Интерактивная карта связей (Телефоны ↔ ЖК)</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Кликните по узлу для подсветки</span>
+          </div>
+          <div id="network-svg-wrap" style="width: 100%; height: 420px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-surface-hover); position: relative; overflow: hidden;">
+            <!-- SVG rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Right: Collision Details Table -->
+        <div class="civic-table-container">
+          <table class="civic-table">
+            <thead>
+              <tr>
+                <th>Контактный телефон</th>
+                <th>Связанные объекты ЖК</th>
+                <th>Характер коллизии</th>
+              </tr>
+            </thead>
+            <tbody id="network-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -478,39 +516,114 @@
       <div class="modal-header">
         <div>
           <div style="font-size: 0.75rem; color: var(--brand-primary); text-transform: uppercase; font-weight: 700;">Ручной мониторинг</div>
-          <h3 style="font-size: 1.15rem; font-weight: 800;">Добавить объявление на ИИ-анализ</h3>
+          <h3 style="font-size: 1.15rem; font-weight: 800;">Добавить публикацию для проверки ИИ</h3>
         </div>
         <button onclick="closeAddAdModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
       </div>
       <div class="modal-body">
-        <div>
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Жилой комплекс</label>
-          <select id="new-ad-complex-id" class="search-input"></select>
-        </div>
-        <div>
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Площадка публикации</label>
-          <select id="new-ad-platform" class="search-input">
-            <option value="Krisha.kz">Krisha.kz</option>
-            <option value="Instagram">Instagram (@realty_vko)</option>
-            <option value="OLX.kz">OLX.kz</option>
-            <option value="Telegram">Telegram канал (@ukg_nedvizhimost)</option>
-            <option value="Баннер">Наружный баннер / Билборд</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Текст объявления для проверки ИИ</label>
-          <textarea id="new-ad-text" class="search-input" rows="4" placeholder="Вставьте текст (например: «Готовность 85%! Бронирование квартир с депозитом 500 000 тенге в кассу до ДДУ»)..."></textarea>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Жилой комплекс:</label>
+            <select id="new-ad-complex" class="search-input" style="width: 100%; margin-top: 0.25rem;">
+              <!-- Options populated by JS -->
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Площадка размещения:</label>
+              <select id="new-ad-platform" class="search-input" style="width: 100%; margin-top: 0.25rem;">
+                <option value="Krisha.kz">Krisha.kz</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Telegram">Telegram</option>
+                <option value="OLX.kz">OLX.kz</option>
+                <option value="Баннер">Наружная реклама</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Контактный телефон отдела продаж:</label>
+              <input type="text" id="new-ad-phone" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="+7 (705) 000-00-00" />
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Ссылка на источник (URL):</label>
+            <input type="text" id="new-ad-url" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="https://..." />
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Текст объявления (или распознанный OCR):</label>
+            <textarea id="new-ad-text" class="search-input" rows="3" style="width: 100%; margin-top: 0.25rem;" placeholder="Вставьте полный текст объявления..."></textarea>
+          </div>
+          <div>
+            <button class="btn btn-secondary" type="button" onclick="runLiveAIAnalysis()" style="width: 100%;">
+              🤖 Проверить текст через ИИ-анализатор
+            </button>
+          </div>
+          <div id="ai-live-preview" style="display: none; background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem;"></div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeAddAdModal()">Отмена</button>
-        <button class="btn btn-primary" onclick="submitManualAd()">⚡ Проанализировать ИИ</button>
+        <button class="btn btn-primary" onclick="submitNewAd()">Сохранить и зафиксировать</button>
       </div>
     </div>
   </div>
 
+  <!-- API Connection Config Modal -->
+  <div class="modal-overlay" id="api-config-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--brand-primary); text-transform: uppercase; font-weight: 700;">Интеграция бэкенда</div>
+          <h3 style="font-size: 1.15rem; font-weight: 800;">🔌 Подключение к Backend API (FastAPI)</h3>
+        </div>
+        <button onclick="closeApiModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div>
+            <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">Backend API URL:</label>
+            <input type="text" id="backend-api-url-input" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="http://localhost:8000/api/v1" />
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">
+              По умолчанию: <code>http://localhost:8000/api/v1</code>. Сохраняется в <code>localStorage</code>.
+            </div>
+          </div>
+
+          <div style="background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+              <strong style="font-size: 0.82rem;">Текущий статус соединения:</strong>
+              <span id="api-modal-status-badge" class="status-badge badge-yellow">🟡 Проверка...</span>
+            </div>
+            <div id="api-modal-status-text" style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">
+              Ожидание ответа сервера...
+            </div>
+          </div>
+
+          <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45;">
+            💡 <strong>Автономная отказоустойчивость:</strong> если сервер напарника выключен (например, при проверке статического сайта жюри на GitHub Pages), 
+            платформа ClearBuild прозрачно работает в памяти поверх <code>seed.json</code> и сохраняет все действия аналитика в <code>localStorage</code>.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <button class="btn btn-secondary" onclick="resetDemoData()">🔄 Сбросить демо</button>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="testApiConnection()">⚡ Проверить (Ping)</button>
+          <button class="btn btn-primary" onclick="saveApiUrlFromModal()">💾 Сохранить URL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Element -->
+  <div id="copy-toast-el" class="copy-toast"></div>
+
+  <!-- Scripts -->
   <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/shared.js"></script>
+
+  <!-- Page Logic -->
   <script>
     // ------------------------------------------------------------------------
     // Tab Navigation Logic
@@ -520,7 +633,7 @@
       saveState();
 
       // Update Desktop Nav
-      ['map', 'registry', 'ads', 'scoring', 'signal', 'registries'].forEach(t => {
+      ['map', 'registry', 'ads', 'scoring', 'signal', 'network'].forEach(t => {
         const deskLink = document.getElementById('tab-nav-' + t);
         const mobLink = document.getElementById('mob-nav-' + t);
         const section = document.getElementById('tab-' + t);
@@ -545,8 +658,8 @@
       } else if (tabName === 'signal') {
         populateComplexDropdowns();
         renderSignalCard(SELECTED_COMPLEX_ID);
-      } else if (tabName === 'registries') {
-        renderRegistriesPanel();
+      } else if (tabName === 'network') {
+        renderNetworkView();
       }
 
       window.location.hash = tabName;
@@ -568,268 +681,217 @@
       if (!container || leafletMapInstance) return;
 
       leafletMapInstance = L.map('leaflet-map', {
-        center: [49.9542, 82.6140],
+        center: [49.95, 82.61],
         zoom: 12,
         zoomControl: true
       });
 
       applyMapTiles();
-      L.control.scale({ imperial: false, metric: true }).addTo(leafletMapInstance);
       renderMapMarkers();
     }
 
     function applyMapTiles() {
-      if (!leafletMapInstance || typeof L === 'undefined') return;
+      if (!leafletMapInstance) return;
       if (leafletTileLayer) leafletMapInstance.removeLayer(leafletTileLayer);
 
-      const url = (MAP_LAYER_TYPE === 'hot')
-        ? 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
-        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      const isDark = CURRENT_THEME === 'dark';
+      let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      let attrib = '&copy; OpenStreetMap contributors';
 
-      leafletTileLayer = L.tileLayer(url, {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19
-      });
-      leafletTileLayer.addTo(leafletMapInstance);
+      if (isDark) {
+        tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        attrib = '&copy; OpenStreetMap &copy; CARTO';
+      } else if (MAP_LAYER_TYPE === 'humanitarian') {
+        tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+        attrib = '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team';
+      }
+
+      leafletTileLayer = L.tileLayer(tileUrl, {
+        maxZoom: 19,
+        attribution: attrib
+      }).addTo(leafletMapInstance);
     }
+    window.applyMapTiles = applyMapTiles;
 
     function toggleMapTiles() {
-      MAP_LAYER_TYPE = (MAP_LAYER_TYPE === 'standard') ? 'hot' : 'standard';
-      const btn = document.getElementById('btn-map-layer');
-      if (btn) btn.textContent = (MAP_LAYER_TYPE === 'hot') ? '🗺️ OSM Стандартная' : '🗺️ OSM Гуманитарная';
+      MAP_LAYER_TYPE = (MAP_LAYER_TYPE === 'standard') ? 'humanitarian' : 'standard';
       applyMapTiles();
-    }
-
-    function centerMapOskemen() {
-      if (leafletMapInstance) leafletMapInstance.flyTo([49.9542, 82.6140], 12, { duration: 0.8 });
-    }
-
-    function resetMapZoom() {
-      if (leafletMapInstance) {
-        leafletMapInstance.flyTo([49.9542, 82.6140], 12);
-        ZONE_FILTER = 'ALL';
-        SEARCH_QUERY = '';
-        document.getElementById('main-search-input').value = '';
-        document.getElementById('search-clear-btn').style.display = 'none';
-        updateFilterChipUI();
-        renderComplexCards();
-        renderMapMarkers();
-      }
-    }
-
-    function getFilteredComplexes() {
-      return complexes.filter(c => {
-        const risk = calculateComplexRisk(c);
-        if (ZONE_FILTER !== 'ALL' && risk.zone !== ZONE_FILTER) return false;
-        if (SEARCH_QUERY) {
-          const q = SEARCH_QUERY.toLowerCase();
-          const name = (getLocalized(c.names) + ' ' + (c.names.ru || '') + ' ' + (c.names.kz || '') + ' ' + (c.names.en || '')).toLowerCase();
-          const dev = (getLocalized(c.developers) + ' ' + c.bin).toLowerCase();
-          const dist = getLocalized(c.districts).toLowerCase();
-          if (!name.includes(q) && !dev.includes(q) && !dist.includes(q)) return false;
-        }
-        return true;
-      });
     }
 
     function renderMapMarkers() {
       if (!leafletMapInstance || typeof L === 'undefined') return;
 
-      mapMarkersList.forEach(m => leafletMapInstance.removeLayer(m.marker));
+      mapMarkersList.forEach(m => leafletMapInstance.removeLayer(m));
       mapMarkersList = [];
 
-      const filtered = getFilteredComplexes();
-      filtered.forEach(c => {
+      complexes.forEach(c => {
         const risk = calculateComplexRisk(c);
-        const isSelected = c.id === SELECTED_COMPLEX_ID;
-        const colorClass = risk.zone === 'RED' ? 'pin-red' : risk.zone === 'YELLOW' ? 'pin-yellow' : 'pin-green';
-        const nameShort = getLocalized(c.names).replace(/ЖК|«|»/g, '').split('(')[0].trim();
+        if (ZONE_FILTER !== 'ALL' && risk.zone !== ZONE_FILTER) return;
+
+        const colorHex = risk.zone === 'RED' ? '#dc2626' : risk.zone === 'YELLOW' ? '#d97706' : '#16a34a';
 
         const customIcon = L.divIcon({
-          className: 'civic-pin-marker',
-          html: `
-            <div class="civic-pin ${colorClass} ${isSelected ? 'pin-active' : ''}">
-              <div class="civic-pin-badge">${risk.score}</div>
-              <div class="civic-pin-label">${nameShort}</div>
-            </div>
-          `,
-          iconSize: [40, 40],
-          iconAnchor: [20, 36]
+          className: 'custom-osm-pin',
+          html: `<div style="
+            background: ${colorHex};
+            color: #fff;
+            font-weight: 800;
+            font-size: 11px;
+            padding: 4px 7px;
+            border-radius: 9999px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+          ">
+            <span>${risk.score}</span>
+          </div>`,
+          iconSize: [36, 24],
+          iconAnchor: [18, 12]
         });
 
         const marker = L.marker(c.coords, { icon: customIcon }).addTo(leafletMapInstance);
 
-        const verdictAlert = (risk.zone === 'RED')
-          ? '<div style="margin: 0.4rem 0; padding: 0.4rem 0.55rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; display: flex; align-items: center; gap: 0.35rem;"><span>⛔</span><span>ОПАСНО: незаконный сбор денег (нет разрешения/гарантии)</span></div>'
-          : (risk.zone === 'YELLOW')
-            ? '<div style="margin: 0.4rem 0; padding: 0.4rem 0.55rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; display: flex; align-items: center; gap: 0.35rem;"><span>⚠️</span><span>ОСТОРОЖНО: статус проверяется, не платите до разрешения!</span></div>'
-            : '<div style="margin: 0.4rem 0; padding: 0.4rem 0.55rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 0.35rem;"><span>✅</span><span>ЗАКОННО: Гарантия КЖК / Разрешение МИО подтверждены.</span></div>';
-
         const popupContent = `
-          <div style="font-family: inherit; min-width: 260px; line-height: 1.45;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-              <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} · ${risk.score} б.</span>
-              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">${c.code}</span>
+          <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+            <div style="font-size: 10px; font-weight: 700; color: ${colorHex}; text-transform: uppercase;">
+              ${c.code} · ${risk.zoneName} (${risk.score} б.)
             </div>
-            <strong style="font-size: 0.95rem; color: var(--text-main); display: block; margin-bottom: 0.2rem;">${getLocalized(c.names)}</strong>
-            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.4rem;">📍 ${getLocalized(c.districts)}</div>
-            <div style="font-size: 0.76rem; background: var(--bg-surface-hover); padding: 0.5rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0.4rem;">
-              <div style="color: var(--text-main); font-weight: 600;">${getLocalized(c.legalTexts)}</div>
-              <div style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.25rem;">Готовность: Факт ${c.readinessFact}% / Заявлено ${c.readinessDeclared}%</div>
+            <div style="font-weight: 800; font-size: 13px; margin: 3px 0; color: #0f172a;">
+              ${getLocalized(c.names)}
             </div>
-            ${verdictAlert}
-            <div style="display: flex; gap: 0.4rem;">
-              <button onclick="openComplexDossier('${c.id}')" class="btn btn-primary btn-sm" style="flex: 1;">📋 Досье</button>
-              <button onclick="switchTab('signal'); renderSignalCard('${c.id}')" class="btn btn-secondary btn-sm">📄 Акт</button>
+            <div style="color: #64748b; font-size: 11px; margin-bottom: 6px;">
+              ${getLocalized(c.districts)}
+            </div>
+            <div style="margin-bottom: 8px; font-size: 11px;">
+              <strong>Правовой статус:</strong> ${getLocalized(c.legalTexts)}
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <button onclick="openComplexDossier('${c.id}')" style="
+                background: #0284c7; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;
+              ">Досье</button>
+              <button onclick="switchTab('signal'); renderSignalCard('${c.id}')" style="
+                background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;
+              ">Акт проверки</button>
             </div>
           </div>
         `;
 
         marker.bindPopup(popupContent);
-        marker.on('click', () => { selectMapComplex(c.id, false); });
-        mapMarkersList.push({ id: c.id, marker });
+        mapMarkersList.push(marker);
       });
     }
 
     function renderComplexCards() {
-      const container = document.getElementById('complex-cards-list');
+      const container = document.getElementById('map-cards-list');
       if (!container) return;
 
-      const filtered = getFilteredComplexes().sort((a, b) => calculateComplexRisk(b).score - calculateComplexRisk(a).score);
-      document.getElementById('cards-header-count').textContent = `Показано: ${filtered.length} ЖК`;
+      const filtered = complexes.filter(c => {
+        const risk = calculateComplexRisk(c);
+        if (ZONE_FILTER !== 'ALL' && risk.zone !== ZONE_FILTER) return false;
+        if (!SEARCH_QUERY) return true;
+        const q = SEARCH_QUERY.toLowerCase();
+        const name = (getLocalized(c.names) + ' ' + (c.names.ru||'') + ' ' + (c.names.kz||'')).toLowerCase();
+        const dev = (getLocalized(c.developers) + ' ' + (c.developers.ru||'')).toLowerCase();
+        const dist = (getLocalized(c.districts) + ' ' + (c.districts.ru||'')).toLowerCase();
+        const bin = (c.bin || '').toLowerCase();
+        return name.includes(q) || dev.includes(q) || dist.includes(q) || bin.includes(q);
+      });
 
       if (filtered.length === 0) {
-        container.innerHTML = `
-          <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-color); border-radius: 12px;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
-            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">Ничего не найдено</div>
-            <div style="font-size: 0.8rem; margin-top: 0.25rem;">Попробуйте изменить поисковый запрос или фильтр зон риска.</div>
-          </div>
-        `;
+        container.innerHTML = `<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">По заданным критериям объектов не найдено</div>`;
         return;
       }
 
       container.innerHTML = filtered.map(c => {
         const risk = calculateComplexRisk(c);
-        const isSelected = c.id === SELECTED_COMPLEX_ID;
-        const calloutClass = risk.zone === 'RED' ? 'legal-red' : risk.zone === 'YELLOW' ? 'legal-yellow' : 'legal-green';
-        const barColor = risk.zone === 'RED' ? '#dc2626' : risk.zone === 'YELLOW' ? '#d97706' : '#16a34a';
-        const factorsStr = risk.activeCodes.length ? risk.activeCodes.join(', ') : 'нет';
-        const verdictText = CITIZEN_VERDICTS[risk.zone][CURRENT_LANG] || CITIZEN_VERDICTS[risk.zone].ru;
-        const verdictIcon = risk.zone === 'RED' ? '⛔' : risk.zone === 'YELLOW' ? '⚠️' : '✅';
+        const isSelected = (c.id === SELECTED_COMPLEX_ID);
+        const cardClass = isSelected ? 'complex-card selected' : 'complex-card';
 
         return `
-          <div class="complex-card ${isSelected ? 'card-selected' : ''}" onclick="selectMapComplex('${c.id}', true)">
-            <div class="card-top">
+          <div class="${cardClass}" onclick="focusComplexOnMap('${c.id}')">
+            <div class="complex-card-header">
               <div>
-                <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">${c.code} · БИН ${c.bin}</span>
-                <h4 class="card-title">${getLocalized(c.names)}</h4>
+                <span class="card-tag">${c.code}</span>
+                <h3 class="complex-card-title">${getLocalized(c.names)}</h3>
+                <div class="complex-card-district">📍 ${getLocalized(c.districts)}</div>
               </div>
-              <span class="status-badge ${risk.zoneBadgeClass}">
-                ${risk.zoneName} · ${risk.score} б.
-              </span>
-            </div>
-            
-            <div class="card-district">
-              <span>📍</span> <span>${getLocalized(c.districts)}</span>
-            </div>
-            <div class="card-developer">
-              <span>🏢</span> <span>${getLocalized(c.developers)}</span>
+              <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} · ${risk.score} б.</span>
             </div>
 
-            <!-- Citizen Plain-Language Verdict Callout -->
-            <div class="verdict-box ${risk.zone === 'RED' ? 'verdict-red' : risk.zone === 'YELLOW' ? 'verdict-yellow' : 'verdict-green'}" style="margin: 0.45rem 0 0.55rem 0; padding: 0.5rem 0.65rem; font-size: 0.74rem;">
-              <span class="verdict-icon" style="font-size: 1.05rem;">${verdictIcon}</span>
-              <div style="font-weight: 600;">${verdictText}</div>
+            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.65rem;">
+              <strong>Застройщик:</strong> ${getLocalized(c.developers)} (БИН: ${c.bin})
             </div>
 
-            <!-- Legal Status Banner -->
-            <div class="legal-callout ${calloutClass}">
-              <strong>${getLocalized(c.legalTexts)}</strong>
-            </div>
-
-            <!-- Score Bar Meter -->
             <div class="score-meter-wrap">
               <div class="score-bar-bg">
-                <div class="score-bar-fill" style="width: ${Math.max(8, risk.score)}%; background: ${barColor};"></div>
+                <div class="score-bar-fill" style="width: ${risk.score}%; background: ${risk.zone === 'RED' ? '#dc2626' : risk.zone === 'YELLOW' ? '#d97706' : '#16a34a'};"></div>
               </div>
-              <span class="score-num-text" style="color: ${barColor};">Балл риска: ${risk.score}/100</span>
+              <span class="score-num-text">${risk.score}/100</span>
             </div>
 
-            <!-- Footer Actions -->
-            <div class="card-footer" style="display: flex; align-items: center; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
-              <span style="font-size: 0.72rem; color: var(--text-secondary);">Факторы: <strong>${factorsStr}</strong></span>
-              <div style="display: flex; gap: 0.4rem;">
-                <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openComplexDossier('${c.id}')">📋 Досье</button>
-                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); switchTab('signal'); renderSignalCard('${c.id}')">📄 Акт</button>
-              </div>
+            <div class="card-action-row no-print">
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openComplexDossier('${c.id}')">📋 Досье</button>
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); switchTab('scoring'); renderScoringView('${c.id}')">⚖️ Матрица R1-R6</button>
+              <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); switchTab('signal'); renderSignalCard('${c.id}')">📑 Акт</button>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function selectMapComplex(complexId, flyToMarker = true) {
-      selectComplex(complexId);
+    function handleMapSearch(val) {
+      SEARCH_QUERY = val || '';
+      renderComplexCards();
+    }
+
+    function setMapFilter(zone) {
+      ZONE_FILTER = zone;
+      document.querySelectorAll('.filter-chips .chip').forEach(ch => {
+        ch.classList.toggle('active', ch.getAttribute('data-filter') === zone);
+      });
+      renderComplexCards();
+      renderMapMarkers();
+    }
+
+    function focusComplexOnMap(id) {
+      selectComplex(id);
       renderComplexCards();
 
-      const c = complexes.find(item => item.id === complexId);
-      if (!c) return;
-
-      if (leafletMapInstance) {
-        if (flyToMarker) {
-          leafletMapInstance.flyTo(c.coords, 14, { duration: 0.7 });
-        }
-        const found = mapMarkersList.find(m => m.id === complexId);
-        if (found) {
-          setTimeout(() => found.marker.openPopup(), flyToMarker ? 750 : 50);
-        }
+      const c = complexes.find(item => item.id === id);
+      if (c && leafletMapInstance) {
+        leafletMapInstance.setView(c.coords, 14, { animate: true });
+        const marker = mapMarkersList.find(m => {
+          const latLng = m.getLatLng();
+          return Math.abs(latLng.lat - c.coords[0]) < 0.0001 && Math.abs(latLng.lng - c.coords[1]) < 0.0001;
+        });
+        if (marker) marker.openPopup();
       }
     }
 
-    function handleSearch(val) {
-      SEARCH_QUERY = val.trim();
-      document.getElementById('search-clear-btn').style.display = SEARCH_QUERY ? 'block' : 'none';
-      renderComplexCards();
-      renderMapMarkers();
-    }
-
-    function clearSearch() {
-      document.getElementById('main-search-input').value = '';
-      handleSearch('');
-    }
-
-    function setZoneFilter(zone) {
-      ZONE_FILTER = zone;
-      updateFilterChipUI();
-      renderComplexCards();
-      renderMapMarkers();
-    }
-
-    function updateFilterChipUI() {
-      ['all', 'green', 'yellow', 'red'].forEach(z => {
-        const btn = document.getElementById('chip-' + z);
-        if (btn) btn.classList.toggle('active', z.toUpperCase() === ZONE_FILTER);
-      });
+    function fitMapToAllMarkers() {
+      if (!leafletMapInstance || complexes.length === 0) return;
+      const group = new L.featureGroup(mapMarkersList);
+      leafletMapInstance.fitBounds(group.getBounds().pad(0.1));
     }
 
     // ------------------------------------------------------------------------
-    // Module 02: Registry Table View
+    // Module 02: Registry of Complexes & 11 State Registries
     // ------------------------------------------------------------------------
-    let REG_SEARCH = '';
-    let REG_ZONE = 'ALL';
+    let REG_SEARCH_QUERY = '';
+    let REG_ZONE_FILTER = 'ALL';
 
     function handleRegSearch(val) {
-      REG_SEARCH = val.trim().toLowerCase();
+      REG_SEARCH_QUERY = val || '';
       renderRegistryView();
     }
 
     function setRegFilter(zone) {
-      REG_ZONE = zone;
-      ['all', 'green', 'yellow', 'red'].forEach(z => {
-        const btn = document.getElementById('reg-chip-' + z);
-        if (btn) btn.classList.toggle('active', z.toUpperCase() === REG_ZONE);
-      });
+      REG_ZONE_FILTER = zone;
+      const sel = document.getElementById('reg-zone-select');
+      if (sel) sel.value = zone;
       renderRegistryView();
     }
 
@@ -838,254 +900,368 @@
       if (!tbody) return;
 
       const filtered = complexes.filter(c => {
-        const r = calculateComplexRisk(c);
-        if (REG_ZONE !== 'ALL' && r.zone !== REG_ZONE) return false;
-        if (REG_SEARCH) {
-          const hay = (getLocalized(c.names) + ' ' + getLocalized(c.developers) + ' ' + c.bin + ' ' + getLocalized(c.districts)).toLowerCase();
-          if (!hay.includes(REG_SEARCH)) return false;
-        }
-        return true;
+        const risk = calculateComplexRisk(c);
+        if (REG_ZONE_FILTER !== 'ALL' && risk.zone !== REG_ZONE_FILTER) return false;
+        if (!REG_SEARCH_QUERY) return true;
+        const q = REG_SEARCH_QUERY.toLowerCase();
+        const name = (getLocalized(c.names) + ' ' + (c.names.ru||'') + ' ' + (c.names.kz||'')).toLowerCase();
+        const dev = (getLocalized(c.developers) + ' ' + (c.developers.ru||'')).toLowerCase();
+        const bin = (c.bin || '').toLowerCase();
+        return name.includes(q) || dev.includes(q) || bin.includes(q);
       });
 
       tbody.innerHTML = filtered.map(c => {
         const risk = calculateComplexRisk(c);
+        const isSelected = (c.id === SELECTED_COMPLEX_ID);
         return `
-          <tr>
+          <tr style="cursor: pointer; background: ${isSelected ? 'var(--bg-surface-hover)' : 'transparent'};" onclick="renderRegistryDetail('${c.id}')">
             <td>
-              <strong style="color: var(--text-main); font-size: 0.9rem;">${getLocalized(c.names)}</strong>
-              <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">${c.code}</div>
+              <strong style="color: var(--text-main); font-size: 0.88rem;">${getLocalized(c.names)}</strong>
+              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem;">📍 ${getLocalized(c.districts)}</div>
             </td>
             <td>
-              <div>${getLocalized(c.developers)}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">БИН: ${c.bin}</div>
+              <div style="font-size: 0.82rem; font-weight: 600;">${getLocalized(c.developers)}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">БИН: ${c.bin}</div>
             </td>
-            <td>📍 ${getLocalized(c.districts)}</td>
             <td>
-              <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.72rem; display: inline-block; margin-bottom: 0.35rem;">${getLocalized(c.legalTexts)}</span>
-              <div class="verdict-box ${risk.zone === 'RED' ? 'verdict-red' : risk.zone === 'YELLOW' ? 'verdict-yellow' : 'verdict-green'}" style="margin: 0; padding: 0.35rem 0.5rem; font-size: 0.7rem; font-weight: 600; line-height: 1.35;">
-                <span style="font-size: 0.85rem;">${risk.zone === 'RED' ? '⛔' : risk.zone === 'YELLOW' ? '⚠️' : '✅'}</span>
-                <div>${CITIZEN_VERDICTS[risk.zone][CURRENT_LANG] || CITIZEN_VERDICTS[risk.zone].ru}</div>
+              <div style="font-size: 0.8rem; font-weight: 600; color: ${risk.zone === 'RED' ? '#dc2626' : 'var(--text-main)'};">
+                ${getLocalized(c.legalTexts)}
               </div>
             </td>
             <td>
-              <div>${getLocalized(c.stages)}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted);">Факт: <strong>${c.readinessFact}%</strong> / Заявлено: <strong>${c.readinessDeclared}%</strong></div>
+              <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} · ${risk.score} б.</span>
             </td>
             <td>
-              <span style="font-weight: 700; color: var(--text-secondary);">${risk.activeCodes.join(', ') || 'нет'}</span>
-            </td>
-            <td>
-              <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} (${risk.score} б.)</span>
-            </td>
-            <td>
-              <div style="display: flex; gap: 0.35rem;">
-                <button class="btn btn-secondary btn-sm" onclick="openComplexDossier('${c.id}')">📋 Досье</button>
-                <button class="btn btn-primary btn-sm" onclick="switchTab('signal'); renderSignalCard('${c.id}')">📄 Акт</button>
-              </div>
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); renderRegistryDetail('${c.id}')">Досье</button>
             </td>
           </tr>
         `;
       }).join('');
+
+      renderRegistryDetail(SELECTED_COMPLEX_ID);
     }
 
-    function exportRegistryCSV() {
-      const headers = ["ID", "Name", "Developer", "BIN", "District", "LegalBasis", "Score", "Zone"];
-      const rows = complexes.map(c => {
-        const r = calculateComplexRisk(c);
-        return [
-          c.id,
-          `"${getLocalized(c.names)}"`,
-          `"${getLocalized(c.developers)}"`,
-          c.bin,
-          `"${getLocalized(c.districts)}"`,
-          `"${getLocalized(c.legalTexts)}"`,
-          r.score,
-          r.zone
-        ].join(",");
-      });
+    function renderRegistryDetail(id) {
+      selectComplex(id);
+      const c = complexes.find(item => item.id === id);
+      const pane = document.getElementById('registry-detail-pane');
+      if (!c || !pane) return;
 
-      const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `saq_qurylys_registry_${new Date().toISOString().slice(0,10)}.csv`;
-      link.click();
+      const risk = calculateComplexRisk(c);
+      const cleanBin = (c.bin || '').replace(/\D/g, '');
+
+      // Citizen summary banner
+      let citizenBanner = '';
+      if (risk.zone === 'RED') {
+        citizenBanner = `<div class="citizen-card-banner banner-danger">⛔ <strong>Опасно для покупки:</strong> Застройщик не имеет права привлекать средства граждан. Не переводите деньги по броням, резервам и депозитам!</div>`;
+      } else if (risk.zone === 'YELLOW') {
+        citizenBanner = `<div class="citizen-card-banner banner-warning">⚠️ <strong>Требует проверки документов:</strong> Идут проверки МИО/ГАСК либо есть расхождения сроков. Заключайте сделку только по официальному ДДУ.</div>`;
+      } else {
+        citizenBanner = `<div class="citizen-card-banner banner-success">✅ <strong>Законное строительство:</strong> Объект имеет официальную гарантию АО «КЖК» либо разрешение МИО. Продажи защищены законом.</div>`;
+      }
+
+      pane.innerHTML = `
+        ${citizenBanner}
+
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.85rem;">
+          <div>
+            <span class="card-tag">${c.code}</span>
+            <h2 style="font-size: 1.2rem; font-weight: 800; margin-top: 0.2rem; color: var(--text-main);">${getLocalized(c.names)}</h2>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.15rem;">📍 ${getLocalized(c.districts)}</div>
+          </div>
+          <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">
+            ${risk.zoneName} · ${risk.score} б.
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; font-size: 0.82rem; margin-bottom: 1.25rem;">
+          <div><strong>Застройщик:</strong> ${getLocalized(c.developers)}</div>
+          <div><strong>БИН:</strong> <code>${c.bin}</code></div>
+          <div><strong>Контактный телефон:</strong> ${c.contactPhone || 'Отдел продаж'}</div>
+          <div><strong>Кадастровый номер:</strong> <code>${c.cadastreNumber || '05:102:044:112'}</code></div>
+          <div><strong>Лицензия СМР:</strong> ${c.smrLicense || 'ГСЛ II категория'}</div>
+          <div><strong>Целевое назначение земли:</strong> ${c.landPurpose || 'Строительство МЖД'}</div>
+          <div><strong>Стадия:</strong> ${getLocalized(c.stages)}</div>
+          <div><strong>Готовность:</strong> Факт ${c.readinessFact}% / Заявлено ${c.readinessDeclared}%</div>
+        </div>
+
+        <!-- 11 State Registries Verification Box -->
+        <div class="registries-verify-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <strong style="font-size: 0.85rem; color: var(--text-main);">🏛️ Сверка по 11 официальным госреестрам РК (Раздел 4 ТЗ):</strong>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Клик копирует БИН в буфер и открывает портал</span>
+          </div>
+          
+          <div class="registry-links-grid">
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://homeportal.kz', 'Homeportal.kz (КЖК)')">
+              <span>🏠 Homeportal.kz (КЖК)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://qazreestr.kz', 'Казреестр ДДУ')">
+              <span>📑 Казреестр (ДДУ)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://data.egov.kz', 'Ashyq Data МИО')">
+              <span>🏛️ Ashyq Data (МИО ВКО)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://elicense.kz', 'E-License.kz')">
+              <span>📜 E-License.kz (СМР)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://equrylys.gov.kz', 'eQurylys.kz')">
+              <span>🏗️ eQurylys.kz (Объекты)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${c.cadastreNumber || '05:102:044:112'}', 'https://map.gov4c.kz/egkn/', 'Кадастровая карта map.gov4c.kz')">
+              <span>🗺️ Кадастр map.gov4c.kz</span>
+              <span class="copy-hint">Копировать Кадастр 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://egov.kz', 'eGov.kz')">
+              <span>🏢 eGov.kz (Юрлицо)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://kgd.gov.kz', 'КГД kgd.gov.kz')">
+              <span>💰 КГД МФ РК (Налоги)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://rsp.gov.kz', 'РСП rsp.gov.kz')">
+              <span>📊 РСП (Реестр бизнеса)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://goszakup.gov.kz', 'Госзакупки procurement.gov.kz')">
+              <span>⚠️ Реестр недобросовестных</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://sud.gov.kz', 'ИС «Төрелік» sud.gov.kz')">
+              <span>⚖️ ИС Төрелік (Суды/Аресты)</span>
+              <span class="copy-hint">Копировать БИН 📋</span>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; gap: 0.65rem; justify-content: flex-end;">
+          <button class="btn btn-secondary" onclick="switchTab('scoring'); renderScoringView('${c.id}')">⚖️ Настроить скоринг</button>
+          <button class="btn btn-primary" onclick="switchTab('signal'); renderSignalCard('${c.id}')">📑 Сформировать акт проверки</button>
+        </div>
+      `;
     }
 
     // ------------------------------------------------------------------------
-    // Module 03: Ads Feed (renderAdsFeed per user specification)
+    // Module 03: Ads Monitoring Feed & Explainable AI Analyzer
     // ------------------------------------------------------------------------
     function renderAdsFeed() {
       const tbody = document.getElementById('ads-table-body');
       if (!tbody) return;
 
       tbody.innerHTML = adsList.map(a => {
-        const complex = complexes.find(c => c.id === a.complexId);
-        const compName = complex ? getLocalized(complex.names) : a.complexId;
-        const badgeClass = a.status === 'CONFIRMED' ? 'badge-red' : a.status === 'VERIFIED_OK' ? 'badge-green' : 'badge-yellow';
-
-        // Safe extraction per Step 1 instruction
+        const c = complexes.find(item => item.id === a.complexId);
+        const complexTitle = c ? getLocalized(c.names) : (a.complexId || 'ЖК не привязан');
+        
         const adDate = a.date || a.pubDate || a.capturedAt || '14.10.2026';
-        const captureTime = a.capturedAt || a.date || a.pubDate || '14.10.2026, 12:00';
-        const adUrl = a.url || '#';
-
         const adText = a.rawText || a.text || '';
         const highlightedAdText = (a.triggerSpan && adText.includes(a.triggerSpan))
           ? adText.replace(a.triggerSpan, '<span class="highlight-risk">' + a.triggerSpan + '</span>')
           : adText;
 
-        const triggersHtml = (a.triggers || []).map(tr => {
-          return `<span style="background: rgba(239,68,68,0.12); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">${tr}</span>`;
-        }).join(' ');
+        const isVerified = (a.status === 'CONFIRMED' || a.status === 'VERIFIED_OK');
+        const badgeColor = (a.status === 'VERIFIED_OK') ? 'badge-green' : (a.status === 'CONFIRMED') ? 'badge-red' : 'badge-yellow';
+        const statusLabel = (a.status === 'VERIFIED_OK') ? '✅ Проверено (Законно)' : (a.status === 'CONFIRMED') ? '⚠️ Нарушение подтверждено' : '🤖 Гипотеза ИИ';
 
         return `
           <tr>
-            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-muted);">${a.id}</td>
+            <td style="font-weight: 700; font-family: monospace; font-size: 0.8rem;">${a.id}</td>
             <td>
-              <strong>${a.source || a.platform}</strong>
+              <div style="font-weight: 700; font-size: 0.82rem;">${a.platform || a.source || 'Реклама'}</div>
               <div style="font-size: 0.72rem; color: var(--text-muted);">${adDate}</div>
             </td>
             <td>
-              <strong>${compName}</strong>
+              <strong style="color: var(--text-main); font-size: 0.85rem;">${complexTitle}</strong>
+              <div style="font-size: 0.72rem; color: var(--text-secondary);">${a.phone || ''}</div>
             </td>
-            <td style="max-width: 340px; font-size: 0.82rem; line-height: 1.45;">
-              <div>${highlightedAdText}</div>
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                <span>📸 Фиксация: ${captureTime}</span>
-                <span>·</span>
-                <a href="${adUrl}" target="_blank" style="color: var(--brand-primary); text-decoration: underline;">🔗 Источник</a>
+            <td style="max-width: 380px;">
+              <div class="ad-raw-text">${highlightedAdText}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; gap: 0.85rem; flex-wrap: wrap;">
+                <span>📸 Фиксация: ${a.capturedAt || adDate}</span>
+                <a href="${a.url || '#'}" target="_blank" style="color: var(--brand-primary); text-decoration: underline;">🔗 Источник</a>
               </div>
             </td>
-            <td>${triggersHtml}</td>
-            <td style="font-size: 0.78rem; font-weight: 600; color: var(--brand-primary);">${a.aiHypothesis}</td>
             <td>
-              <span class="status-badge ${badgeClass}">${a.status}</span>
+              <span class="trigger-chip">${a.triggerSpan || 'Прямой сбор средств'}</span>
+            </td>
+            <td>
+              <div style="font-size: 0.78rem; font-weight: 700; color: var(--brand-primary);">${a.aiHypothesis || 'R2/R3 детекция'}</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">Уверенность: ${a.confidence || 94}%</div>
+            </td>
+            <td>
+              <span class="status-badge ${badgeColor}">${statusLabel}</span>
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    // Alias for compatibility
-    window.renderAdsTable = renderAdsFeed;
-
     function openAddAdModal() {
-      const sel = document.getElementById('new-ad-complex-id');
-      sel.innerHTML = complexes.map(c => {
-        return `<option value="${c.id}">${getLocalized(c.names)} (${c.code})</option>`;
-      }).join('');
-      document.getElementById('add-ad-modal').style.display = 'flex';
+      const sel = document.getElementById('new-ad-complex');
+      if (sel) {
+        sel.innerHTML = complexes.map(c => `
+          <option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>${getLocalized(c.names)} (${c.code})</option>
+        `).join('');
+      }
+      const preview = document.getElementById('ai-live-preview');
+      if (preview) preview.style.display = 'none';
+      const modal = document.getElementById('add-ad-modal');
+      if (modal) modal.style.display = 'flex';
     }
 
     function closeAddAdModal() {
-      document.getElementById('add-ad-modal').style.display = 'none';
+      const modal = document.getElementById('add-ad-modal');
+      if (modal) modal.style.display = 'none';
     }
 
-    function submitManualAd() {
-      const complexId = document.getElementById('new-ad-complex-id').value;
-      const platform = document.getElementById('new-ad-platform').value;
-      const text = document.getElementById('new-ad-text').value.trim();
-
-      if (!text) {
-        alert('Введите текст объявления');
+    function runLiveAIAnalysis() {
+      const text = (document.getElementById('new-ad-text').value || '').trim();
+      const complexId = document.getElementById('new-ad-complex').value;
+      const preview = document.getElementById('ai-live-preview');
+      if (!text || !preview) {
+        alert('Введите текст объявления для анализа ИИ');
         return;
       }
 
-      const matchedComplex = complexes.find(c => c.id === complexId);
-      const lower = text.toLowerCase();
-      const triggers = [];
-      let hypothesisTitle = 'Информационная публикация';
+      const c = complexes.find(item => item.id === complexId);
+      const confPct = (c && c.readinessFact) ? c.readinessFact : 30;
 
-      if (lower.includes('бронь') || lower.includes('депозит') || lower.includes('взнос') || lower.includes('касс') || lower.includes('наличн')) {
-        triggers.push('признаки сбора средств до ДДУ');
-        hypothesisTitle = 'R2 (+25 б.): Незаконный сбор денег до ДДУ';
-      }
-
-      // Check R5 readiness delta
-      const readinessMatch = text.match(/готовность(?:\s+объекта|\s+дома|\s+уже)?\s*(\d{1,3})\s*%/i);
-      if (readinessMatch && matchedComplex) {
-        const declaredPct = parseInt(readinessMatch[1], 10);
-        const factPct = matchedComplex.readinessFact || 0;
-        const delta = Math.abs(declaredPct - factPct);
-        if (delta >= 20) {
-          triggers.push(`расхождение готовности ${delta} п.п.`);
-          hypothesisTitle += ` + R5 (+10 б.): Разница готовности (заявлено ${declaredPct}%, факт ${factPct}%)`;
-          matchedComplex.factors.R5.status = 'CONFIRMED';
-          matchedComplex.readinessDeclared = declaredPct;
+      // Check R5 Readiness discrepancy (>= 20 pp)
+      const readinessMatch = text.match(/готовность(?:\s+объекта|\s+дома|\s+уже)?\s*(\d{1,3})\s*%/i) || text.match(/(\d{1,3})\s*%\s*готовност/i);
+      let r5Discrepancy = null;
+      if (readinessMatch) {
+        const declared = parseInt(readinessMatch[1], 10);
+        const diff = Math.abs(declared - confPct);
+        if (diff >= 20) {
+          r5Discrepancy = { declared, fact: confPct, diff };
         }
       }
 
-      const newId = 'AD-' + (100 + adsList.length + 1);
+      // Check R2 triggers
+      const r2Match = text.match(/бронь|депозит|в кассу|первоначальный взнос|резервирован|цесси|уступк/i);
+
+      let proposedFactor = 'R3';
+      let confidence = 88;
+      let explanation = 'Стандартная реклама строящегося объекта (R3 +10 баллов).';
+
+      if (r2Match) {
+        proposedFactor = 'R2';
+        confidence = 95;
+        explanation = `Обнаружен признак прямого сбора средств до ДДУ: «${r2Match[0]}». Предлагается фактор R2 (+25 баллов).`;
+      } else if (r5Discrepancy) {
+        proposedFactor = 'R5';
+        confidence = 92;
+        explanation = `Обнаружено расхождение готовности ≥20 п.п.: в рекламе заявлено ${r5Discrepancy.declared}%, тогда как подтверждено МИО/ГАСК ${r5Discrepancy.fact}% (разница ${r5Discrepancy.diff} п.п.). Предлагается фактор R5 (+10 баллов).`;
+      }
+
+      preview.style.display = 'block';
+      preview.innerHTML = `
+        <div style="font-weight: 800; color: var(--brand-primary); margin-bottom: 0.35rem;">
+          🤖 Результат экспресс-анализа ИИ (Уверенность: ${confidence}%):
+        </div>
+        <div style="margin-bottom: 0.45rem;">${explanation}</div>
+        ${r5Discrepancy ? `<div style="background: #fef3c7; border: 1px solid #fcd34d; padding: 0.4rem 0.6rem; border-radius: 6px; font-weight: 700; color: #92400e;">⚠️ Внимание аналитика: критическое завышение готовности на ${r5Discrepancy.diff} процентных пунктов!</div>` : ''}
+      `;
+    }
+
+    async function submitNewAd() {
+      const complexId = document.getElementById('new-ad-complex').value;
+      const platform = document.getElementById('new-ad-platform').value;
+      const phone = (document.getElementById('new-ad-phone').value || '').trim();
+      const url = (document.getElementById('new-ad-url').value || '').trim() || '#';
+      const text = (document.getElementById('new-ad-text').value || '').trim();
+
+      if (!text) {
+        alert('Пожалуйста, введите текст объявления!');
+        return;
+      }
+
+      const newId = `AD-${100 + adsList.length + 1}`;
       const nowStr = new Date().toLocaleString();
 
-      adsList.unshift({
+      const newAd = {
         id: newId,
-        complexId,
-        source: platform,
+        complexId: complexId,
         platform: platform,
+        source: platform,
+        account: "Отдел продаж",
+        phone: phone,
         date: "15.10.2026",
         pubDate: "15.10.2026",
         capturedAt: nowStr,
-        url: "https://clearbuild.kz/ads/" + newId,
+        url: url,
         rawText: text,
         text: text,
-        triggers: triggers.length ? triggers : ["проверка условий"],
-        aiHypothesis: hypothesisTitle,
+        triggerSpan: text.length > 50 ? text.substring(0, 50) + '...' : text,
+        triggers: ["ручной ввод"],
+        proposedFactor: "R2",
+        confidence: 90,
+        aiHypothesis: "R2 (+25 баллов): Ручная фиксация аналитика",
         status: "CONFIRMED"
-      });
+      };
 
-      auditLogEntries.unshift(`[${nowStr}] Добавлено объявление ${newId} для ${getLocalized(matchedComplex.names)}`);
+      // Call apiClient
+      if (typeof apiClient !== 'undefined') {
+        await apiClient.addPublication(newAd);
+      }
+
+      adsList.unshift(newAd);
+      auditLogEntries.unshift(`[${new Date().toLocaleTimeString()}] Зафиксирована новая публикация ${newId} для комплекса ${complexId} (${platform})`);
       saveState();
 
       closeAddAdModal();
-      document.getElementById('new-ad-text').value = '';
       renderAdsFeed();
-      refreshAllViews();
-      alert('Объявление добавлено и проанализировано ИИ!');
+      alert(`Публикация ${newId} успешно зафиксирована и сохранена!`);
     }
 
     // ------------------------------------------------------------------------
-    // Module 04: Interactive Risk Scoring Matrix R1-R6 (renderScoringView)
+    // Module 04: Risk Scoring Matrix R1-R6
     // ------------------------------------------------------------------------
     function populateComplexDropdowns() {
       const scoringSel = document.getElementById('scoring-select-complex');
-      if (scoringSel) {
-        scoringSel.innerHTML = complexes.map(c => {
-          return `<option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>${getLocalized(c.names)} (${c.code})</option>`;
-        }).join('');
-      }
-
       const signalSel = document.getElementById('signal-select-complex');
-      if (signalSel) {
-        signalSel.innerHTML = complexes.map(c => {
-          return `<option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>${getLocalized(c.names)} (${c.code})</option>`;
-        }).join('');
-      }
+
+      const options = complexes.map(c => `
+        <option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>
+          ${getLocalized(c.names)} (${c.code})
+        </option>
+      `).join('');
+
+      if (scoringSel) scoringSel.innerHTML = options;
+      if (signalSel) signalSel.innerHTML = options;
     }
 
-    function renderScoringView(complexId = SELECTED_COMPLEX_ID) {
-      selectComplex(complexId);
-      const c = complexes.find(item => item.id === complexId);
-      if (!c) return;
-
+    function renderScoringView(complexId) {
+      if (complexId) selectComplex(complexId);
+      const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID);
       const tbody = document.getElementById('scoring-interactive-body');
-      if (!tbody) return;
+      const auditLog = document.getElementById('scoring-audit-log');
+      if (!c || !tbody) return;
+
+      const risk = calculateComplexRisk(c);
 
       tbody.innerHTML = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6'].map(code => {
         const factor = c.factors[code] || { status: 'NONE', weight: FACTOR_INFO[code].weight };
-        const st = factor.status;
         const info = FACTOR_INFO[code];
-        const evidenceText = factor.evidence ? getLocalized(factor.evidence) : 'Доказательства не прикреплены';
+        const st = factor.status;
+        const evidenceText = factor.evidence ? getLocalized(factor.evidence) : '';
 
         return `
           <tr>
-            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--brand-primary); font-size: 0.9rem;">${code}</td>
-            <td><span class="status-badge badge-yellow">+${info.weight} б.</span></td>
-            <td><strong>${getLocalized(info)}</strong></td>
+            <td style="font-weight: 800; font-family: monospace; font-size: 0.85rem;">${code}</td>
+            <td style="font-weight: 800; color: var(--brand-primary);">+${info.weight} б.</td>
+            <td>
+              <div style="font-weight: 700; font-size: 0.82rem;">${getLocalized(info)}</div>
+            </td>
             <td>
               <select class="factor-select" onchange="changeFactorStatus('${c.id}', '${code}', this.value)">
                 <option value="CONFIRMED" ${st === 'CONFIRMED' ? 'selected' : ''}>✅ Подтверждён (+${info.weight} б.)</option>
-                <option value="AI_HYPOTHESIS" ${st === 'AI_HYPOTHESIS' ? 'selected' : ''}>🤖 Подозрение ИИ (0 б. до проверки)</option>
+                <option value="AI_HYPOTHESIS" ${st === 'AI_HYPOTHESIS' ? 'selected' : ''}>🤖 Гипотеза ИИ (0 б. до проверки)</option>
                 <option value="UNVERIFIED" ${st === 'UNVERIFIED' ? 'selected' : ''}>⚠️ Нужна проверка (0 б.)</option>
                 <option value="NONE" ${st === 'NONE' ? 'selected' : ''}>⚪ Не выявлено (0 б.)</option>
               </select>
@@ -1097,22 +1273,17 @@
         `;
       }).join('');
 
-      renderAuditLog();
-    }
-
-    window.renderScoringInteractiveTable = renderScoringView;
-
-    function renderAuditLog() {
-      const container = document.getElementById('scoring-audit-log');
-      if (!container) return;
-      container.innerHTML = auditLogEntries.map(e => `<div>${e}</div>`).join('');
+      if (auditLog) {
+        auditLog.innerHTML = auditLogEntries.slice(0, 15).map(e => `<div>${e}</div>`).join('');
+      }
     }
 
     // ------------------------------------------------------------------------
-    // Module 05: Official Signal Act Sheet (renderSignalCard)
+    // Module 05: Printable Signal Act (PDF)
     // ------------------------------------------------------------------------
     function setActLanguage(lang) {
       CURRENT_ACT_LANG = lang;
+      saveState();
       ['ru', 'kz', 'en'].forEach(l => {
         const btn = document.getElementById('act-lang-' + l);
         if (btn) btn.classList.toggle('active', l === lang);
@@ -1120,271 +1291,268 @@
       renderSignalCard(SELECTED_COMPLEX_ID);
     }
 
-    function renderSignalCard(complexId = SELECTED_COMPLEX_ID) {
-      selectComplex(complexId);
+    function renderSignalCard(complexId) {
+      if (complexId) selectComplex(complexId);
+      const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID);
       const container = document.getElementById('signal-sheet-container');
-      if (!container) return;
+      if (!c || !container) return;
 
-      const c = complexes.find(item => item.id === complexId) || complexes[0];
+      const lang = CURRENT_ACT_LANG || 'ru';
       const risk = calculateComplexRisk(c);
-      const isRed = risk.zone === 'RED';
-      const lang = CURRENT_ACT_LANG;
+      const cleanBin = (c.bin || '').replace(/\D/g, '');
 
-      const actI18N = {
-        ru: {
-          headerTop: "РЕСПУБЛИКА КАЗАХСТАН · ВОСТОЧНО-КАЗАХСТАНСКАЯ ОБЛАСТЬ",
-          title: "СИГНАЛЬНЫЙ АКТ ПРОВЕРКИ ОБЪЕКТА ДОЛЕВОГО СТРОИТЕЛЬСТВА",
-          regNum: "Регистрационный номер:",
-          stampDanger: "ВЫСОКИЙ РИСК · БЕЗ РАЗРЕШЕНИЯ",
-          stampSafe: "УЧЕТНАЯ ЗАПИСЬ ВЕРИФИЦИРОВАНА",
-          sec1: "1. СВЕДЕНИЯ ОБ ОБЪЕКТЕ И ЗАСТРОЙЩИКЕ",
-          sec2: "2. РЕЗУЛЬТАТ ПРОВЕРКИ ПРАВОВОГО СТАТУСА",
-          sec3: "3. ОЦЕНКА РИСК-ФАКТОРОВ ПО МЕТОДОЛОГИИ R1–R6",
-          sec4: "4. ЗАФИКСИРОВАННЫЕ РЕКЛАМНЫЕ ОБЪЯВЛЕНИЯ И ЦИТАТЫ-ДОКАЗАТЕЛЬСТВА",
-          sec5: "5. ВЕРДИКТ ДЛЯ ПОКУПАТЕЛЯ (ДОЛЬЩИКА) ПРОСТЫМ ЯЗЫКОМ",
-          thCode: "Код",
-          thCriterion: "Критерий оценки",
-          thStatus: "Статус проверки",
-          thScore: "Балл",
-          totalScore: "ИТОГОВЫЙ БАЛЛ РИСКА:",
-          noAdsFound: "Неправомерных рекламных объявлений не зафиксировано.",
-          expert: "Уполномоченный аналитик МИО: Ахметов Д.К.",
-          signature: "Подпись: __________________ М.П."
-        },
-        kz: {
-          headerTop: "ҚАЗАҚСТАН РЕСПУБЛИКАСЫ · ШЫҒЫС ҚАЗАҚСТАН ОБЛЫСЫ",
-          title: "ТҰРҒЫН ҮЙ ҚҰРЫЛЫСЫ НЫСАНЫН ТЕКСЕРУДІҢ ДАБЫЛ АКТІСІ",
-          regNum: "Тіркеу нөмірі:",
-          stampDanger: "ЖОҒАРЫ ТӘУЕКЕЛ · РҰҚСАТСЫЗ",
-          stampSafe: "ЕСЕПТІК ЖАЗБА РАСТАЛҒАН",
-          sec1: "1. НЫСАН ЖӘНЕ ҚҰРЫЛЫС САЛУШЫ ТУРАЛЫ МӘЛІМЕТТЕР",
-          sec2: "2. ҚҰҚЫҚТЫҚ МӘРТЕБЕНІ ТЕКСЕРУ НӘТИЖЕСІ",
-          sec3: "3. R1–R6 ӘДІСТЕМЕСІ БОЙЫНША ТӘУЕКЕЛ-ФАКТОРЛАРДЫ БАҒАЛАУ",
-          sec4: "4. ТІРКЕЛГЕН ЖАРНАМАЛЫҚ ХАБАРЛАНДЫРУЛАР МЕН ДӘЙЕКТЕМЕЛЕР",
-          sec5: "5. ҮЛЕСКЕРГЕ (САТЫП АЛУШЫҒА) АРНАЛҒАН ҚАРАПАЙЫМ ҮКІМ",
-          thCode: "Код",
-          thCriterion: "Бағалау критерийі",
-          thStatus: "Тексеру мәртебесі",
-          thScore: "Ұпай",
-          totalScore: "ЖАЛПЫ ТӘУЕКЕЛ ҰПАЙЫ:",
-          noAdsFound: "Заңсыз жарнамалық хабарландырулар тіркелмеген.",
-          expert: "ЖАО уәкілетті сарапшысы: Ахметов Д.К.",
-          signature: "Қолы: __________________ М.О."
-        },
-        en: {
-          headerTop: "REPUBLIC OF KAZAKHSTAN · EAST KAZAKHSTAN REGION",
-          title: "OFFICIAL SIGNAL INSPECTION ACT FOR RESIDENTIAL CONSTRUCTION",
-          regNum: "Registration Number:",
-          stampDanger: "HIGH RISK · UNAUTHORIZED",
-          stampSafe: "RECORD VERIFIED & COMPLIANT",
-          sec1: "1. PROJECT & DEVELOPER IDENTIFICATION",
-          sec2: "2. LEGAL BASIS & PERMIT COMPLIANCE STATUS",
-          sec3: "3. RISK FACTOR SCORING AUDIT (R1–R6)",
-          sec4: "4. RECORDED ADVERTISEMENTS & CITATION EVIDENCE",
-          sec5: "5. CITIZEN PURCHASER SAFETY VERDICT",
-          thCode: "Code",
-          thCriterion: "Evaluation Criterion",
-          thStatus: "Audit Status",
-          thScore: "Score",
-          totalScore: "TOTAL AUDIT RISK SCORE:",
-          noAdsFound: "No unlawful advertisement citations recorded.",
-          expert: "Certified Compliance Analyst: Akhmetov D.K.",
-          signature: "Signature: __________________  Seal"
-        }
-      }[lang];
+      // Evidence ads for this complex
+      const linkedAds = adsList.filter(a => a.complexId === c.id);
+      let adsEvidenceRows = '';
 
-      // Section 4: Recorded Ad Evidence per Step 1 instruction
-      const complexAds = adsList.filter(a => a.complexId === c.id);
-      let adsEvidenceHtml = '';
-      if (complexAds.length) {
-        adsEvidenceHtml = complexAds.map(ad => {
-          const capTime = ad.capturedAt || ad.pubDate || ad.date || '14.10.2026';
-          const raw = ad.rawText || ad.text || '';
-          const src = ad.source || ad.platform || 'Krisha.kz';
-          const tr = Array.isArray(ad.triggers) ? ad.triggers.join(', ') : (ad.triggerSpan || 'Нарушение правил рекламы');
-          const adLink = ad.url || 'https://krisha.kz';
+      if (linkedAds.length > 0) {
+        adsEvidenceRows = linkedAds.map((a, idx) => {
+          const adText = a.rawText || a.text || '';
+          const highlighted = (a.triggerSpan && adText.includes(a.triggerSpan))
+            ? adText.replace(a.triggerSpan, '<strong style="color: #b91c1c; text-decoration: underline;">' + a.triggerSpan + '</strong>')
+            : adText;
           return `
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.65rem 0.85rem; margin-bottom: 0.5rem; font-size: 0.8rem;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <strong>${src} (${ad.id})</strong>
-                <span style="color: #64748b;">📸 Фиксация: ${capTime}</span>
-              </div>
-              <div style="color: #1e293b; font-style: italic; margin-bottom: 0.3rem;">«${raw}»</div>
-              <div style="font-size: 0.72rem; color: #b91c1c; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                <span>🎯 Триггер: ${tr}</span>
-                <a href="${adLink}" target="_blank" style="color: #0284c7; text-decoration: underline;">🔗 Источник объявления</a>
-              </div>
-            </div>
+            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+              <td style="padding: 6px; font-weight: 700;">#${idx + 1} (${a.id})</td>
+              <td style="padding: 6px;">${a.platform || a.source}<br/><span style="color: #64748b; font-size: 10px;">${a.capturedAt || a.date}</span></td>
+              <td style="padding: 6px; line-height: 1.35;">${highlighted}</td>
+              <td style="padding: 6px; font-weight: 700; color: #dc2626;">${a.proposedFactor || 'R2/R3'}</td>
+              <td style="padding: 6px;"><a href="${a.url || '#'}" target="_blank" style="color: #0284c7;">Источник 🔗</a></td>
+            </tr>
           `;
         }).join('');
       } else {
-        adsEvidenceHtml = `<div style="font-size: 0.8rem; color: #64748b;">${actI18N.noAdsFound}</div>`;
+        adsEvidenceRows = `<tr><td colspan="5" style="padding: 10px; text-align: center; color: #64748b;">Прямых доказательств незаконной рекламы в базе не зафиксировано.</td></tr>`;
       }
 
-      // Section 5: Citizen Safety Verdict
-      const verdictText = CITIZEN_VERDICTS[risk.zone][lang] || CITIZEN_VERDICTS[risk.zone].ru;
+      const factorsRows = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6'].map(code => {
+        const f = c.factors[code] || { status: 'NONE', weight: FACTOR_INFO[code].weight };
+        const st = f.status;
+        const pts = (st === 'CONFIRMED') ? f.weight : 0;
+        const ev = f.evidence ? getLocalized(f.evidence, lang) : getLocalized(FACTOR_INFO[code], lang);
+        const statusLabel = getFactorStatusLabel(st, lang);
+        const statusColor = (st === 'CONFIRMED') ? '#dc2626' : (st === 'AI_HYPOTHESIS' ? '#d97706' : (st === 'UNVERIFIED' ? '#b45309' : '#64748b'));
+
+        return `
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 0.45rem; font-weight: 700;">${code}</td>
+            <td style="padding: 0.45rem;">${ev}</td>
+            <td style="padding: 0.45rem; font-weight: 700; color: ${statusColor};">${statusLabel}</td>
+            <td style="padding: 0.45rem; font-weight: 800;">+${pts}</td>
+          </tr>
+        `;
+      }).join('');
 
       container.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-start;">
           <div>
-            <div style="font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em;">
-              ${actI18N.headerTop}
+            <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b;">
+              ГУ «Управление строительства, архитектуры и градостроительства ВКО»
             </div>
-            <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem;">
-              ${actI18N.title}
-            </div>
-            <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.15rem;">
-              ${actI18N.regNum} <strong>SAQ-VKO-2026-${c.id.toUpperCase()}</strong> / 15.10.2026
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
+              СИГНАЛЬНЫЙ АКТ ПРОВЕРКИ ОБЪЕКТА СТРОИТЕЛЬСТВА
+            </h2>
+            <div style="font-size: 0.8rem; color: #475569; margin-top: 0.2rem;">
+              Регистрационный номер: <strong>СА-2026/УК-${c.id.toUpperCase()}</strong> от 15.10.2026
             </div>
           </div>
-          <div class="official-stamp ${isRed ? 'stamp-danger' : ''}">
-            ${isRed ? actI18N.stampDanger : actI18N.stampSafe}
-          </div>
-        </div>
-
-        <!-- Section 1 -->
-        <div style="margin-bottom: 1.25rem;">
-          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            ${actI18N.sec1}
-          </h3>
-          <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 0.35rem 0; width: 35%; color: #475569; font-weight: 600;">Наименование ЖК:</td>
-              <td style="padding: 0.35rem 0; font-weight: 700; color: #0f172a;">${getLocalized(c.names, lang)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 0.35rem 0; color: #475569; font-weight: 600;">Застройщик / БИН:</td>
-              <td style="padding: 0.35rem 0; font-weight: 700; color: #0f172a;">${getLocalized(c.developers, lang)} (БИН: ${c.bin})</td>
-            </tr>
-            <tr>
-              <td style="padding: 0.35rem 0; color: #475569; font-weight: 600;">Местоположение:</td>
-              <td style="padding: 0.35rem 0; color: #0f172a;">${getLocalized(c.districts, lang)} (Координаты: ${c.coords.join(', ')})</td>
-            </tr>
-            <tr>
-              <td style="padding: 0.35rem 0; color: #475569; font-weight: 600;">Стадия и готовность:</td>
-              <td style="padding: 0.35rem 0; color: #0f172a;">${getLocalized(c.stages, lang)} (Факт: <strong>${c.readinessFact}%</strong> / Реклама: <strong>${c.readinessDeclared}%</strong>)</td>
-            </tr>
-          </table>
-        </div>
-
-        <!-- Section 2 -->
-        <div style="margin-bottom: 1.25rem;">
-          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            ${actI18N.sec2}
-          </h3>
-          <div style="background: ${isRed ? '#fef2f2' : '#f0fdf4'}; border: 1px solid ${isRed ? '#fecaca' : '#bbf7d0'}; border-radius: 8px; padding: 0.85rem; font-size: 0.85rem;">
-            <div style="font-weight: 800; color: ${isRed ? '#b91c1c' : '#15803d'}; font-size: 0.92rem; margin-bottom: 0.25rem;">
-              ${getLocalized(c.legalTexts, lang)}
-            </div>
-            <div style="color: #334155; line-height: 1.45;">
-              ${getLocalized(c.legalDetails, lang)}
+          <div style="text-align: right;">
+            <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.95rem; padding: 0.4rem 1rem;">
+              ${risk.zoneName} · ${risk.score}/100 БАЛЛОВ
+            </span>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
+              Резолюция: <strong>${c.signalStatus || 'PENDING_HUMAN'}</strong>
             </div>
           </div>
         </div>
 
-        <!-- Section 3: Factors R1-R6 with STRICTLY LOCALIZED STATUSES (no English confirmed in RU/KZ) -->
-        <div style="margin-bottom: 1.25rem;">
+        <div style="margin-bottom: 1.25rem; font-size: 0.85rem; line-height: 1.5;">
           <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            ${actI18N.sec3}
+            1. Идентификационные сведения об объекте и застройщике
           </h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
+            <div><strong>Наименование ЖК:</strong> ${getLocalized(c.names, lang)}</div>
+            <div><strong>Застройщик:</strong> ${getLocalized(c.developers, lang)}</div>
+            <div><strong>БИН организации:</strong> <code>${c.bin}</code></div>
+            <div><strong>Контактный телефон:</strong> ${c.contactPhone || 'Отдел продаж'}</div>
+            <div><strong>Местоположение:</strong> ${getLocalized(c.districts, lang)}</div>
+            <div><strong>Кадастровый номер:</strong> <code>${c.cadastreNumber || '05:102:044:112'}</code></div>
+            <div><strong>Лицензия СМР:</strong> ${c.smrLicense || 'ГСЛ II категория'}</div>
+            <div><strong>Стадия / Готовность:</strong> ${getLocalized(c.stages, lang)} (Факт: ${c.readinessFact}%, Заявлено: ${c.readinessDeclared}%)</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem; font-size: 0.85rem;">
+          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
+            2. Результаты детерминированной оценки рисков R1–R6 (Раздел 5 ТЗ)
+          </h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
             <thead>
-              <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
-                <th style="padding: 0.45rem;">${actI18N.thCode}</th>
-                <th style="padding: 0.45rem;">${actI18N.thCriterion}</th>
-                <th style="padding: 0.45rem;">${actI18N.thStatus}</th>
-                <th style="padding: 0.45rem;">${actI18N.thScore}</th>
+              <tr style="border-bottom: 2px solid #94a3b8; text-align: left;">
+                <th style="padding: 0.45rem;">Код</th>
+                <th style="padding: 0.45rem;">Фактор риска и обоснование</th>
+                <th style="padding: 0.45rem;">Статус фактора</th>
+                <th style="padding: 0.45rem;">Балл</th>
               </tr>
             </thead>
             <tbody>
-              ${['R1', 'R2', 'R3', 'R4', 'R5', 'R6'].map(code => {
-                const f = c.factors[code] || { status: 'NONE', weight: FACTOR_INFO[code].weight };
-                const st = f.status;
-                const pts = (st === 'CONFIRMED') ? f.weight : 0;
-                const ev = f.evidence ? getLocalized(f.evidence, lang) : getLocalized(FACTOR_INFO[code], lang);
-                const statusLabel = getFactorStatusLabel(st, lang);
-                const statusColor = (st === 'CONFIRMED') ? '#dc2626' : (st === 'AI_HYPOTHESIS' ? '#d97706' : (st === 'UNVERIFIED' ? '#b45309' : '#64748b'));
-                return `
-                  <tr style="border-bottom: 1px solid #e2e8f0;">
-                    <td style="padding: 0.45rem; font-weight: 700;">${code}</td>
-                    <td style="padding: 0.45rem;">${ev}</td>
-                    <td style="padding: 0.45rem; font-weight: 700; color: ${statusColor};">${statusLabel}</td>
-                    <td style="padding: 0.45rem; font-weight: 800;">+${pts}</td>
-                  </tr>
-                `;
-              }).join('')}
-              <tr style="background: #f8fafc; font-weight: 800;">
-                <td colspan="3" style="padding: 0.55rem; text-align: right;">${actI18N.totalScore}</td>
-                <td style="padding: 0.55rem; font-size: 1rem; color: ${isRed ? '#dc2626' : '#15803d'};">${risk.score} / 100</td>
-              </tr>
+              ${factorsRows}
             </tbody>
           </table>
         </div>
 
-        <!-- Section 4: Recorded Ad Evidence -->
-        <div style="margin-bottom: 1.25rem;">
+        <!-- Attached Ads & Citations (STEP 3 Requirement) -->
+        <div style="margin-bottom: 1.25rem; font-size: 0.85rem;">
           <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            ${actI18N.sec4}
+            3. Зафиксированные рекламные публикации и цитаты-основания (Раздел 3 и 4 ТЗ)
           </h3>
-          ${adsEvidenceHtml}
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #f8fafc;">
+            <thead>
+              <tr style="border-bottom: 2px solid #cbd5e1; text-align: left;">
+                <th style="padding: 6px;">ID</th>
+                <th style="padding: 6px;">Источник / Дата</th>
+                <th style="padding: 6px;">Зафиксированный текст и цитата</th>
+                <th style="padding: 6px;">Фактор</th>
+                <th style="padding: 6px;">Ссылка</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${adsEvidenceRows}
+            </tbody>
+          </table>
         </div>
 
-        <!-- Section 5: Citizen Safety Verdict -->
-        <div style="margin-bottom: 1.5rem;">
+        <!-- 11 State Registries Legal References (STEP 4 Requirement) -->
+        <div style="margin-bottom: 1.25rem; font-size: 0.85rem;">
           <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            ${actI18N.sec5}
+            4. Сведения о проверке по государственным информационным системам РК
           </h3>
-          <div style="background: ${isRed ? '#fef2f2' : '#f0fdf4'}; border: 1px solid ${isRed ? '#fecaca' : '#bbf7d0'}; border-radius: 8px; padding: 0.85rem; font-size: 0.85rem; color: ${isRed ? '#b91c1c' : '#15803d'}; font-weight: 600;">
-            ${verdictText}
+          <div style="font-size: 0.8rem; line-height: 1.5; color: #334155;">
+            <div>• <strong>АО «КЖК» / Казреестр:</strong> ${c.legalStatus === 'GUARANTEE' ? 'Подтверждено наличие договора государственной гарантии №KZ-2026/049.' : 'Договор гарантии и выписки ДДУ в Казреестре отсутствуют.'}</div>
+            <div>• <strong>МИО г. Усть-Каменогорска:</strong> ${c.legalStatus === 'PERMIT' ? 'Действует разрешение акимата на привлечение средств дольщиков.' : 'Официальное разрешение акимата на привлечение средств граждан не выдавалось.'}</div>
+            <div>• <strong>УГАСК ВКО:</strong> ${risk.zone === 'RED' ? 'Вынесено предписание о прекращении незаконного сбора средств граждан.' : 'Нарушений строительных норм первой очереди не зафиксировано.'}</div>
           </div>
         </div>
 
-        <!-- Signatures and Stamp Block -->
-        <div style="border-top: 1px dashed #cbd5e1; padding-top: 1.25rem; margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.8rem;">
+        <div style="border-top: 1px solid #cbd5e1; padding-top: 1rem; margin-top: 1.5rem; display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569;">
           <div>
-            <div><strong>${actI18N.expert}</strong></div>
-            <div style="color: #64748b; margin-top: 0.2rem;">Информационная система SAQ QURYLYS · г. Усть-Каменогорск</div>
+            <strong>Акт составил уполномоченный аналитик МИО:</strong><br/>
+            <span>${c.signalAuthor || 'Ахметов Д.К. (Главный специалист отдела контроля)'}</span>
           </div>
           <div style="text-align: right;">
-            <div>${actI18N.signature}</div>
-            <div style="color: #64748b; margin-top: 0.2rem;">ГУ «Управление ГАСК ВКО» / Общественный мониторинг</div>
+            <strong>Дата и время фиксации:</strong><br/>
+            <span>${c.signalUpdatedAt || '15.10.2026, 12:00'}</span>
           </div>
         </div>
       `;
     }
 
-    window.renderSignalAct = renderSignalCard;
-
     // ------------------------------------------------------------------------
-    // Module 06: 11 State Registries Panel & Cross-Verification
+    // Module 06: Phone Network & Collisions (Bonus Section 11 TZ)
     // ------------------------------------------------------------------------
-    function renderRegistriesPanel() {
-      const container = document.getElementById('registries-cards-grid');
-      if (!container) return;
+    function renderNetworkView() {
+      const wrap = document.getElementById('network-svg-wrap');
+      const tbody = document.getElementById('network-table-body');
+      if (!wrap || !tbody) return;
 
-      container.innerHTML = STATE_REGISTRIES_RK.map(reg => {
+      // Group complexes by contactPhone
+      const phoneMap = {};
+      complexes.forEach(c => {
+        const ph = c.contactPhone || 'Без телефона';
+        if (!phoneMap[ph]) phoneMap[ph] = [];
+        phoneMap[ph].push(c);
+      });
+
+      // Render Table
+      tbody.innerHTML = Object.keys(phoneMap).map(ph => {
+        const compList = phoneMap[ph];
+        const hasCollision = compList.length > 1;
+        const hasRed = compList.some(c => calculateComplexRisk(c).zone === 'RED');
+
+        let badge = '';
+        if (hasCollision && hasRed) {
+          badge = `<span class="collision-badge">⛔ Зонтичные продажи (Красная зона)</span>`;
+        } else if (hasCollision) {
+          badge = `<span class="status-badge badge-yellow">⚠️ Общий отдел продаж</span>`;
+        } else {
+          badge = `<span class="status-badge badge-green">✅ Индивидуальный номер</span>`;
+        }
+
+        const compLinks = compList.map(c => {
+          const r = calculateComplexRisk(c);
+          return `<div style="margin-bottom: 2px;">
+            <a href="javascript:void(0)" onclick="switchTab('registry'); renderRegistryDetail('${c.id}')" style="font-weight: 700; color: ${r.zone === 'RED' ? '#dc2626' : 'var(--text-main)'};">
+              ${getLocalized(c.names)}
+            </a> 
+            <span style="font-size: 0.72rem; color: var(--text-muted);">(${r.zoneName})</span>
+          </div>`;
+        }).join('');
+
         return `
-          <div class="registry-card">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
-                <span style="font-size: 0.68rem; font-family: monospace; font-weight: 700; color: var(--text-muted);">${reg.code}</span>
-                <span class="registry-badge-online">🟢 ${getLocalized(reg.statusText)}</span>
-              </div>
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem;">${getLocalized(reg.name)}</h4>
-              <div style="font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 0.4rem;">🏛️ <strong>Орган:</strong> ${getLocalized(reg.authority)}</div>
-              <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin-bottom: 0.5rem;">📜 <strong>Норма:</strong> ${reg.lawArticle}</div>
-            </div>
-
-            <div style="border-top: 1px solid var(--border-color); padding-top: 0.65rem; font-size: 0.74rem;">
-              <div style="color: var(--brand-primary); font-weight: 600; margin-bottom: 0.25rem;">🔍 Сверено: ${reg.matchedValid}</div>
-              <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.7rem;">
-                <span>Синхронизация: ${reg.lastSync}</span>
-                <a href="${reg.url}" target="_blank" style="color: var(--brand-primary); text-decoration: underline;">Официальный портал ↗</a>
-              </div>
-            </div>
-          </div>
+          <tr>
+            <td style="font-weight: 800; font-family: monospace; font-size: 0.85rem;">${ph}</td>
+            <td>${compLinks}</td>
+            <td>${badge}</td>
+          </tr>
         `;
       }).join('');
+
+      // Render Dynamic SVG Diagram
+      const width = wrap.clientWidth || 550;
+      const height = 400;
+
+      const phones = Object.keys(phoneMap);
+      let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Draw connections
+      const phoneX = 140;
+      const compX = width - 160;
+
+      phones.forEach((ph, pIdx) => {
+        const py = 60 + pIdx * (height - 100) / Math.max(1, phones.length - 1);
+        phoneMap[ph].forEach(c => {
+          const cIdx = complexes.findIndex(item => item.id === c.id);
+          const cy = 40 + cIdx * (height - 80) / Math.max(1, complexes.length - 1);
+          const r = calculateComplexRisk(c);
+          const strokeColor = (phoneMap[ph].length > 1 && r.zone === 'RED') ? '#dc2626' : '#cbd5e1';
+          const strokeWidth = (phoneMap[ph].length > 1 && r.zone === 'RED') ? '2.5' : '1.5';
+
+          svgHtml += `<line x1="${phoneX}" y1="${py}" x2="${compX}" y2="${cy}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-dasharray="${phoneMap[ph].length > 1 ? 'none' : '4 2'}" />`;
+        });
+      });
+
+      // Draw phone nodes
+      phones.forEach((ph, pIdx) => {
+        const py = 60 + pIdx * (height - 100) / Math.max(1, phones.length - 1);
+        const isCollision = phoneMap[ph].length > 1;
+        const color = isCollision ? '#dc2626' : '#0284c7';
+
+        svgHtml += `
+          <g style="cursor: pointer;">
+            <circle cx="${phoneX}" cy="${py}" r="16" fill="${color}" stroke="#ffffff" stroke-width="2" />
+            <text x="${phoneX}" y="${py + 4}" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">📞</text>
+            <text x="${phoneX - 22}" y="${py + 4}" font-size="10" font-family="'JetBrains Mono', monospace" font-weight="bold" fill="var(--text-main)" text-anchor="end">${ph}</text>
+          </g>
+        `;
+      });
+
+      // Draw complex nodes
+      complexes.forEach((c, cIdx) => {
+        const cy = 40 + cIdx * (height - 80) / Math.max(1, complexes.length - 1);
+        const r = calculateComplexRisk(c);
+        const color = r.zone === 'RED' ? '#dc2626' : r.zone === 'YELLOW' ? '#d97706' : '#16a34a';
+
+        svgHtml += `
+          <g style="cursor: pointer;" onclick="switchTab('registry'); renderRegistryDetail('${c.id}')">
+            <circle cx="${compX}" cy="${cy}" r="14" fill="${color}" stroke="#ffffff" stroke-width="2" />
+            <text x="${compX}" y="${cy + 4}" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">🏗️</text>
+            <text x="${compX + 22}" y="${cy + 4}" font-size="11" font-family="'Inter', sans-serif" font-weight="600" fill="var(--text-main)" text-anchor="start">${c.code}</text>
+          </g>
+        `;
+      });
+
+      svgHtml += `</svg>`;
+      wrap.innerHTML = svgHtml;
     }
 
     // ------------------------------------------------------------------------
@@ -1428,7 +1596,7 @@
       renderAdsFeed();
       renderScoringView(SELECTED_COMPLEX_ID);
       renderSignalCard(SELECTED_COMPLEX_ID);
-      renderRegistriesPanel();
+      renderNetworkView();
     };
 
     window.pageRefresh = function() {
@@ -1440,7 +1608,7 @@
       let initialTab = 'map';
       if (window.location.hash) {
         const hashTab = window.location.hash.replace('#', '');
-        if (['map', 'registry', 'ads', 'scoring', 'signal', 'registries'].includes(hashTab)) {
+        if (['map', 'registry', 'ads', 'scoring', 'signal', 'network'].includes(hashTab)) {
           initialTab = hashTab;
         }
       }
