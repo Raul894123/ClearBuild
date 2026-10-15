@@ -55,8 +55,12 @@
         </a>
       </nav>
 
-      <!-- Right Controls: Domain, Theme, Language -->
+      <!-- Right Controls: Reset, Domain, Theme, Language -->
       <div class="header-tools">
+        <button class="reset-btn" onclick="resetDemoData()" title="Сбросить все демонстрационные данные к эталону">
+          🔄 <span>Сброс демо</span>
+        </button>
+
         <a href="https://komputerny-oslik.site" target="_blank" class="domain-link">
           🌐 <span>komputerny-oslik.site</span>
         </a>
@@ -233,13 +237,13 @@
             <td>
               <select class="factor-select" onchange="changeFactorStatus('${c.id}', '${code}', this.value)">
                 <option value="CONFIRMED" ${st === 'CONFIRMED' ? 'selected' : ''}>✅ Подтверждён (+${info.weight} б.)</option>
-                <option value="AI_HYPOTHESIS" ${st === 'AI_HYPOTHESIS' ? 'selected' : ''}>🤖 Гипотеза ИИ (0 б.)</option>
+                <option value="AI_HYPOTHESIS" ${st === 'AI_HYPOTHESIS' ? 'selected' : ''}>🤖 Подозрение ИИ (0 б. до проверки)</option>
                 <option value="UNVERIFIED" ${st === 'UNVERIFIED' ? 'selected' : ''}>⚠️ Нужна проверка (0 б.)</option>
                 <option value="NONE" ${st === 'NONE' ? 'selected' : ''}>⚪ Не выявлено (0 б.)</option>
               </select>
             </td>
-            <td style="font-size: 0.78rem; color: var(--text-secondary); max-width: 320px;">
-              ${evidenceText}
+            <td style="max-width: 320px;">
+              <textarea class="evidence-input" rows="2" placeholder="Обоснование решения аналитика..." onchange="updateFactorEvidence('${c.id}', '${code}', this.value)">${evidenceText}</textarea>
             </td>
           </tr>
         `;

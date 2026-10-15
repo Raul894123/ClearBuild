@@ -779,3 +779,78 @@ table.civic-table tr:hover td { background: var(--bg-surface-hover); }
     max-width: 100% !important;
   }
 }
+
+/* Tab display mechanics */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Quick Evidence Editing in Scoring Matrix */
+.evidence-input {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.76rem;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+  resize: vertical;
+}
+.evidence-input:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+/* Reset Demo Button */
+.reset-btn {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+.reset-btn:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* 11 State Registries Cards & Settings */
+.registries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.15rem;
+}
+.registry-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.85rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.registry-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-strong);
+}
+.registry-badge-online {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}

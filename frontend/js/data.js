@@ -272,3 +272,268 @@ const FACTOR_INFO = {
   R5: { weight: 10, ru: "Расхождение заявленной и фактической готовности (≥20 п.п.)", kz: "Мәлімделген және нақты дайындықтың алшақтығы (≥20 п.п.)", en: "Discrepancy in declared vs verified readiness (≥20 pp)" },
   R6: { weight: 5,  ru: "Приостановка строительных работ на площадке (простой)", kz: "Алаңда құрылыс жұмыстарының тоқтатылуы (бос тұру)", en: "Work stoppage on the construction site" }
 };
+
+// Factor status localization (replaces robotic AI_HYPOTHESIS with human-friendly plain language)
+const FACTOR_STATUS_LABELS = {
+  CONFIRMED: {
+    ru: "✅ Подтверждён (+вес)",
+    kz: "✅ Расталды (+ұпай)",
+    en: "✅ Confirmed (+pts)"
+  },
+  AI_HYPOTHESIS: {
+    ru: "🤖 Подозрение ИИ (0 б. до проверки)",
+    kz: "🤖 ЖИ анықтаған күдік (0 ұпай)",
+    en: "🤖 AI Flagged (0 pts until verified)"
+  },
+  UNVERIFIED: {
+    ru: "⚠️ Нужна проверка (0 б.)",
+    kz: "⚠️ Тексеруді талап етеді (0 ұпай)",
+    en: "⚠️ Verification Needed (0 pts)"
+  },
+  NONE: {
+    ru: "⚪ Не выявлено (0 б.)",
+    kz: "⚪ Анықталған жоқ (0 ұпай)",
+    en: "⚪ Not Detected (0 pts)"
+  }
+};
+
+function getFactorStatusLabel(status, lang = 'ru') {
+  const item = FACTOR_STATUS_LABELS[status];
+  if (!item) return status;
+  return item[lang] || item['ru'] || status;
+}
+
+// 11 Official State Registries of the Republic of Kazakhstan
+const STATE_REGISTRIES_RK = [
+  {
+    id: "REG-01",
+    code: "KZH-GUARANTEE",
+    name: {
+      ru: "Реестр гарантийных договоров АО «КЖК»",
+      kz: "«ҚТҚ» АҚ кепілдік шарттарының тізілімі",
+      en: "KZH Single Housing Operator Guarantee Registry"
+    },
+    authority: {
+      ru: "АО «Казахстанская Жилищная Компания» (Единый оператор)",
+      kz: "«Қазақстан Тұрғын үй Компаниясы» АҚ (Бірыңғай оператор)",
+      en: "Kazakhstan Housing Company JSC"
+    },
+    lawArticle: "Ст. 7 Закона РК о долевом участии (Гарантия Единого оператора)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · 100% сверка", kz: "Біріктірілген · 100% салыстыру", en: "Integrated · 100% matched" },
+    recordsCount: 8,
+    matchedValid: "ЖК «Алтай Премиум Резиденс» (№KZ-2026-089)",
+    lastSync: "15.10.2026, 09:15",
+    url: "https://khc.kz"
+  },
+  {
+    id: "REG-02",
+    code: "MIO-PERMITS",
+    name: {
+      ru: "Реестр разрешений МИО ВКО на привлечение денег",
+      kz: "ШҚО ЖАО ақша тартуға рұқсаттарының тізілімі",
+      en: "East Kazakhstan Akimat Developer Permits Registry"
+    },
+    authority: {
+      ru: "ГУ «Отдел архитектуры и градостроительства г. Усть-Каменогорска» / МИО ВКО",
+      kz: "«Өскемен қаласының сәулет және қала құрылысы бөлімі» ММ",
+      en: "Ust-Kamenogorsk Urban Architecture Dept / Akimat"
+    },
+    lawArticle: "Ст. 8 и ст. 18 Закона РК (Разрешения акимата: участие БВУ / каркас)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Постановления акимата", kz: "Біріктірілген · Әкімдік қаулылары", en: "Integrated · Akimat decrees" },
+    recordsCount: 8,
+    matchedValid: "ЖК «Иртыш Плаза» (№441), ЖК «Согра Парк» (№112)",
+    lastSync: "15.10.2026, 09:20",
+    url: "https://gov.kz/memleket/entities/akimvko"
+  },
+  {
+    id: "REG-03",
+    code: "KAZREESTR-DDU",
+    name: {
+      ru: "ИС «Казреестр» (Единая база договоров ДДУ)",
+      kz: "«Қазреестр» АЖ (ҮҚШ шарттарының бірыңғай базасы)",
+      en: "Kazreestr State Shared-Construction Contract Base"
+    },
+    authority: {
+      ru: "Комитет по делам строительства и ЖКХ МПС РК",
+      kz: "ҚР ӨСМ Құрылыс және ТҮКШ істері комитеті",
+      en: "Committee for Construction and Housing of the RK"
+    },
+    lawArticle: "Ст. 11 Закона РК (Обязательная государственная регистрация договоров ДДУ)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Сверка выписок ДДУ", kz: "Біріктірілген · ҮҚШ үзінділерін салыстыру", en: "Integrated · DDU Verification" },
+    recordsCount: 8,
+    matchedValid: "Электронные выписки активны для объектов Зелёной зоны",
+    lastSync: "15.10.2026, 08:50",
+    url: "https://kazreestr.gov.kz"
+  },
+  {
+    id: "REG-04",
+    code: "UGASK-INSPECTIONS",
+    name: {
+      ru: "Портал государственного контроля УГАСК ВКО",
+      kz: "ШҚО МСҚБ мемлекеттік бақылау порталы",
+      en: "GASK Architectural Control State Registry"
+    },
+    authority: {
+      ru: "ГУ «Управление государственного архитектурно-строительного контроля ВКО»",
+      kz: "«Шығыс Қазақстан облысының мемлекеттік сәулет-құрылыс бақылауы басқармасы» ММ",
+      en: "GASK Inspection Administration of EKR"
+    },
+    lawArticle: "Ст. 144 Предпринимательского кодекса РК (Проверки и предписания)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Акты мониторинга №114", kz: "Біріктірілген · №114 мониторинг актілері", en: "Integrated · Monitoring acts" },
+    recordsCount: 8,
+    matchedValid: "Зафиксировано предписание по ЖК «Ертіс Рівер Тауэрс» и «Нурлы Жол»",
+    lastSync: "15.10.2026, 09:45",
+    url: "https://gov.kz/memleket/entities/vko-gask"
+  },
+  {
+    id: "REG-05",
+    code: "E-OTINISH-PETITIONS",
+    name: {
+      ru: "Единая платформа обращений граждан «e-Otinish»",
+      kz: "«e-Өтініш» азаматтардың өтініштерінің бірыңғай платформасы",
+      en: "e-Otinish Citizen Petition & Complaint Gateway"
+    },
+    authority: {
+      ru: "Генеральная Прокуратура РК / МЦРИАП РК",
+      kz: "ҚР Бас прокуратурасы / ҚР ЦДИАӨМ",
+      en: "General Prosecutor's Office of the RK"
+    },
+    lawArticle: "АППК РК (Автоматическая детекция фактора R4: коллективные жалобы)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Мониторинг обращений", kz: "Біріктірілген · Өтініштерді бақылау", en: "Integrated · Complaints tracking" },
+    recordsCount: 8,
+    matchedValid: "ЖК «Нурлы Жол» (обращение №ЖТ-2026-00918 от 05.10.2026)",
+    lastSync: "15.10.2026, 09:10",
+    url: "https://eotinish.kz"
+  },
+  {
+    id: "REG-06",
+    code: "E-SHANYRAQ",
+    name: {
+      ru: "ИС «Е-Шаңырақ» (Единая система жилищного фонда)",
+      kz: "«Е-Шаңырақ» АЖ (Тұрғын үй қорының бірыңғай жүйесі)",
+      en: "E-Shanyraq National Housing & Utility System"
+    },
+    authority: {
+      ru: "АО «КазЦентр ЖКХ» / МПС РК",
+      kz: "«ТҮКШ ҚазОрталығы» АҚ",
+      en: "KazCenter Housing and Utilities JSC"
+    },
+    lawArticle: "Закон РК «О жилищных отношениях» (Паспортизация строящихся МЖД)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Цифровые паспорта домов", kz: "Біріктірілген · Цифрлық төлқұжаттар", en: "Integrated · Digital house passports" },
+    recordsCount: 8,
+    matchedValid: "Все 8 комплексов привязаны к электронным паспортам объектов",
+    lastSync: "15.10.2026, 08:30",
+    url: "https://eshanyraq.gov.kz"
+  },
+  {
+    id: "REG-07",
+    code: "AIS-GZK-LAND",
+    name: {
+      ru: "АИС ГЗК (Земельный кадастр Республики Казахстан)",
+      kz: "МЖК ААЖ (Қазақстан Республикасының жер кадастры)",
+      en: "Automated Land Cadastre of the Republic of Kazakhstan"
+    },
+    authority: {
+      ru: "НАО «Государственная корпорация «Правительство для граждан» / МСХ РК",
+      kz: "«Азаматтарға арналған үкімет» МК КЕАҚ",
+      en: "State Corporation 'Government for Citizens'"
+    },
+    lawArticle: "Земельный кодекс РК (Проверка целевого назначения земельных участков)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Кадастровые номера", kz: "Біріктірілген · Кадастрлық нөмірлер", en: "Integrated · Cadastre IDs" },
+    recordsCount: 8,
+    matchedValid: "Сверка земельных участков (Сатпаева 88, Пермитина 17, Астана 32, Жибек Жолы 14)",
+    lastSync: "15.10.2026, 09:00",
+    url: "https://aisgzk.kz"
+  },
+  {
+    id: "REG-08",
+    code: "UNRELIABLE-REGISTRY",
+    name: {
+      ru: "Реестр недобросовестных застройщиков и участников закупок",
+      kz: "Жосықсыз құрылыс салушылар мен сатып алуға қатысушылар тізілімі",
+      en: "Registry of Unreliable Developers & Contractors"
+    },
+    authority: {
+      ru: "Министерство финансов РК / Портал Goszakup.gov.kz",
+      kz: "ҚР Қаржы министрлігі",
+      en: "Ministry of Finance of the Republic of Kazakhstan"
+    },
+    lawArticle: "Закон РК «О государственных закупках» и ст. 31 Закона РК о ДЖС",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Проверка по БИН", kz: "Біріктірілген · БСН бойынша тексеру", en: "Integrated · BIN check" },
+    recordsCount: 8,
+    matchedValid: "Автоматический скрининг 8 БИН застройщиков на включение в чёрный список",
+    lastSync: "15.10.2026, 09:35",
+    url: "https://goszakup.gov.kz"
+  },
+  {
+    id: "REG-09",
+    code: "TORELIK-COURTS",
+    name: {
+      ru: "ИС «Төрелік» (Банк судебных актов Верховного Суда РК)",
+      kz: "«Төрелік» АЖ (ҚР Жоғарғы Сотының сот актілері банкі)",
+      en: "Torelik Judicial Acts Bank of the Supreme Court"
+    },
+    authority: {
+      ru: "Департамент по обеспечению деятельности судов при Верховном Суде РК",
+      kz: "ҚР Жоғарғы Сотының жанындағы Соттардың қызметін қамтамасыз ету департаменті",
+      en: "Department of Court Administration of the RK"
+    },
+    lawArticle: "ГПК РК (Проверка споров, арестов земельных участков и решений о сносе)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Поиск судебных тяжб", kz: "Біріктірілген · Сот істерін іздеу", en: "Integrated · Litigation search" },
+    recordsCount: 8,
+    matchedValid: "Иск УГАСК ВКО о приостановлении привлечения средств по объекту jk-5",
+    lastSync: "15.10.2026, 07:45",
+    url: "https://sud.gov.kz"
+  },
+  {
+    id: "REG-10",
+    code: "BANKRUPT-REGISTRY",
+    name: {
+      ru: "Реестр банкротов и реабилитируемых лиц КГД МФ РК",
+      kz: "ҚР ҚМ МКК банкроттар мен оңалтылатын тұлғалар тізілімі",
+      en: "State Revenue Committee Insolvency & Bankruptcy Registry"
+    },
+    authority: {
+      ru: "Комитет государственных доходов Министерства финансов РК",
+      kz: "ҚР Қаржы министрлігінің Мемлекеттік кірістер комитеті",
+      en: "State Revenue Committee of the Ministry of Finance"
+    },
+    lawArticle: "Закон РК «О реабилитации и банкротстве» (Финансовая состоятельность застройщика)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Проверка платежеспособности", kz: "Біріктірілген · Төлем қабілеттілігін тексеру", en: "Integrated · Solvency check" },
+    recordsCount: 8,
+    matchedValid: "8 застройщиков проверены: признаков банкротства и арестов счетов не выявлено",
+    lastSync: "15.10.2026, 08:15",
+    url: "https://kgd.gov.kz"
+  },
+  {
+    id: "REG-11",
+    code: "NATURAL-MONOPOLIES",
+    name: {
+      ru: "Реестр субъектов естественных монополий и техусловий",
+      kz: "Табиғи монополиялар субъектілері мен техникалық шарттар тізілімі",
+      en: "State Natural Monopolies & Utility Connections Registry"
+    },
+    authority: {
+      ru: "Комитет по регулированию естественных монополий МНЭ РК (КРЕМ)",
+      kz: "ҚР ҰЭМ Табиғи монополияларды реттеу комитеті",
+      en: "Committee for Regulation of Natural Monopolies"
+    },
+    lawArticle: "Закон РК «О естественных монополиях» (ТУ: теплоснабжение, вода, электроэнергия)",
+    status: "ONLINE",
+    statusText: { ru: "Интегрировано · Проверка подключений", kz: "Біріктірілген · Қосылымдарды тексеру", en: "Integrated · Utilities verified" },
+    recordsCount: 8,
+    matchedValid: "Сверка ТУ с АО «Усть-Каменогорские тепловые сети» и ГКП «Оскемен Водоканал»",
+    lastSync: "15.10.2026, 09:05",
+    url: "https://krem.gov.kz"
+  }
+];
