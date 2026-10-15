@@ -754,11 +754,35 @@ table.civic-table tr:hover td { background: var(--bg-surface-hover); }
   display: inline-block;
   transform: rotate(-2deg);
   background: rgba(219, 234, 254, 0.4);
+  border-radius: 6px;
+  line-height: 1.3;
 }
-.official-stamp.stamp-danger {
+.official-stamp.stamp-danger,
+.official-stamp.stamp-red,
+.official-stamp.stamp-returned {
   border-color: #dc2626;
   color: #dc2626;
-  background: rgba(254, 226, 226, 0.4);
+  background: rgba(254, 226, 226, 0.6);
+}
+.official-stamp.stamp-success,
+.official-stamp.stamp-green,
+.official-stamp.stamp-confirmed {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: rgba(220, 252, 231, 0.6);
+}
+.official-stamp.stamp-warning,
+.official-stamp.stamp-yellow,
+.official-stamp.stamp-pending {
+  border-color: #d97706;
+  color: #d97706;
+  background: rgba(254, 243, 199, 0.6);
+}
+
+/* Active row highlight */
+table.civic-table tr.active-row td {
+  background: var(--bg-surface-hover) !important;
+  border-left: 3px solid var(--brand-primary);
 }
 
 /* Footer */

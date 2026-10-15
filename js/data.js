@@ -125,12 +125,6 @@ const RAW_COMPLEXES = [
       R4: { status: "CONFIRMED", weight: 15, evidence: { ru: "Коллективное обращение 14 дольщиков в e-Otinish №ЖТ-2026-089112.", kz: "e-Otinish арқылы 14 үлескердің ұжымдық шағымы.", en: "Collective petition of 14 citizens on e-Otinish." } },
       R5: { status: "CONFIRMED", weight: 10, evidence: { ru: "В рекламе заявлено 80%, по акту УГАСК — 35% (разница 45 п.п. ≥ 20 п.п.).", kz: "Жарнамада 80%, МСҚБ актісі бойынша — 35% (айырма 45 п.п.).", en: "Claimed 80%, fact 35% (45 pp discrepancy)." } },
       R6: { status: "CONFIRMED", weight: 5, evidence: { ru: "Документированный простой башенного крана и стройплощадки более 4 месяцев.", kz: "Мұнаралы кран мен құрылыс алаңының 4 айдан астам тоқтап тұруы.", en: "Documented construction standstill exceeding 4 months." } }
-    } },
-      R2: { status: "CONFIRMED", weight: 25, evidence: { ru: "Предварительный договор намерения с задатком 1 000 000 ₸.", kz: "1 000 000 ₸ кепілақысы бар ниет туралы алдын ала келісімшарт.", en: "Preliminary intent contract with 1,000,000 KZT deposit." } },
-      R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Реклама в соцсетях без указания реквизитов разрешения.", kz: "Әлеуметтік желілерде рұқсат деректерінсіз жарнамалау.", en: "Online promotion lacking permit credentials." } },
-      R4: { status: "NONE", weight: 15, evidence: { ru: "Жалоб нет.", kz: "Шағымдар жоқ.", en: "No complaints." } },
-      R5: { status: "NONE", weight: 10, evidence: { ru: "Расхождение незначительное (5 п.п.).", kz: "Айырмашылық шамалы (5 п.п.).", en: "Readiness discrepancy minor (5 pp)." } },
-      R6: { status: "NONE", weight: 5, evidence: { ru: "Работы ведутся.", kz: "Жұмыстар жүргізілуде.", en: "Work ongoing." } }
     }
   },
   {
@@ -162,12 +156,6 @@ const RAW_COMPLEXES = [
       R4: { status: "NONE", weight: 15, evidence: { ru: "Подтвержденных коллективных обращений нет.", kz: "Расталған ұжымдық шағым жоқ.", en: "No confirmed complaints." } },
       R5: { status: "CONFIRMED", weight: 10, evidence: { ru: "Заявлено 75%, подтверждено 45% (расхождение 30 п.п. ≥ 20 п.п.).", kz: "75% мәлімделген, 45% расталған (айырма 30 п.п.).", en: "Claimed 75%, confirmed 45% (30 pp discrepancy)." } },
       R6: { status: "CONFIRMED", weight: 5, evidence: { ru: "Отставание от графика строительства более чем на 6 месяцев.", kz: "Құрылыс кестесінен 6 айдан астам кешігу.", en: "Schedule delay exceeding 6 months." } }
-    } },
-      R2: { status: "CONFIRMED", weight: 25, evidence: { ru: "Договор уступки права требования (цессия) и оплата наличными.", kz: "Талап ету құқығын басқаға беру (цессия) шарты және қолма-қол төлем.", en: "Assignment of claim rights (cession) with cash hand-over." } },
-      R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Агрессивный таргет в Instagram с обещанием сдачи через 6 месяцев.", kz: "Instagram желісінде 6 айда тапсыру уәдесімен агрессивті жарнама.", en: "Aggressive Instagram ads promising handover in 6 months." } },
-      R4: { status: "CONFIRMED", weight: 15, evidence: { ru: "Зарегистрировано коллективное обращение в e-Otinish от 05.10.2026.", kz: "05.10.2026 ж. e-Otinish арқылы ұжымдық шағым тіркелді.", en: "Collective petition filed on e-Otinish on 05.10.2026." } },
-      R5: { status: "AI_HYPOTHESIS", weight: 10, evidence: { ru: "ИИ выявил критическое расхождение готовности: в рекламе 75%, по факту проверки — 10% (разница 65 п.п.).", kz: "ЖИ сыни дайындық алшақтығын тапты: жарнамада 75%, іс жүзінде — 10% (65 п.п.).", en: "AI flagged critical readiness discrepancy: claimed 75%, fact 10% (65 pp)." } },
-      R6: { status: "NONE", weight: 5, evidence: { ru: "Простоя нет.", kz: "Тоқтау жоқ.", en: "No stoppage." } }
     }
   },
   {
@@ -813,3 +801,26 @@ const STATE_REGISTRIES_RK = [
     url: "https://krem.gov.kz"
   }
 ];
+
+// Global window attachments
+if (typeof window !== 'undefined') {
+  window.RAW_COMPLEXES = RAW_COMPLEXES;
+  window.COMPLEXES_DB = RAW_COMPLEXES;
+  window.INITIAL_ADS = INITIAL_ADS;
+  window.CITIZEN_VERDICTS = CITIZEN_VERDICTS;
+  window.FACTOR_INFO = FACTOR_INFO;
+  window.FACTOR_STATUS_LABELS = FACTOR_STATUS_LABELS;
+  window.STATE_REGISTRIES_RK = STATE_REGISTRIES_RK;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    RAW_COMPLEXES,
+    COMPLEXES_DB: RAW_COMPLEXES,
+    INITIAL_ADS,
+    CITIZEN_VERDICTS,
+    FACTOR_INFO,
+    FACTOR_STATUS_LABELS,
+    STATE_REGISTRIES_RK
+  };
+}
