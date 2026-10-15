@@ -21,9 +21,10 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <!-- Top Civic Header -->
+  <!-- Two-Tier Civic Header -->
   <header class="civic-header no-print">
-    <div class="container header-inner">
+    <!-- Top Tier: Branding & Controls -->
+    <div class="header-top">
       <a href="javascript:void(0)" onclick="switchTab('map')" class="brand-wrap">
         <div class="brand-badge">🏛️</div>
         <div>
@@ -37,28 +38,6 @@
           </div>
         </div>
       </a>
-
-      <!-- Main Navigation Menu (Desktop Tabs) -->
-      <nav class="main-nav">
-        <a href="javascript:void(0)" onclick="switchTab('map')" class="nav-link active" id="tab-nav-map">
-          <span>🗺️</span> <span id="lbl-nav-map">01 · Карта и Обзор</span>
-        </a>
-        <a href="javascript:void(0)" onclick="switchTab('registry')" class="nav-link" id="tab-nav-registry">
-          <span>📋</span> <span id="lbl-nav-registry">02 · Реестр ЖК</span>
-        </a>
-        <a href="javascript:void(0)" onclick="switchTab('ads')" class="nav-link" id="tab-nav-ads">
-          <span>📢</span> <span id="lbl-nav-ads">03 · Мониторинг рекламы (AI)</span>
-        </a>
-        <a href="javascript:void(0)" onclick="switchTab('scoring')" class="nav-link" id="tab-nav-scoring">
-          <span>⚖️</span> <span id="lbl-nav-scoring">04 · Риск-скоринг R1–R6</span>
-        </a>
-        <a href="javascript:void(0)" onclick="switchTab('signal')" class="nav-link" id="tab-nav-signal">
-          <span>📑</span> <span id="lbl-nav-signal">05 · Сигнальный акт (PDF)</span>
-        </a>
-        <a href="javascript:void(0)" onclick="switchTab('network')" class="nav-link" id="tab-nav-network">
-          <span>🕸️</span> <span id="lbl-nav-network">Сеть телефонов / Коллизии</span>
-        </a>
-      </nav>
 
       <!-- Right Controls: Backend API, Reset Demo, Domain, Theme, Language -->
       <div class="header-tools">
@@ -95,6 +74,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Bottom Tier: Horizontal Navigation Panel for 6 modules -->
+    <nav class="header-nav">
+      <a href="javascript:void(0)" onclick="switchTab('map')" class="nav-btn active" id="tab-nav-map">
+        <span>🗺️</span> <span id="lbl-nav-map">01 · Карта и Обзор</span>
+      </a>
+      <a href="javascript:void(0)" onclick="switchTab('registry')" class="nav-btn" id="tab-nav-registry">
+        <span>📋</span> <span id="lbl-nav-registry">02 · Реестр ЖК</span>
+      </a>
+      <a href="javascript:void(0)" onclick="switchTab('ads')" class="nav-btn" id="tab-nav-ads">
+        <span>📢</span> <span id="lbl-nav-ads">03 · Мониторинг рекламы (AI)</span>
+      </a>
+      <a href="javascript:void(0)" onclick="switchTab('scoring')" class="nav-btn" id="tab-nav-scoring">
+        <span>⚖️</span> <span id="lbl-nav-scoring">04 · Риск-скоринг R1–R6</span>
+      </a>
+      <a href="javascript:void(0)" onclick="switchTab('signal')" class="nav-btn" id="tab-nav-signal">
+        <span>📑</span> <span id="lbl-nav-signal">05 · Сигнальный акт (PDF)</span>
+      </a>
+      <a href="javascript:void(0)" onclick="switchTab('network')" class="nav-btn" id="tab-nav-network">
+        <span>🕸️</span> <span id="lbl-nav-network">Сеть телефонов / Коллизии</span>
+      </a>
+    </nav>
   </header>
 
   <!-- Mobile Navigation Bar -->
@@ -158,13 +159,13 @@
   <main class="container app-main">
 
     <!-- ======================================================================
-         TAB 1: MAP & OVERVIEW (MODULE 01)
+         TAB 1: MAP & OVERVIEW (MODULE 01) - SPLIT VIEW LAYOUT
          ====================================================================== -->
     <section id="tab-map" class="tab-content active">
-      <div class="map-layout">
-        <!-- Left Sidebar: Search & Complexes List -->
-        <div class="map-sidebar">
-          <div class="filter-box">
+      <div class="map-split-layout">
+        <!-- Left Column: Search, Filter Pills & Scrollable Complexes List (460px) -->
+        <div class="map-sidebar-pane">
+          <div>
             <input 
               type="text" 
               id="map-search-input" 
@@ -173,35 +174,178 @@
               oninput="handleMapSearch(this.value)"
             />
             
-            <div class="filter-chips">
-              <button class="chip active" data-filter="ALL" onclick="setMapFilter('ALL')">Все (<span id="chip-cnt-all">8</span>)</button>
-              <button class="chip chip-green" data-filter="GREEN" onclick="setMapFilter('GREEN')">Зелёная (<span id="chip-cnt-green">3</span>)</button>
-              <button class="chip chip-yellow" data-filter="YELLOW" onclick="setMapFilter('YELLOW')">Жёлтая (<span id="chip-cnt-yellow">3</span>)</button>
-              <button class="chip chip-red" data-filter="RED" onclick="setMapFilter('RED')">Красная (<span id="chip-cnt-red">2</span>)</button>
+            <div class="filter-pills-row">
+              <button class="filter-pill active" data-filter="ALL" onclick="setMapFilter('ALL')">Все (<span id="chip-cnt-all">8</span>)</button>
+              <button class="filter-pill pill-green" data-filter="GREEN" onclick="setMapFilter('GREEN')">🟢 Зелёная (<span id="chip-cnt-green">3</span>)</button>
+              <button class="filter-pill pill-yellow" data-filter="YELLOW" onclick="setMapFilter('YELLOW')">🟡 Жёлтая (<span id="chip-cnt-yellow">3</span>)</button>
+              <button class="filter-pill pill-red" data-filter="RED" onclick="setMapFilter('RED')">🔴 Красная (<span id="chip-cnt-red">2</span>)</button>
             </div>
           </div>
 
-          <!-- Cards Scroll Container -->
-          <div class="complexes-list" id="map-cards-list">
+          <!-- Complexes Scrollable List (max-height 620px) -->
+          <div class="complexes-scroll-list" id="map-cards-list">
             <!-- Rendered by JS -->
           </div>
         </div>
 
-        <!-- Right: OpenStreetMap Container -->
-        <div class="map-container-wrap">
-          <div id="leaflet-map" class="leaflet-map-canvas"></div>
-          
-          <!-- Map Overlay Controls -->
-          <div class="map-floating-controls no-print">
-            <button class="map-action-btn" onclick="fitMapToAllMarkers()" title="Показать все 8 объектов">🎯 Центр</button>
-            <button class="map-action-btn" onclick="toggleMapTiles()" title="Сменить стиль тайлов OSM">🗺️ Слой карты</button>
+        <!-- Right Column: Interactive Map Card (Sticky 1fr, 600px height) -->
+        <div class="map-main-pane">
+          <!-- Mode Switcher Bar -->
+          <div class="map-mode-bar">
+            <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-main); display: flex; align-items: center; gap: 0.4rem;">
+              <span>🗺️</span> <span>Интерактивная карта г. Усть-Каменогорск</span>
+            </div>
+            <div class="map-mode-btn-group">
+              <button class="map-mode-btn active" id="map-mode-osm" onclick="setMapDisplayMode('osm')">🗺️ OpenStreetMap</button>
+              <button class="map-mode-btn" id="map-mode-dark" onclick="setMapDisplayMode('dark')">🌙 Ночная</button>
+              <button class="map-mode-btn" id="map-mode-vector" onclick="setMapDisplayMode('vector')">🛰️ Векторная офлайн-схема</button>
+            </div>
           </div>
 
-          <!-- Map Legend -->
-          <div class="map-legend no-print">
-            <div class="legend-item"><span class="legend-dot dot-green"></span> 0–24: Законное строительство</div>
-            <div class="legend-item"><span class="legend-dot dot-yellow"></span> 25–59: Документы на проверке</div>
-            <div class="legend-item"><span class="legend-dot dot-red"></span> 60–100: Незаконный сбор средств</div>
+          <!-- Map Canvas Container (Fixed 600px height) -->
+          <div class="map-card-canvas-wrap">
+            <!-- Leaflet Map Container -->
+            <div id="leaflet-map-container" style="height: 100%; width: 100%; position: relative;">
+              <div id="leaflet-map" style="height: 100%; width: 100%;"></div>
+            </div>
+
+            <!-- Vector Offline Map Container (SVG) -->
+            <div id="vector-map-container" style="height: 100%; width: 100%; position: relative; display: none;">
+              
+          <svg width="100%" height="100%" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="background: #0f172a; font-family: 'Inter', sans-serif;">
+            <defs>
+              <linearGradient id="irtyshGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.8" />
+                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.9" />
+              </linearGradient>
+              <linearGradient id="ulbaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0369a1" stop-opacity="0.8" />
+                <stop offset="100%" stop-color="#0284c7" stop-opacity="0.9" />
+              </linearGradient>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            <!-- Background Grid -->
+            <rect width="100%" height="100%" fill="#0b1120" />
+            <g stroke="#1e293b" stroke-width="1" opacity="0.4">
+              <line x1="0" y1="150" x2="800" y2="150" />
+              <line x1="0" y1="300" x2="800" y2="300" />
+              <line x1="0" y1="450" x2="800" y2="450" />
+              <line x1="200" y1="0" x2="200" y2="600" />
+              <line x1="400" y1="0" x2="400" y2="600" />
+              <line x1="600" y1="0" x2="600" y2="600" />
+            </g>
+
+            <!-- Rivers: Irtysh and Ulba -->
+            <path d="M 50 580 Q 250 480 380 340 T 750 160" fill="none" stroke="url(#irtyshGrad)" stroke-width="32" stroke-linecap="round" opacity="0.85" />
+            <path d="M 780 40 Q 560 120 380 340" fill="none" stroke="url(#ulbaGrad)" stroke-width="22" stroke-linecap="round" opacity="0.85" />
+
+            <text x="180" y="520" fill="#38bdf8" font-size="12" font-weight="700" letter-spacing="2" opacity="0.8">РЕКА ИРТЫШ (ЕРТІС)</text>
+            <text x="590" y="110" fill="#0284c7" font-size="11" font-weight="700" letter-spacing="2" opacity="0.8">РЕКА УЛЬБА (ҮЛБІ)</text>
+
+            <!-- Districts -->
+            <text x="350" y="320" fill="#94a3b8" font-size="11" font-weight="700">р-н Стрелка</text>
+            <text x="520" y="470" fill="#94a3b8" font-size="11" font-weight="700">р-н КШТ (Сатпаева)</text>
+            <text x="460" y="210" fill="#94a3b8" font-size="11" font-weight="700">Набережная Ульбы</text>
+            <text x="210" y="140" fill="#94a3b8" font-size="11" font-weight="700">р-н Бажова</text>
+            <text x="660" y="270" fill="#94a3b8" font-size="11" font-weight="700">Центр города</text>
+            <text x="680" y="80" fill="#94a3b8" font-size="11" font-weight="700">Новая Согра</text>
+
+            <!-- 8 Interactive Pins -->
+            <!-- JK-1: Strelka (Red, 70 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-1')" style="cursor: pointer;">
+              <circle cx="360" cy="345" r="18" fill="rgba(220, 38, 38, 0.25)" filter="url(#glow)">
+                <animate attributeName="r" values="16;24;16" dur="2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="360" cy="345" r="14" fill="#dc2626" stroke="#ffffff" stroke-width="2" />
+              <text x="360" y="349" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">70</text>
+              <rect x="270" y="365" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="360" y="380" fill="#fca5a5" font-size="10" font-weight="700" text-anchor="middle">JK-1: Ертіс Рівер (70 б.)</text>
+            </g>
+
+            <!-- JK-2: KSHT Satpayev (Yellow, 35 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-2')" style="cursor: pointer;">
+              <circle cx="530" cy="450" r="14" fill="#d97706" stroke="#ffffff" stroke-width="2" />
+              <text x="530" y="454" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">35</text>
+              <rect x="440" y="470" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="530" y="485" fill="#fde68a" font-size="10" font-weight="700" text-anchor="middle">JK-2: Сатпаев Сити (35 б.)</text>
+            </g>
+
+            <!-- JK-3: Zhibek Zholy (Green, 10 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-3')" style="cursor: pointer;">
+              <circle cx="460" cy="430" r="14" fill="#16a34a" stroke="#ffffff" stroke-width="2" />
+              <text x="460" y="434" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+              <rect x="370" y="400" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="460" y="415" fill="#86efac" font-size="10" font-weight="700" text-anchor="middle">JK-3: Алтай Премиум (10 б.)</text>
+            </g>
+
+            <!-- JK-4: Astana 32 / Ulba Gardens (Red, 100 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-4')" style="cursor: pointer;">
+              <circle cx="475" cy="235" r="20" fill="rgba(220, 38, 38, 0.3)" filter="url(#glow)">
+                <animate attributeName="r" values="18;26;18" dur="1.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="475" cy="235" r="14" fill="#dc2626" stroke="#ffffff" stroke-width="2" />
+              <text x="475" y="239" fill="#ffffff" font-size="9" font-weight="800" text-anchor="middle">100</text>
+              <rect x="385" y="255" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="475" y="270" fill="#fca5a5" font-size="10" font-weight="700" text-anchor="middle">JK-4: Ульба Гарденс (100 б.)</text>
+            </g>
+
+            <!-- JK-5: Bazhova (Yellow, 60 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-5')" style="cursor: pointer;">
+              <circle cx="230" cy="165" r="14" fill="#d97706" stroke="#ffffff" stroke-width="2" />
+              <text x="230" y="169" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">60</text>
+              <rect x="140" y="185" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="230" y="200" fill="#fde68a" font-size="10" font-weight="700" text-anchor="middle">JK-5: Нурлы Жол (60 б.)</text>
+            </g>
+
+            <!-- JK-6: Ryskulova / KSHT (Yellow, 35 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-6')" style="cursor: pointer;">
+              <circle cx="580" cy="520" r="14" fill="#d97706" stroke="#ffffff" stroke-width="2" />
+              <text x="580" y="524" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">35</text>
+              <rect x="490" y="540" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="580" y="555" fill="#fde68a" font-size="10" font-weight="700" text-anchor="middle">JK-6: КШТ Эко (35 б.)</text>
+            </g>
+
+            <!-- JK-7: Kazakhstan St / Center (Green, 10 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-7')" style="cursor: pointer;">
+              <circle cx="640" cy="300" r="14" fill="#16a34a" stroke="#ffffff" stroke-width="2" />
+              <text x="640" y="304" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">10</text>
+              <rect x="550" y="320" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="640" y="335" fill="#86efac" font-size="10" font-weight="700" text-anchor="middle">JK-7: Иртыш Плаза (10 б.)</text>
+            </g>
+
+            <!-- JK-8: Nova Sogra (Green, 0 pts) -->
+            <g class="vector-pin" onclick="focusComplexOnMap('jk-8')" style="cursor: pointer;">
+              <circle cx="700" cy="110" r="14" fill="#16a34a" stroke="#ffffff" stroke-width="2" />
+              <text x="700" y="114" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle">0</text>
+              <rect x="610" y="130" width="180" height="22" rx="4" fill="#1e293b" opacity="0.9" />
+              <text x="700" y="145" fill="#86efac" font-size="10" font-weight="700" text-anchor="middle">JK-8: Согра Парк (0 б.)</text>
+            </g>
+
+            <!-- Map Banner Overlay -->
+            <g transform="translate(15, 15)">
+              <rect width="250" height="45" rx="6" fill="#0f172a" stroke="#334155" opacity="0.92" />
+              <text x="12" y="20" fill="#f8fafc" font-size="11" font-weight="800">ОФЛАЙН-СХЕМА Г. УСТЬ-КАМЕНОГОРСК</text>
+              <text x="12" y="35" fill="#94a3b8" font-size="10">8 объектов мониторинга (Раздел 2 ТЗ)</text>
+            </g>
+          </svg>
+
+            </div>
+
+            <!-- Map Floating Controls -->
+            <div class="map-floating-controls no-print">
+              <button class="map-action-btn" onclick="fitMapToAllMarkers()" title="Показать все 8 объектов">🎯 Центр</button>
+            </div>
+
+            <!-- Map Legend -->
+            <div class="map-legend no-print">
+              <div class="legend-item"><span class="legend-dot dot-green"></span> 0–24: Законно</div>
+              <div class="legend-item"><span class="legend-dot dot-yellow"></span> 25–59: Проверка документов</div>
+              <div class="legend-item"><span class="legend-dot dot-red"></span> 60–100: Незаконный сбор средств</div>
+            </div>
           </div>
         </div>
       </div>
@@ -598,8 +742,7 @@
           </div>
 
           <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.45;">
-            💡 <strong>Автономная отказоустойчивость:</strong> если сервер напарника выключен (например, при проверке статического сайта жюри на GitHub Pages), 
-            платформа ClearBuild прозрачно работает в памяти поверх <code>seed.json</code> и сохраняет все действия аналитика в <code>localStorage</code>.
+            💡 <strong>Автономная отказоустойчивость:</strong> если сервер напарника выключен, ClearBuild прозрачно работает в памяти поверх <code>seed.json</code> и сохраняет все действия аналитика в <code>localStorage</code>.
           </div>
         </div>
       </div>
@@ -632,7 +775,7 @@
       CURRENT_ACTIVE_TAB = tabName;
       saveState();
 
-      // Update Desktop Nav
+      // Update Desktop Nav Buttons
       ['map', 'registry', 'ads', 'scoring', 'signal', 'network'].forEach(t => {
         const deskLink = document.getElementById('tab-nav-' + t);
         const mobLink = document.getElementById('mob-nav-' + t);
@@ -647,7 +790,9 @@
       // Execute specific tab renderers
       if (tabName === 'map') {
         if (!leafletMapInstance) initMap();
-        setTimeout(() => { if (leafletMapInstance) leafletMapInstance.invalidateSize(); }, 100);
+        setTimeout(() => {
+          if (leafletMapInstance) leafletMapInstance.invalidateSize();
+        }, 150);
       } else if (tabName === 'registry') {
         renderRegistryView();
       } else if (tabName === 'ads') {
@@ -666,17 +811,20 @@
     }
 
     // ------------------------------------------------------------------------
-    // Module 01: Interactive Map & Cards
+    // Module 01: Interactive Map & Cards (Split-View)
     // ------------------------------------------------------------------------
     let SEARCH_QUERY = '';
     let ZONE_FILTER = 'ALL';
-    let MAP_LAYER_TYPE = 'standard';
+    let MAP_DISPLAY_MODE = 'osm'; // 'osm' | 'dark' | 'vector'
     let leafletMapInstance = null;
     let leafletTileLayer = null;
     let mapMarkersList = [];
 
     function initMap() {
-      if (typeof L === 'undefined') { setTimeout(initMap, 150); return; }
+      if (typeof L === 'undefined') {
+        setTimeout(initMap, 150);
+        return;
+      }
       const container = document.getElementById('leaflet-map');
       if (!container || leafletMapInstance) return;
 
@@ -688,22 +836,46 @@
 
       applyMapTiles();
       renderMapMarkers();
+
+      setTimeout(() => {
+        if (leafletMapInstance) leafletMapInstance.invalidateSize();
+      }, 150);
+    }
+
+    function setMapDisplayMode(mode) {
+      MAP_DISPLAY_MODE = mode;
+      ['osm', 'dark', 'vector'].forEach(m => {
+        const btn = document.getElementById('map-mode-' + m);
+        if (btn) btn.classList.toggle('active', m === mode);
+      });
+
+      const leafletWrap = document.getElementById('leaflet-map-container');
+      const vectorWrap = document.getElementById('vector-map-container');
+
+      if (mode === 'vector') {
+        if (leafletWrap) leafletWrap.style.display = 'none';
+        if (vectorWrap) vectorWrap.style.display = 'block';
+      } else {
+        if (leafletWrap) leafletWrap.style.display = 'block';
+        if (vectorWrap) vectorWrap.style.display = 'none';
+        applyMapTiles();
+        setTimeout(() => {
+          if (leafletMapInstance) leafletMapInstance.invalidateSize();
+        }, 100);
+      }
     }
 
     function applyMapTiles() {
       if (!leafletMapInstance) return;
       if (leafletTileLayer) leafletMapInstance.removeLayer(leafletTileLayer);
 
-      const isDark = CURRENT_THEME === 'dark';
+      const isDark = (MAP_DISPLAY_MODE === 'dark') || (CURRENT_THEME === 'dark' && MAP_DISPLAY_MODE === 'osm');
       let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
       let attrib = '&copy; OpenStreetMap contributors';
 
       if (isDark) {
         tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
         attrib = '&copy; OpenStreetMap &copy; CARTO';
-      } else if (MAP_LAYER_TYPE === 'humanitarian') {
-        tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
-        attrib = '&copy; OpenStreetMap contributors, Humanitarian OpenStreetMap Team';
       }
 
       leafletTileLayer = L.tileLayer(tileUrl, {
@@ -712,11 +884,6 @@
       }).addTo(leafletMapInstance);
     }
     window.applyMapTiles = applyMapTiles;
-
-    function toggleMapTiles() {
-      MAP_LAYER_TYPE = (MAP_LAYER_TYPE === 'standard') ? 'humanitarian' : 'standard';
-      applyMapTiles();
-    }
 
     function renderMapMarkers() {
       if (!leafletMapInstance || typeof L === 'undefined') return;
@@ -753,9 +920,10 @@
         });
 
         const marker = L.marker(c.coords, { icon: customIcon }).addTo(leafletMapInstance);
+        marker.__complexId = c.id;
 
         const popupContent = `
-          <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+          <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; padding: 2px; min-width: 200px;">
             <div style="font-size: 10px; font-weight: 700; color: ${colorHex}; text-transform: uppercase;">
               ${c.code} · ${risk.zoneName} (${risk.score} б.)
             </div>
@@ -763,10 +931,10 @@
               ${getLocalized(c.names)}
             </div>
             <div style="color: #64748b; font-size: 11px; margin-bottom: 6px;">
-              ${getLocalized(c.districts)}
+              📍 ${getLocalized(c.districts)}
             </div>
             <div style="margin-bottom: 8px; font-size: 11px;">
-              <strong>Правовой статус:</strong> ${getLocalized(c.legalTexts)}
+              <strong>Статус:</strong> ${getLocalized(c.legalTexts)}
             </div>
             <div style="display: flex; gap: 4px;">
               <button onclick="openComplexDossier('${c.id}')" style="
@@ -849,7 +1017,7 @@
 
     function setMapFilter(zone) {
       ZONE_FILTER = zone;
-      document.querySelectorAll('.filter-chips .chip').forEach(ch => {
+      document.querySelectorAll('.filter-pills-row .filter-pill').forEach(ch => {
         ch.classList.toggle('active', ch.getAttribute('data-filter') === zone);
       });
       renderComplexCards();
@@ -862,12 +1030,15 @@
 
       const c = complexes.find(item => item.id === id);
       if (c && leafletMapInstance) {
-        leafletMapInstance.setView(c.coords, 14, { animate: true });
-        const marker = mapMarkersList.find(m => {
-          const latLng = m.getLatLng();
-          return Math.abs(latLng.lat - c.coords[0]) < 0.0001 && Math.abs(latLng.lng - c.coords[1]) < 0.0001;
-        });
-        if (marker) marker.openPopup();
+        if (MAP_DISPLAY_MODE === 'vector') {
+          // Switch to OSM mode so user sees the pin on real map smoothly
+          setMapDisplayMode('osm');
+        }
+        leafletMapInstance.flyTo(c.coords, 14, { animate: true, duration: 0.8 });
+        setTimeout(() => {
+          const marker = mapMarkersList.find(m => m.__complexId === id);
+          if (marker) marker.openPopup();
+        }, 850);
       }
     }
 
