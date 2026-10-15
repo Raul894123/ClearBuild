@@ -29,6 +29,18 @@ try {
   adsList = JSON.parse(JSON.stringify(INITIAL_ADS));
 }
 
+// Normalize all loaded ads so neither text nor rawText, neither date nor pubDate is ever undefined
+adsList.forEach(a => {
+  a.text = a.text || a.rawText || '';
+  a.rawText = a.rawText || a.text || '';
+  a.pubDate = a.pubDate || a.date || a.capturedAt || '14.10.2026';
+  a.date = a.date || a.pubDate || a.capturedAt || '14.10.2026';
+  a.capturedAt = a.capturedAt || a.date || a.pubDate || '14.10.2026, 12:00';
+  a.platform = a.platform || a.source || 'Krisha.kz';
+  a.source = a.source || a.platform || 'Krisha.kz';
+  a.url = a.url || '#';
+});
+
 // Audit log
 let auditLogEntries = [];
 try {
@@ -47,6 +59,39 @@ function saveState() {
   localStorage.setItem('clearbuild_ads', JSON.stringify(adsList));
   localStorage.setItem('clearbuild_audit_log', JSON.stringify(auditLogEntries));
   localStorage.setItem('clearbuild_selected_id', SELECTED_COMPLEX_ID);
+}
+
+function changeFactorStatus(complexId, factorCode, newStatus) {
+  const c = complexes.find(item => item.id === complexId);
+  if (!c) return;
+
+  const prevStatus = c.factors[factorCode].status;
+  c.factors[factorCode].status = newStatus;
+
+  const timeNow = new Date().toLocaleTimeString();
+  const entry = `[${timeNow}] Фактор ${factorCode} для «${getLocalized(c.names)}»: изменен с ${prevStatus} на ${newStatus}`;
+  auditLogEntries.unshift(entry);
+
+  saveState();
+
+  // Background sync with FastAPI if local backend is running
+  fetch(`/api/v1/complexes/${complexId}/confirm-factor`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      factor: factorCode,
+      status: newStatus,
+      evidence: `Решение аналитика МИО через интерактивную матрицу: ${newStatus}`,
+      analyst: "Ахметов Д.К. (Аналитик МИО)"
+    })
+  }).catch(() => {
+    // Autonomous client-side mode active
+  });
+
+  if (typeof renderScoringTable === 'function') renderScoringTable(complexId);
+  if (typeof renderRegistry === 'function') renderRegistry();
+  if (typeof renderComplexCards === 'function') renderComplexCards();
+  if (typeof renderMapMarkers === 'function') renderMapMarkers();
 }
 
 // Deterministic Scoring

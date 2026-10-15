@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Интерактивная матрица риск-скоринга R1–R6 · SAQ QURYLYS" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Матрица рисков R1–R6 · SAQ QURYLYS</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -256,6 +260,21 @@
       auditLogEntries.unshift(entry);
 
       saveState();
+
+      // Background sync with FastAPI if local server is running
+      fetch(`/api/v1/complexes/${complexId}/confirm-factor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          factor: factorCode,
+          status: newStatus,
+          evidence: `Решение аналитика МИО: ${newStatus}`,
+          analyst: "Ахметов Д.К. (Аналитик МИО)"
+        })
+      }).catch(() => {
+        // Autonomous mode
+      });
+
       renderScoringTable(complexId);
     }
 

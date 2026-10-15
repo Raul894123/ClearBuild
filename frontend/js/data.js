@@ -232,8 +232,19 @@ const INITIAL_ADS = [
   { id: "AD-109", complexId: "jk-7", source: "Krisha.kz", date: "07.10.2026", capturedAt: "07.10.2026, 15:40", url: "https://krisha.kz/a/show/69055443", rawText: "ЖК Иртыш Плаза. Разрешение акимата №441. Безопасная покупка по договорам ДДУ.", triggerSpan: "Разрешение акимата №441", triggers: ["Разрешение №441", "Договор ДДУ"], aiHypothesis: "R3 (Законно): Разрешение МИО действует", status: "VERIFIED_OK" },
   { id: "AD-110", complexId: "jk-8", source: "Крыша", date: "06.10.2026", capturedAt: "06.10.2026, 11:20", url: "https://krisha.kz/a/show/69022110", rawText: "Готовое жилье в Согре! Дом сдан, ключи в день сделки, госакт оформлен.", triggerSpan: "Дом сдан, ключи в день сделки", triggers: ["Дом сдан", "Госакт"], aiHypothesis: "0 баллов: Введено в эксплуатацию", status: "VERIFIED_OK" },
   { id: "AD-111", complexId: "jk-1", source: "OLX.kz", date: "05.10.2026", capturedAt: "05.10.2026, 13:00", url: "https://olx.kz/d/obyavlenie/ID888999.html", rawText: "Инвестируйте на нулевом цикле! Доходность 30% годовых при вступлении в жилищный кооператив.", triggerSpan: "вступлении в жилищный кооператив", triggers: ["жилищный кооператив", "инвестируйте"], aiHypothesis: "R2 (+25 баллов): Серая схема через ЖСК", status: "PENDING" },
-  { id: "AD-112", complexId: "jk-2", source: "Instagram", date: "04.10.2026", capturedAt: "04.10.2026, 16:50", url: "https://instagram.com/p/DB114477", rawText: "Сатпаев Сити Парк — лучший вид на горы. Приходите на консультацию в наш шатер.", triggerSpan: "консультацию в наш шатер", triggers: ["консультация в шатре"], aiHypothesis: "R3 (Информационно)", status: "VERIFIED_OK" }
 ];
+
+// Ensure all ad objects have complete field aliases (text, rawText, date, pubDate, platform, source)
+INITIAL_ADS.forEach(a => {
+  a.text = a.text || a.rawText || '';
+  a.rawText = a.rawText || a.text || '';
+  a.pubDate = a.pubDate || a.date || a.capturedAt || '14.10.2026';
+  a.date = a.date || a.pubDate || a.capturedAt || '14.10.2026';
+  a.capturedAt = a.capturedAt || a.date || a.pubDate || '14.10.2026, 12:00';
+  a.platform = a.platform || a.source || 'Krisha.kz';
+  a.source = a.source || a.platform || 'Krisha.kz';
+  a.url = a.url || '#';
+});
 
 const CITIZEN_VERDICTS = {
   RED: {
