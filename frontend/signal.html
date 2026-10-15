@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Официальный сигнальный акт проверки объекта долевого строительства · SAQ QURYLYS" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Сигнальный акт проверки · SAQ QURYLYS</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -259,15 +263,22 @@
       let adsEvidenceHtml = '';
       if (complexAds.length) {
         adsEvidenceHtml = complexAds.map(ad => {
-          const capTime = ad.capturedAt || ad.date || '14.10.2026';
+          const capTime = ad.capturedAt || ad.pubDate || ad.date || '14.10.2026';
+          const raw = ad.rawText || ad.text || '';
+          const src = ad.source || ad.platform || 'Krisha.kz';
+          const tr = Array.isArray(ad.triggers) ? ad.triggers.join(', ') : (ad.triggerSpan || 'Нарушение правил рекламы');
+          const adLink = ad.url || 'https://krisha.kz';
           return `
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.65rem 0.85rem; margin-bottom: 0.5rem; font-size: 0.8rem;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                <strong>${ad.source} (${ad.id})</strong>
+                <strong>${src} (${ad.id})</strong>
                 <span style="color: #64748b;">📸 Фиксация: ${capTime}</span>
               </div>
-              <div style="color: #1e293b; font-style: italic;">«${ad.rawText || ad.text}»</div>
-              <div style="font-size: 0.72rem; color: #b91c1c; font-weight: 700; margin-top: 0.2rem;">Триггер: ${ad.triggers.join(', ')} · Ссылка: ${ad.url || 'https://clearbuild.kz'}</div>
+              <div style="color: #1e293b; font-style: italic; margin-bottom: 0.3rem;">«${raw}»</div>
+              <div style="font-size: 0.72rem; color: #b91c1c; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <span>🎯 Триггер: ${tr}</span>
+                <a href="${adLink}" target="_blank" style="color: #0284c7; text-decoration: underline;">🔗 Источник объявления</a>
+              </div>
             </div>
           `;
         }).join('');

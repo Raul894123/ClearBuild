@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="SAQ QURYLYS (ClearBuild) — Официальный портал мониторинга строящегося жилья г. Усть-Каменогорск" />
+  <meta property="og:title" content="SAQ QURYLYS · ClearBuild — Карта новостроек г. Усть-Каменогорск" />
+  <meta property="og:description" content="Проверка разрешений МИО и гарантий КЖК, детекция незаконной рекламы и интерактивный скоринг рисков R1–R6" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Карта новостроек · SAQ QURYLYS (Усть-Каменогорск)</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -337,6 +343,12 @@
 
         const marker = L.marker(c.coords, { icon: customIcon }).addTo(leafletMapInstance);
 
+        const verdictAlert = (risk.zone === 'RED')
+          ? '<div style="margin: 0.4rem 0; padding: 0.4rem 0.55rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; display: flex; align-items: center; gap: 0.35rem;"><span>⛔</span><span>ОПАСНО: незаконный сбор денег (нет разрешения/гарантии)</span></div>'
+          : (risk.zone === 'YELLOW')
+            ? '<div style="margin: 0.4rem 0; padding: 0.4rem 0.55rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; display: flex; align-items: center; gap: 0.35rem;"><span>⚠️</span><span>ОСТОРОЖНО: статус проверяется, не платите до разрешения!</span></div>'
+            : '<div style="margin: 0.4rem 0; padding: 0.4rem 0.55rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; display: flex; align-items: center; gap: 0.35rem;"><span>✅</span><span>ЗАКОННО: Гарантия КЖК / Разрешение МИО подтверждены.</span></div>';
+
         const popupContent = `
           <div style="font-family: inherit; min-width: 260px; line-height: 1.45;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
@@ -345,10 +357,11 @@
             </div>
             <strong style="font-size: 0.95rem; color: var(--text-main); display: block; margin-bottom: 0.2rem;">${getLocalized(c.names)}</strong>
             <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.4rem;">📍 ${getLocalized(c.districts)}</div>
-            <div style="font-size: 0.76rem; background: var(--bg-surface-hover); padding: 0.5rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0.65rem;">
+            <div style="font-size: 0.76rem; background: var(--bg-surface-hover); padding: 0.5rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 0.4rem;">
               <div style="color: var(--text-main); font-weight: 600;">${getLocalized(c.legalTexts)}</div>
               <div style="color: var(--text-muted); font-size: 0.72rem; margin-top: 0.25rem;">Готовность: Факт ${c.readinessFact}% / Заявлено ${c.readinessDeclared}%</div>
             </div>
+            ${verdictAlert}
             <div style="display: flex; gap: 0.4rem;">
               <button onclick="openComplexDossier('${c.id}')" class="btn btn-primary btn-sm" style="flex: 1;">📋 Досье</button>
               <button onclick="openSignalPage('${c.id}')" class="btn btn-secondary btn-sm">📄 Акт</button>
@@ -386,6 +399,8 @@
         const calloutClass = risk.zone === 'RED' ? 'legal-red' : risk.zone === 'YELLOW' ? 'legal-yellow' : 'legal-green';
         const barColor = risk.zone === 'RED' ? '#dc2626' : risk.zone === 'YELLOW' ? '#d97706' : '#16a34a';
         const factorsStr = risk.activeCodes.length ? risk.activeCodes.join(', ') : 'нет';
+        const verdictText = CITIZEN_VERDICTS[risk.zone][CURRENT_LANG] || CITIZEN_VERDICTS[risk.zone].ru;
+        const verdictIcon = risk.zone === 'RED' ? '⛔' : risk.zone === 'YELLOW' ? '⚠️' : '✅';
 
         return `
           <div class="complex-card ${isSelected ? 'card-selected' : ''}" onclick="selectMapComplex('${c.id}', true)">
@@ -404,6 +419,12 @@
             </div>
             <div class="card-developer">
               <span>🏢</span> <span>${getLocalized(c.developers)}</span>
+            </div>
+
+            <!-- Citizen Plain-Language Verdict Callout -->
+            <div class="verdict-box ${risk.zone === 'RED' ? 'verdict-red' : risk.zone === 'YELLOW' ? 'verdict-yellow' : 'verdict-green'}" style="margin: 0.45rem 0 0.55rem 0; padding: 0.5rem 0.65rem; font-size: 0.74rem;">
+              <span class="verdict-icon" style="font-size: 1.05rem;">${verdictIcon}</span>
+              <div style="font-weight: 600;">${verdictText}</div>
             </div>
 
             <!-- Legal Status Banner -->

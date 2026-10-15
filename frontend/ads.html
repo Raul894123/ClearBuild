@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Мониторинг рекламы и ИИ-детектор несанкционированного привлечения средств · SAQ QURYLYS" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Мониторинг рекламы и ИИ-детектор · SAQ QURYLYS</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -308,10 +312,13 @@
         id: newId,
         complexId,
         source: platform,
+        platform: platform,
         date: "15.10.2026",
+        pubDate: "15.10.2026",
         capturedAt: nowStr,
         url: "https://clearbuild.kz/ads/" + newId,
         rawText: text,
+        text: text,
         triggers: triggers.length ? triggers : ["проверка условий"],
         aiHypothesis: hypothesisTitle,
         status: "CONFIRMED"

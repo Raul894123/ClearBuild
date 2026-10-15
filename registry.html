@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Реестр строящихся ЖК г. Усть-Каменогорск · SAQ QURYLYS" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Реестр строящихся ЖК · SAQ QURYLYS</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -225,7 +229,11 @@
             </td>
             <td>📍 ${getLocalized(c.districts)}</td>
             <td>
-              <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.72rem;">${getLocalized(c.legalTexts)}</span>
+              <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.72rem; display: inline-block; margin-bottom: 0.35rem;">${getLocalized(c.legalTexts)}</span>
+              <div class="verdict-box ${risk.zone === 'RED' ? 'verdict-red' : risk.zone === 'YELLOW' ? 'verdict-yellow' : 'verdict-green'}" style="margin: 0; padding: 0.35rem 0.5rem; font-size: 0.7rem; font-weight: 600; line-height: 1.35;">
+                <span style="font-size: 0.85rem;">${risk.zone === 'RED' ? '⛔' : risk.zone === 'YELLOW' ? '⚠️' : '✅'}</span>
+                <div>${CITIZEN_VERDICTS[risk.zone][CURRENT_LANG] || CITIZEN_VERDICTS[risk.zone].ru}</div>
+              </div>
             </td>
             <td>
               <div>${getLocalized(c.stages)}</div>
