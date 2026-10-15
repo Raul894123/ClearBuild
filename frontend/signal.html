@@ -55,8 +55,12 @@
         </a>
       </nav>
 
-      <!-- Right Controls: Domain, Theme, Language -->
+      <!-- Right Controls: Reset, Domain, Theme, Language -->
       <div class="header-tools">
+        <button class="reset-btn" onclick="resetDemoData()" title="Сбросить все демонстрационные данные к эталону (8 ЖК и 12 объявлений)">
+          🔄 <span>Сброс демо</span>
+        </button>
+
         <a href="https://komputerny-oslik.site" target="_blank" class="domain-link">
           🌐 <span>komputerny-oslik.site</span>
         </a>
@@ -366,11 +370,13 @@
                 const st = f.status;
                 const pts = (st === 'CONFIRMED') ? f.weight : 0;
                 const ev = f.evidence ? getLocalized(f.evidence, lang) : getLocalized(FACTOR_INFO[code], lang);
+                const statusLabel = getFactorStatusLabel(st, lang);
+                const statusColor = (st === 'CONFIRMED') ? '#dc2626' : (st === 'AI_HYPOTHESIS' ? '#d97706' : (st === 'UNVERIFIED' ? '#b45309' : '#64748b'));
                 return `
                   <tr style="border-bottom: 1px solid #e2e8f0;">
                     <td style="padding: 0.45rem; font-weight: 700;">${code}</td>
                     <td style="padding: 0.45rem;">${ev}</td>
-                    <td style="padding: 0.45rem; font-weight: 700; color: ${st === 'CONFIRMED' ? '#dc2626' : '#64748b'};">${st}</td>
+                    <td style="padding: 0.45rem; font-weight: 700; color: ${statusColor};">${statusLabel}</td>
                     <td style="padding: 0.45rem; font-weight: 800;">+${pts}</td>
                   </tr>
                 `;

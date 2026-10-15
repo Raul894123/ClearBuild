@@ -55,8 +55,12 @@
         </a>
       </nav>
 
-      <!-- Right Controls: Domain, Theme, Language -->
+      <!-- Right Controls: Reset, Domain, Theme, Language -->
       <div class="header-tools">
+        <button class="reset-btn" onclick="resetDemoData()" title="Сбросить все демонстрационные данные к эталону">
+          🔄 <span>Сброс демо</span>
+        </button>
+
         <a href="https://komputerny-oslik.site" target="_blank" class="domain-link">
           🌐 <span>komputerny-oslik.site</span>
         </a>
@@ -336,6 +340,8 @@
     window.pageRefresh = function() {
       renderAdsTable();
     };
+
+    window.renderAdsFeed = renderAdsTable;
 
     document.addEventListener('DOMContentLoaded', () => {
       renderAdsTable();
