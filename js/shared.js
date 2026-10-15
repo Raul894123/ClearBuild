@@ -71,6 +71,17 @@ let CURRENT_LANG = appState.lang || localStorage.getItem('clearbuild_lang') || '
 let CURRENT_ACT_LANG = appState.actLang || 'ru';
 let CURRENT_ACTIVE_TAB = appState.activeTab || 'map';
 
+if (typeof window !== 'undefined') {
+  window.complexes = complexes;
+  window.adsList = adsList;
+  window.auditLogEntries = auditLogEntries;
+  window.SELECTED_COMPLEX_ID = SELECTED_COMPLEX_ID;
+  window.CURRENT_THEME = CURRENT_THEME;
+  window.CURRENT_LANG = CURRENT_LANG;
+  window.CURRENT_ACT_LANG = CURRENT_ACT_LANG;
+  window.CURRENT_ACTIVE_TAB = CURRENT_ACTIVE_TAB;
+}
+
 // Query param override (e.g. ?id=jk-2&tab=scoring)
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('id')) {
@@ -351,16 +362,164 @@ function setTheme(theme) {
   if (window.applyMapTiles) window.applyMapTiles();
 }
 
-// Language handling
-function setLanguage(lang) {
-  CURRENT_LANG = lang;
-  localStorage.setItem('clearbuild_lang', lang);
-  ['ru', 'kz', 'en'].forEach(l => {
-    const btn = document.getElementById('lang-btn-' + l);
-    if (btn) btn.classList.toggle('active', l === lang);
-  });
-  if (window.pageRefresh) window.pageRefresh();
+// ------------------------------------------------------------------------
+// Localization System (I18N) - RU / KZ / EN
+// ------------------------------------------------------------------------
+const I18N = {
+  ru: {
+    'portal-title': 'SAQ QURYLYS',
+    'portal-sub': 'Мониторинг строящегося жилья · Усть-Каменогорск',
+    'btn-api-lbl': '🔌 API Бэкенда',
+    'btn-reset-lbl': '🔄 Сброс демо',
+    'lbl-theme-light': 'Светлая',
+    'lbl-theme-dark': 'Тёмная',
+    'i18n-ribbon-tag': 'Официальный реестр:',
+    'i18n-ribbon-desc': 'Сверка строящихся объектов с базой разрешений МИО ВКО и договоров гарантии АО «КЖК».',
+    'kpi-title-total': 'Всего объектов на контроле',
+    'kpi-title-green': 'Законное привлечение (Гарантия/МИО)',
+    'kpi-title-yellow': 'Документы на проверке / Расхождения',
+    'kpi-title-red': 'Высокий риск (Сбор денег без ДДУ)',
+    'lbl-nav-map': '01 · Карта и Обзор',
+    'lbl-nav-registry': '02 · Реестр ЖК',
+    'lbl-nav-ads': '03 · Мониторинг рекламы (AI)',
+    'lbl-nav-scoring': '04 · Риск-скоринг R1–R6',
+    'lbl-nav-signal': '05 · Сигнальный акт (PDF)',
+    'lbl-nav-network': '🕸️ Сеть телефонов / Коллизии',
+    'mob-nav-map': '🗺️ Карта',
+    'mob-nav-registry': '📋 Реестр',
+    'mob-nav-ads': '📢 Реклама',
+    'mob-nav-scoring': '⚖️ Матрица',
+    'mob-nav-signal': '📑 Акт',
+    'mob-nav-network': '🕸️ Связи',
+    'pill-txt-all': 'Все (8)',
+    'pill-txt-green': '🟢 Зелёная (3)',
+    'pill-txt-yellow': '🟡 Жёлтая (3)',
+    'pill-txt-red': '🔴 Красная (2)',
+    'search-placeholder': 'Поиск ЖК по названию, адресу или БИН...',
+    'reg-search-placeholder': 'Фильтр по названию, БИН или застройщику...',
+    'zone-safe': 'Безопасно',
+    'zone-warn': 'Требует внимания',
+    'zone-danger': 'Опасно'
+  },
+  kz: {
+    'portal-title': 'SAQ QURYLYS',
+    'portal-sub': 'Салынып жатқан тұрғын үйлер мониторингі · Өскемен қ.',
+    'btn-api-lbl': '🔌 Бэкенд API',
+    'btn-reset-lbl': '🔄 Демоны қалпына келтіру',
+    'lbl-theme-light': 'Жарық',
+    'lbl-theme-dark': 'Қараңғы',
+    'i18n-ribbon-tag': 'Ресми тізілім:',
+    'i18n-ribbon-desc': 'ШҚО ЖАО рұқсаттар базасымен және «ҚТҚ» АҚ кепілдік шарттарымен салыстыру.',
+    'kpi-title-total': 'Бақылаудағы барлық нысандар',
+    'kpi-title-green': 'Заңды қаражат тарту (Кепілдік/ЖАО)',
+    'kpi-title-yellow': 'Құжаттар тексерілуде / Сәйкессіздіктер',
+    'kpi-title-red': 'Жоғары тәуекел (ҮҚШ-сыз ақша жинау)',
+    'lbl-nav-map': '01 · Карта және Шолу',
+    'lbl-nav-registry': '02 · ТҮК тізілімі',
+    'lbl-nav-ads': '03 · Жарнама мониторингі (AI)',
+    'lbl-nav-scoring': '04 · Тәуекел-скоринг R1–R6',
+    'lbl-nav-signal': '05 · Сигналдық акт (PDF)',
+    'lbl-nav-network': '🕸️ Телефондар желісі / Қайшылықтар',
+    'mob-nav-map': '🗺️ Карта',
+    'mob-nav-registry': '📋 Тізілім',
+    'mob-nav-ads': '📢 Жарнама',
+    'mob-nav-scoring': '⚖️ Матрица',
+    'mob-nav-signal': '📑 Акт',
+    'mob-nav-network': '🕸️ Желі',
+    'pill-txt-all': 'Барлығы (8)',
+    'pill-txt-green': '🟢 Жасыл (3)',
+    'pill-txt-yellow': '🟡 Сары (3)',
+    'pill-txt-red': '🔴 Қызыл (2)',
+    'search-placeholder': 'ТҮК атауы, мекенжайы немесе БСН бойынша іздеу...',
+    'reg-search-placeholder': 'Атауы, БСН немесе құрылыс салушы бойынша сүзгі...',
+    'zone-safe': 'Қауіпсіз',
+    'zone-warn': 'Назар аударуды қажет етеді',
+    'zone-danger': 'Қауіпті'
+  },
+  en: {
+    'portal-title': 'SAQ QURYLYS',
+    'portal-sub': 'Under-Construction Housing Risk Monitoring · Oskemen',
+    'btn-api-lbl': '🔌 Backend API',
+    'btn-reset-lbl': '🔄 Reset Demo',
+    'lbl-theme-light': 'Light',
+    'lbl-theme-dark': 'Dark',
+    'i18n-ribbon-tag': 'Official Registry:',
+    'i18n-ribbon-desc': 'Cross-verification with East Kazakhstan Akimat permits and KZH guarantee contracts.',
+    'kpi-title-total': 'Total Monitored Complexes',
+    'kpi-title-green': 'Lawful Sales (Guarantee/Permit)',
+    'kpi-title-yellow': 'Under Verification / Discrepancies',
+    'kpi-title-red': 'High Risk (Illegal Fundraising)',
+    'lbl-nav-map': '01 · Map & Overview',
+    'lbl-nav-registry': '02 · Complexes Registry',
+    'lbl-nav-ads': '03 · Ad Monitoring (AI)',
+    'lbl-nav-scoring': '04 · Risk Scoring R1–R6',
+    'lbl-nav-signal': '05 · Signal Report (PDF)',
+    'lbl-nav-network': '🕸️ Phone Network & Collisions',
+    'mob-nav-map': '🗺️ Map',
+    'mob-nav-registry': '📋 Registry',
+    'mob-nav-ads': '📢 Ads',
+    'mob-nav-scoring': '⚖️ Matrix',
+    'mob-nav-signal': '📑 Report',
+    'mob-nav-network': '🕸️ Network',
+    'pill-txt-all': 'All (8)',
+    'pill-txt-green': '🟢 Green (3)',
+    'pill-txt-yellow': '🟡 Yellow (3)',
+    'pill-txt-red': '🔴 Red (2)',
+    'search-placeholder': 'Search by complex name, address or BIN...',
+    'reg-search-placeholder': 'Filter by name, BIN or developer...',
+    'zone-safe': 'Safe',
+    'zone-warn': 'Needs Review',
+    'zone-danger': 'High Risk'
+  }
+};
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el && text !== undefined) el.textContent = text;
 }
+
+function setLang(lang) {
+  CURRENT_LANG = lang;
+  if (typeof window !== 'undefined') window.CURRENT_LANG = lang;
+  try {
+    localStorage.setItem('clearbuild_lang', lang);
+  } catch(e) {}
+
+  // Update button active state in header
+  ['kz', 'ru', 'en'].forEach(l => {
+    const btn1 = document.getElementById('lang-' + l);
+    const btn2 = document.getElementById('lang-btn-' + l);
+    if (btn1) btn1.classList.toggle('active', l === lang);
+    if (btn2) btn2.classList.toggle('active', l === lang);
+  });
+
+  // Apply translations to UI elements by ID
+  const dict = I18N[lang] || I18N.ru;
+  for (const [key, val] of Object.entries(dict)) {
+    safeSetText(key, val);
+  }
+
+  // Apply translations to elements with data-i18n attribute
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (dict[k]) el.textContent = dict[k];
+  });
+
+  // Update search input placeholders
+  const sInput = document.getElementById('search-complex-input');
+  if (sInput && dict['search-placeholder']) sInput.placeholder = dict['search-placeholder'];
+  const rInput = document.getElementById('reg-search-input');
+  if (rInput && dict['reg-search-placeholder']) rInput.placeholder = dict['reg-search-placeholder'];
+
+  // Re-render views in current language
+  if (typeof refreshAllViews === 'function') {
+    refreshAllViews();
+  } else if (typeof window.refreshAllViews === 'function') {
+    window.refreshAllViews();
+  }
+}
+window.setLang = setLang;
+window.setLanguage = setLang;
 
 function selectComplex(id) {
   SELECTED_COMPLEX_ID = id;
@@ -433,7 +592,7 @@ function openComplexDossier(complexId) {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.8rem;">
         <div><strong>Застройщик:</strong> ${getLocalized(c.developers)}</div>
         <div><strong>БИН застройщика:</strong> ${c.bin}</div>
-        <div><strong>Контактный телефон:</strong> ${c.contactPhone || 'Отдел продаж'}</div>
+        <div><strong>Контактный телефон:</strong> ${c.contactPhone || '+7 (705) 999-00-11'}</div>
         <div><strong>Кадастровый номер:</strong> ${c.cadastreNumber || 'Участок МИО'}</div>
         <div><strong>Стадия строительства:</strong> ${getLocalized(c.stages)}</div>
         <div><strong>Готовность:</strong> Факт ${c.readinessFact}% / Заявлено ${c.readinessDeclared}%</div>
@@ -456,10 +615,108 @@ function closeDossierModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function openSignalPage(complexId) {
-  selectComplex(complexId);
-  window.location.href = `signal.html?id=${complexId}`;
+// ------------------------------------------------------------------------
+// Signal Act Navigation & Action Handlers
+// ------------------------------------------------------------------------
+function openSignalAct(complexId) {
+  if (complexId) selectComplex(complexId);
+  if (typeof switchTab === 'function') {
+    switchTab('signal');
+  }
+  if (typeof renderSignalCard === 'function') {
+    renderSignalCard(complexId || SELECTED_COMPLEX_ID);
+  }
 }
+window.openSignalAct = openSignalAct;
+window.openSignalPage = openSignalAct;
+window.openSignalCard = openSignalAct;
+
+function selectComplexForSignal(complexId) {
+  selectComplex(complexId);
+  if (typeof renderSignalCard === 'function') {
+    renderSignalCard(complexId);
+  }
+}
+window.selectComplexForSignal = selectComplexForSignal;
+
+function updateSignalDecision(decision) {
+  const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID);
+  if (!c) return;
+
+  const analystInput = document.getElementById('analyst-name-input');
+  const commentInput = document.getElementById('analyst-comment-input');
+  const author = (analystInput && analystInput.value.trim()) ? analystInput.value.trim() : (c.signalAuthor || "Ахметов Д.К. — Главный специалист отдела мониторинга ДЖС МИО ВКО");
+  const comment = (commentInput && commentInput.value.trim()) ? commentInput.value.trim() : (c.signalComment || "");
+
+  c.signalStatus = decision;
+  c.signalUpdatedAt = new Date().toLocaleString();
+  c.signalAuthor = author;
+  c.signalComment = comment;
+
+  const timeNow = new Date().toLocaleTimeString();
+  const decisionText = (decision === 'CONFIRMED') ? 'ПОДТВЕРЖДЕНО АНАЛИТИКОМ МИО' : 'ВОЗВРАЩЕНО НА ДОРАБОТКУ';
+  auditLogEntries.unshift(`[${timeNow}] Сигнальный акт по ЖК «${getLocalized(c.names)}»: ${decisionText} (специалист: ${author.split('—')[0].trim()})`);
+  saveState();
+
+  if (typeof apiClient !== 'undefined' && apiClient.signalDecision) {
+    apiClient.signalDecision(c.id, decision, comment, author);
+  }
+
+  if (typeof renderSignalCard === 'function') renderSignalCard(c.id);
+  if (typeof renderRegistryView === 'function') renderRegistryView();
+  showCopyToast(`✅ Статус сигнального акта обновлен: <strong>${decisionText}</strong>`);
+}
+window.updateSignalDecision = updateSignalDecision;
+
+function exportSignalJSON() {
+  const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID);
+  if (!c) return;
+  const risk = calculateComplexRisk(c);
+  const analystInput = document.getElementById('analyst-name-input');
+  const commentInput = document.getElementById('analyst-comment-input');
+  const author = (analystInput && analystInput.value.trim()) ? analystInput.value.trim() : (c.signalAuthor || "Ахметов Д.К.");
+  const comment = (commentInput && commentInput.value.trim()) ? commentInput.value.trim() : (c.signalComment || "");
+
+  const payload = {
+    actNumber: `SIG-2026-${c.id.toUpperCase()}`,
+    generatedAt: new Date().toISOString(),
+    department: "ГУ «Управление строительства, архитектуры и градостроительства Восточно-Казахстанской области»",
+    analyst: author,
+    decision: c.signalStatus || "PENDING",
+    comment: comment,
+    complex: {
+      id: c.id,
+      code: c.code,
+      names: c.names,
+      developers: c.developers,
+      bin: c.bin,
+      contactPhone: c.contactPhone || "+7 (705) 999-00-11",
+      cadastreNumber: c.cadastreNumber,
+      smrLicense: c.smrLicense,
+      landPurpose: c.landPurpose,
+      districts: c.districts,
+      readinessFact: c.readinessFact,
+      readinessDeclared: c.readinessDeclared,
+      legalStatus: c.legalStatus,
+      legalTexts: c.legalTexts,
+      factors: c.factors,
+      riskScore: risk.score,
+      zone: risk.zone
+    },
+    attachedAds: (adsList || []).filter(a => a.complexId === c.id),
+    disclaimer: "Система подсвечивает признаки риска и помогает принять решение, но не устанавливает факт правонарушения и не отправляет материалы в госорганы автоматически."
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Signal_Act_${c.id.toUpperCase()}_2026.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showCopyToast(`⬇️ Акт №SIG-2026-${c.id.toUpperCase()} выгружен в JSON!`);
+}
+window.exportSignalJSON = exportSignalJSON;
 
 // Global bootstrap
 document.addEventListener('DOMContentLoaded', () => {

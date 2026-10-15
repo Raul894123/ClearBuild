@@ -44,12 +44,12 @@
         <!-- Backend API Connection Button -->
         <button class="api-btn" onclick="openApiModal()" id="api-status-btn" title="Настройка подключения к Backend API (FastAPI)">
           <span id="api-status-dot" class="status-dot dot-yellow"></span>
-          <span>🔌 API Бэкенда</span>
+          <span id="btn-api-lbl">🔌 API Бэкенда</span>
         </button>
 
         <!-- Reset Demo Data -->
         <button class="reset-btn" onclick="resetDemoData()" title="Сбросить все демонстрационные данные к эталону (8 ЖК и 12 объявлений)">
-          🔄 <span>Сброс демо</span>
+          🔄 <span id="btn-reset-lbl">Сброс демо</span>
         </button>
 
         <a href="https://komputerny-oslik.site" target="_blank" class="domain-link">
@@ -68,9 +68,9 @@
 
         <!-- Language Switcher -->
         <div class="pill-group" role="group" aria-label="Language Switcher">
-          <button class="pill-btn" id="lang-btn-kz" onclick="setLanguage('kz')">ҚАЗ</button>
-          <button class="pill-btn active" id="lang-btn-ru" onclick="setLanguage('ru')">РУС</button>
-          <button class="pill-btn" id="lang-btn-en" onclick="setLanguage('en')">ENG</button>
+          <button class="pill-btn" id="lang-kz" onclick="setLang('kz')">ҚАЗ</button>
+          <button class="pill-btn active" id="lang-ru" onclick="setLang('ru')">РУС</button>
+          <button class="pill-btn" id="lang-en" onclick="setLang('en')">ENG</button>
         </div>
       </div>
     </div>
@@ -126,28 +126,28 @@
     <div class="kpi-grid">
       <div class="kpi-card" onclick="switchTab('registry'); setRegFilter('ALL');" style="cursor: pointer;">
         <div>
-          <div class="kpi-title">Всего объектов на контроле</div>
+          <div class="kpi-title" id="kpi-title-total">Всего объектов на контроле</div>
           <div class="kpi-value" id="kpi-val-total">8</div>
         </div>
         <div class="kpi-icon-wrap">🏗️</div>
       </div>
       <div class="kpi-card kpi-green" onclick="switchTab('registry'); setRegFilter('GREEN');" style="cursor: pointer;">
         <div>
-          <div class="kpi-title">Законное привлечение (Гарантия/МИО)</div>
+          <div class="kpi-title" id="kpi-title-green">Законное привлечение (Гарантия/МИО)</div>
           <div class="kpi-value" id="kpi-val-green">3</div>
         </div>
         <div class="kpi-icon-wrap">🛡️</div>
       </div>
       <div class="kpi-card kpi-yellow" onclick="switchTab('registry'); setRegFilter('YELLOW');" style="cursor: pointer;">
         <div>
-          <div class="kpi-title">Документы на проверке / Расхождения</div>
+          <div class="kpi-title" id="kpi-title-yellow">Документы на проверке / Расхождения</div>
           <div class="kpi-value" id="kpi-val-yellow">3</div>
         </div>
         <div class="kpi-icon-wrap">⚠️</div>
       </div>
       <div class="kpi-card kpi-red" onclick="switchTab('registry'); setRegFilter('RED');" style="cursor: pointer;">
         <div>
-          <div class="kpi-title">Высокий риск (Сбор денег без ДДУ)</div>
+          <div class="kpi-title" id="kpi-title-red">Высокий риск (Сбор денег без ДДУ)</div>
           <div class="kpi-value" id="kpi-val-red">2</div>
         </div>
         <div class="kpi-icon-wrap">⛔</div>
@@ -374,17 +374,16 @@
       </div>
 
       <!-- Main Registry Split: Table & Detail Pane -->
-      <div class="registry-split-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
-        <!-- Left: Table of Complexes -->
-        <div class="civic-table-container">
+      <div class="registry-split-grid" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem; align-items: start;">
+        <!-- Left: Table of Complexes (4 Columns - No cutoff) -->
+        <div class="civic-table-container registry-table-container" style="max-height: 720px; overflow-y: auto; overflow-x: auto; margin-bottom: 0;">
           <table class="civic-table">
             <thead>
               <tr>
-                <th>Объект ЖК</th>
-                <th>Застройщик / БИН</th>
-                <th>Правовое основание</th>
-                <th>Зона / Балл</th>
-                <th>Действия</th>
+                <th style="min-width: 190px;">ОБЪЕКТ ЖК И АДРЕС</th>
+                <th>ЗАСТРОЙЩИК / БИН</th>
+                <th>ПРАВОВОЕ ОСНОВАНИЕ</th>
+                <th style="text-align: center; min-width: 125px;">ЗОНА / ДОСЬЕ</th>
               </tr>
             </thead>
             <tbody id="registry-table-body">
@@ -393,8 +392,8 @@
           </table>
         </div>
 
-        <!-- Right: Selected Complex Detailed Card with 11 Registries Block -->
-        <div id="registry-detail-pane" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem;">
+        <!-- Right: Sticky Selected Complex Detailed Card with 11 Registries Block -->
+        <div id="registry-detail-pane" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
           <!-- Rendered by JS -->
         </div>
       </div>
@@ -504,35 +503,56 @@
          TAB 5: SIGNAL INSPECTION ACT (MODULE 05)
          ====================================================================== -->
     <section id="tab-signal" class="tab-content">
-      <!-- Controls Toolbar -->
-      <div class="no-print" style="margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
-        <div>
-          <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">Официальный сигнальный акт проверки объекта</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
-            Формируется для направления в УГАСК ВКО, прокуратуру или для личной проверки покупателем перед сделкой.
-          </p>
-        </div>
+      <!-- Controls Toolbar (MIO Analyst Control Panel) -->
+      <div class="no-print" style="margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <h1 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">05 · Официальный сигнальный акт проверки объекта</h1>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+              Формируется уполномоченным инспектором МИО для фиксации нарушений ДЖС и передачи в УГАСК ВКО / прокуратуру.
+            </p>
+          </div>
 
-        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-          <!-- Dedicated Language Selector for the Act Sheet -->
+          <!-- Language Selector for Act Sheet -->
           <div style="display: flex; align-items: center; gap: 0.35rem; background: var(--bg-surface); border: 1px solid var(--border-color); padding: 3px 6px; border-radius: 8px;">
             <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">Язык акта:</span>
             <button class="pill-btn" id="act-lang-kz" onclick="setActLanguage('kz')">ҚАЗ</button>
             <button class="pill-btn active" id="act-lang-ru" onclick="setActLanguage('ru')">РУС</button>
             <button class="pill-btn" id="act-lang-en" onclick="setActLanguage('en')">ENG</button>
           </div>
+        </div>
 
-          <select id="signal-select-complex" class="search-input" style="width: auto; padding: 0.45rem 1rem;" onchange="renderSignalCard(this.value)">
-          </select>
+        <!-- Analyst Control Row: Select Complex, Analyst Name, Resolution, Action Buttons -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem; background: var(--bg-surface); border: 1px solid var(--border-color); padding: 0.75rem 1rem; border-radius: 10px;">
+          <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; flex: 1;">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Объект:</label>
+              <select id="signal-complex-select" class="search-input" style="width: auto; padding: 0.45rem 0.85rem;" onchange="selectComplexForSignal(this.value)"></select>
+            </div>
 
-          <button class="btn btn-secondary" onclick="recordSignalDecision(SELECTED_COMPLEX_ID, 'CONFIRMED')">✅ Утвердить акт</button>
-          <button class="btn btn-secondary" onclick="recordSignalDecision(SELECTED_COMPLEX_ID, 'RETURNED')">↩️ На доработку</button>
-          <button class="btn btn-primary" onclick="window.print()">🖨️ Распечатать акт (PDF)</button>
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex: 1; min-width: 250px;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Инспектор:</label>
+              <input type="text" id="analyst-name-input" class="search-input" style="flex: 1; min-width: 200px; padding: 0.45rem 0.75rem;" value="Ахметов Д.К. — Главный специалист отдела мониторинга ДЖС МИО ВКО" oninput="renderSignalCard()" />
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.4rem; flex: 1; min-width: 250px;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Резолюция:</label>
+              <input type="text" id="analyst-comment-input" class="search-input" style="flex: 1; min-width: 200px; padding: 0.45rem 0.75rem;" placeholder="Введите резолюцию инспектора..." oninput="renderSignalCard()" />
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="updateSignalDecision('CONFIRMED')">✅ Подтвердить сигнал</button>
+            <button class="btn btn-secondary" onclick="updateSignalDecision('RETURNED')">↩️ Вернуть на доработку</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Скачать PDF / Печать</button>
+            <button class="btn btn-secondary" onclick="exportSignalJSON()">⬇️ Выгрузить JSON</button>
+          </div>
         </div>
       </div>
 
       <!-- Printable Sheet Container -->
-      <div class="signal-print-sheet" id="signal-sheet-container"></div>
+      <div class="signal-print-sheet" id="signal-printable-area"></div>
+      <div id="signal-sheet-container" style="display: none;"></div>
     </section>
 
     <!-- ======================================================================
@@ -649,7 +669,7 @@
       <div class="modal-body" id="modal-dossier-body"></div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeDossierModal()">Закрыть</button>
-        <button class="btn btn-primary" onclick="openSignalCard(SELECTED_COMPLEX_ID)">📄 Сформировать акт проверки</button>
+        <button class="btn btn-primary" onclick="openSignalAct(SELECTED_COMPLEX_ID); closeDossierModal();">📄 Сформировать акт проверки</button>
       </div>
     </div>
   </div>
@@ -1085,25 +1105,23 @@
         const risk = calculateComplexRisk(c);
         const isSelected = (c.id === SELECTED_COMPLEX_ID);
         return `
-          <tr style="cursor: pointer; background: ${isSelected ? 'var(--bg-surface-hover)' : 'transparent'};" onclick="renderRegistryDetail('${c.id}')">
-            <td>
-              <strong style="color: var(--text-main); font-size: 0.88rem;">${getLocalized(c.names)}</strong>
-              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem;">📍 ${getLocalized(c.districts)}</div>
+          <tr style="cursor: pointer;" class="${isSelected ? 'active-row' : ''}" onclick="renderRegistryDetail('${c.id}')">
+            <td style="min-width: 190px;">
+              <div style="font-weight: 800; color: var(--text-main); font-size: 0.9rem;">${getLocalized(c.names)}</div>
+              <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px;">📍 ${getLocalized(c.districts)}</div>
             </td>
             <td>
               <div style="font-size: 0.82rem; font-weight: 600;">${getLocalized(c.developers)}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">БИН: ${c.bin}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-top: 2px;">БИН: ${c.bin}</div>
             </td>
             <td>
-              <div style="font-size: 0.8rem; font-weight: 600; color: ${risk.zone === 'RED' ? '#dc2626' : 'var(--text-main)'};">
+              <div style="font-size: 0.78rem; font-weight: 600; line-height: 1.35; color: ${risk.zone === 'RED' ? 'var(--zone-red-text)' : risk.zone === 'YELLOW' ? 'var(--zone-yellow-text)' : 'var(--zone-green-text)'};">
                 ${getLocalized(c.legalTexts)}
               </div>
             </td>
-            <td>
+            <td style="text-align: center; white-space: nowrap;">
               <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} · ${risk.score} б.</span>
-            </td>
-            <td>
-              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); renderRegistryDetail('${c.id}')">Досье</button>
+              <button class="btn btn-secondary btn-sm" style="display: block; width: 100%; margin-top: 5px; font-weight: 600;" onclick="event.stopPropagation(); renderRegistryDetail('${c.id}')">📄 Досье</button>
             </td>
           </tr>
         `;
@@ -1148,7 +1166,7 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; font-size: 0.82rem; margin-bottom: 1.25rem;">
           <div><strong>Застройщик:</strong> ${getLocalized(c.developers)}</div>
           <div><strong>БИН:</strong> <code>${c.bin}</code></div>
-          <div><strong>Контактный телефон:</strong> ${c.contactPhone || 'Отдел продаж'}</div>
+          <div><strong>Контактный телефон:</strong> <a href="tel:${c.contactPhone || '+7 (705) 999-00-11'}" style="color: var(--brand-primary); font-weight: 700;">${c.contactPhone || '+7 (705) 999-00-11'}</a></div>
           <div><strong>Кадастровый номер:</strong> <code>${c.cadastreNumber || '05:102:044:112'}</code></div>
           <div><strong>Лицензия СМР:</strong> ${c.smrLicense || 'ГСЛ II категория'}</div>
           <div><strong>Целевое назначение земли:</strong> ${c.landPurpose || 'Строительство МЖД'}</div>
@@ -1204,8 +1222,8 @@
               <span>⚠️ Реестр недобросовестных</span>
               <span class="copy-hint">Копировать БИН 📋</span>
             </button>
-            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://sud.gov.kz', 'ИС «Төрелік» sud.gov.kz')">
-              <span>⚖️ ИС Төрелік (Суды/Аресты)</span>
+            <button class="reg-verify-btn" onclick="copyBinAndOpen('${cleanBin}', 'https://data.egov.kz', 'Открытые данные РК (data.egov.kz)')">
+              <span>📊 Открытые данные РК (data.egov.kz)</span>
               <span class="copy-hint">Копировать БИН 📋</span>
             </button>
           </div>
@@ -1213,7 +1231,7 @@
 
         <div style="margin-top: 1.25rem; display: flex; gap: 0.65rem; justify-content: flex-end;">
           <button class="btn btn-secondary" onclick="switchTab('scoring'); renderScoringView('${c.id}')">⚖️ Настроить скоринг</button>
-          <button class="btn btn-primary" onclick="switchTab('signal'); renderSignalCard('${c.id}')">📑 Сформировать акт проверки</button>
+          <button class="btn btn-primary" onclick="openSignalAct('${c.id}')">📑 Сформировать акт проверки</button>
         </div>
       `;
     }
@@ -1395,9 +1413,9 @@
     // ------------------------------------------------------------------------
     function populateComplexDropdowns() {
       const scoringSel = document.getElementById('scoring-select-complex');
-      const signalSel = document.getElementById('signal-select-complex');
+      const signalSel = document.getElementById('signal-complex-select') || document.getElementById('signal-select-complex');
 
-      const options = complexes.map(c => `
+      const options = (complexes || []).map(c => `
         <option value="${c.id}" ${c.id === SELECTED_COMPLEX_ID ? 'selected' : ''}>
           ${getLocalized(c.names)} (${c.code})
         </option>
@@ -1464,106 +1482,221 @@
 
     function renderSignalCard(complexId) {
       if (complexId) selectComplex(complexId);
-      const c = complexes.find(item => item.id === SELECTED_COMPLEX_ID);
-      const container = document.getElementById('signal-sheet-container');
+      const c = complexes.find(item => item.id === (SELECTED_COMPLEX_ID || 'jk-1')) || complexes[0];
+      const container = document.getElementById('signal-printable-area') || document.getElementById('signal-sheet-container');
       if (!c || !container) return;
 
-      const lang = CURRENT_ACT_LANG || 'ru';
+      const lang = CURRENT_ACT_LANG || CURRENT_LANG || 'ru';
       const risk = calculateComplexRisk(c);
       const cleanBin = (c.bin || '').replace(/\D/g, '');
 
+      // Sync complex selector if present
+      const compSelect = document.getElementById('signal-complex-select') || document.getElementById('signal-select-complex');
+      if (compSelect && compSelect.value !== c.id) {
+        compSelect.value = c.id;
+      }
+
+      // Read current analyst input values if available
+      const analystInput = document.getElementById('analyst-name-input');
+      const commentInput = document.getElementById('analyst-comment-input');
+      const analystName = (analystInput && analystInput.value.trim()) ? analystInput.value.trim() : (c.signalAuthor || "Ахметов Д.К. — Главный специалист отдела мониторинга ДЖС МИО ВКО");
+      const analystComment = (commentInput && commentInput.value.trim()) ? commentInput.value.trim() : (c.signalComment || (risk.zone === 'RED' ? "Рекомендуется направление материалов в УГАСК ВКО и органы прокуратуры в связи с признаками незаконного привлечения средств дольщиков." : risk.zone === 'YELLOW' ? "Требуется проведение камерального контроля и запрос актуальной выписки из Казреестра." : "Нарушений законодательства о долевом участии в жилищном строительстве не выявлено."));
+
+      // Status Stamp
+      let stampHtml = '';
+      if (c.signalStatus === 'CONFIRMED') {
+        stampHtml = `
+          <div class="official-stamp stamp-confirmed">
+            🛡️ ПОДТВЕРЖДЕНО АНАЛИТИКОМ МИО<br/>
+            <span style="font-size: 10px; font-weight: 600; text-transform: none;">${c.signalUpdatedAt || '15.10.2026, 12:00'} · ${analystName.split('—')[0].trim()}</span>
+          </div>
+        `;
+      } else if (c.signalStatus === 'RETURNED') {
+        stampHtml = `
+          <div class="official-stamp stamp-returned">
+            ↩️ ВОЗВРАЩЕНО НА ДОРАБОТКУ<br/>
+            <span style="font-size: 10px; font-weight: 600; text-transform: none;">${c.signalUpdatedAt || '15.10.2026, 12:00'}</span>
+          </div>
+        `;
+      } else {
+        stampHtml = `
+          <div class="official-stamp stamp-pending">
+            ⏳ ОЖИДАЕТ ПОДТВЕРЖДЕНИЯ<br/>
+            <span style="font-size: 10px; font-weight: 600; text-transform: none;">Проект сигнального акта</span>
+          </div>
+        `;
+      }
+
       // Evidence ads for this complex
-      const linkedAds = adsList.filter(a => a.complexId === c.id);
+      const linkedAds = (adsList || []).filter(a => a.complexId === c.id);
       let adsEvidenceRows = '';
 
       if (linkedAds.length > 0) {
         adsEvidenceRows = linkedAds.map((a, idx) => {
           const adText = a.rawText || a.text || '';
           const highlighted = (a.triggerSpan && adText.includes(a.triggerSpan))
-            ? adText.replace(a.triggerSpan, '<strong style="color: #b91c1c; text-decoration: underline;">' + a.triggerSpan + '</strong>')
+            ? adText.replace(a.triggerSpan, '<strong style="color: #b91c1c; text-decoration: underline; background: #fee2e2; padding: 1px 3px; border-radius: 3px;">' + a.triggerSpan + '</strong>')
             : adText;
           return `
             <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
-              <td style="padding: 6px; font-weight: 700;">#${idx + 1} (${a.id})</td>
-              <td style="padding: 6px;">${a.platform || a.source}<br/><span style="color: #64748b; font-size: 10px;">${a.capturedAt || a.date}</span></td>
+              <td style="padding: 6px; font-weight: 700;">#${idx + 1} (${a.id || 'AD'})</td>
+              <td style="padding: 6px;">${a.platform || a.source || 'Инфо'}<br/><span style="color: #64748b; font-size: 10px;">${a.capturedAt || a.date || a.pubDate || '15.10.2026'}</span></td>
               <td style="padding: 6px; line-height: 1.35;">${highlighted}</td>
               <td style="padding: 6px; font-weight: 700; color: #dc2626;">${a.proposedFactor || 'R2/R3'}</td>
-              <td style="padding: 6px;"><a href="${a.url || '#'}" target="_blank" style="color: #0284c7;">Источник 🔗</a></td>
+              <td style="padding: 6px;"><a href="${a.url || '#'}" target="_blank" style="color: #0284c7; text-decoration: underline;">Источник 🔗</a></td>
             </tr>
           `;
         }).join('');
       } else {
-        adsEvidenceRows = `<tr><td colspan="5" style="padding: 10px; text-align: center; color: #64748b;">Прямых доказательств незаконной рекламы в базе не зафиксировано.</td></tr>`;
+        adsEvidenceRows = `<tr><td colspan="5" style="padding: 10px; text-align: center; color: #64748b; font-style: italic;">Прямых зафиксированных рекламных объявлений с нарушениями в текущей базе не обнаружено.</td></tr>`;
       }
 
+      // Factors rows
       const factorsRows = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6'].map(code => {
-        const f = c.factors[code] || { status: 'NONE', weight: FACTOR_INFO[code].weight };
-        const st = f.status;
+        const f = (c.factors && c.factors[code]) || { status: 'NONE', weight: (FACTOR_INFO[code]?.weight || 0) };
+        const st = f.status || 'NONE';
         const pts = (st === 'CONFIRMED') ? f.weight : 0;
-        const ev = f.evidence ? getLocalized(f.evidence, lang) : getLocalized(FACTOR_INFO[code], lang);
+        const ev = (f.evidence && typeof f.evidence === 'object') ? getLocalized(f.evidence, lang) : (typeof f.evidence === 'string' ? f.evidence : getLocalized(FACTOR_INFO[code], lang));
         const statusLabel = getFactorStatusLabel(st, lang);
         const statusColor = (st === 'CONFIRMED') ? '#dc2626' : (st === 'AI_HYPOTHESIS' ? '#d97706' : (st === 'UNVERIFIED' ? '#b45309' : '#64748b'));
 
         return `
-          <tr style="border-bottom: 1px solid #e2e8f0;">
-            <td style="padding: 0.45rem; font-weight: 700;">${code}</td>
-            <td style="padding: 0.45rem;">${ev}</td>
-            <td style="padding: 0.45rem; font-weight: 700; color: ${statusColor};">${statusLabel}</td>
-            <td style="padding: 0.45rem; font-weight: 800;">+${pts}</td>
+          <tr style="border-bottom: 1px solid #e2e8f0; font-size: 12px;">
+            <td style="padding: 6px 8px; font-weight: 800; font-family: monospace;">${code}</td>
+            <td style="padding: 6px 8px; line-height: 1.35;">${ev || 'Критерий оценки'}</td>
+            <td style="padding: 6px 8px; font-weight: 700; color: ${statusColor};">${statusLabel}</td>
+            <td style="padding: 6px 8px; font-weight: 800; text-align: right;">+${pts} б.</td>
           </tr>
         `;
       }).join('');
 
+      // Translations for act sections
+      const actTexts = {
+        ru: {
+          gov: "ГУ «Управление строительства, архитектуры и градостроительства Восточно-Казахстанской области»",
+          title: "СИГНАЛЬНЫЙ АКТ СВЕРКИ И МОНИТОРИНГА РИСКОВ ДЖС",
+          sec1: "1. Паспорт объекта и сверка с госреестрами РК",
+          sec2: "2. Матрица расчёта факторов риска (R1–R6, Раздел 5 ТЗ)",
+          sec3: "3. Зафиксированные рекламные публикации и доказательства (Разделы 3–4 ТЗ)",
+          sec4: "4. Резолюция проверяющего аналитика МИО и правовые основания",
+          jkName: "Наименование ЖК:",
+          dev: "Застройщик:",
+          bin: "БИН организации:",
+          phone: "Контактный телефон:",
+          addr: "Адрес стройплощадки:",
+          cad: "Кадастровый номер:",
+          lic: "Лицензия СМР:",
+          purpose: "Целевое назначение земли:",
+          legal: "Статус законности:",
+          readiness: "Готовность объекта:",
+          riskSummary: "Итоговый риск-скоринг:",
+          disclaimer: "Правовой дисклеймер (Раздел 2 ТЗ): Система SAQ QURYLYS подсвечивает признаки риска и помогает принять решение, но не устанавливает факт правонарушения и не отправляет материалы в госорганы автоматически. Окончательное решение принимается уполномоченным инспектором МИО / УГАСК ВКО.",
+          signAnalyst: "Ответственный специалист отдела контроля ДЖС:"
+        },
+        kz: {
+          gov: "«Шығыс Қазақстан облысының құрылыс, сәулет және қала құрылысы басқармасы» ММ",
+          title: "ТҰРҒЫН ҮЙ ҚҰРЫЛЫСЫ ТӘУЕКЕЛДЕРІНІҢ СИГНАЛДЫҚ САЛЫСТЫРУ АКТІСІ",
+          sec1: "1. Нысан паспорты және ҚР мемлекеттік тізілімдерімен салыстыру",
+          sec2: "2. Тәуекел факторларын есептеу матрицасы (R1–R6, ТТ 5-бөлімі)",
+          sec3: "3. Тіркелген жарнамалық жарияланымдар мен дәлелдемелер (ТТ 3–4 бөлімдері)",
+          sec4: "4. ЖАО тексеруші талдаушысының қарары және құқықтық негіздер",
+          jkName: "ТҮК атауы:",
+          dev: "Құрылыс салушы:",
+          bin: "Ұйымның БСН:",
+          phone: "Байланыс телефоны:",
+          addr: "Құрылыс орнының мекенжайы:",
+          cad: "Кадастрлық нөмірі:",
+          lic: "ҚМЖ лицензиясы:",
+          purpose: "Жердің нысаналы мақсаты:",
+          legal: "Заңдылық мәртебесі:",
+          readiness: "Нысанның дайындығы:",
+          riskSummary: "Қорытынды тәуекел-скоринг:",
+          disclaimer: "Құқықтық ескерту (ТТ 2-бөлімі): SAQ QURYLYS жүйесі тәуекел белгілерін көрсетеді және шешім қабылдауға көмектеседі, бірақ құқық бұзушылық фактісін дербес анықтамайды және мемлекеттік органдарға материалдарды автоматты түрде жібермейді. Соңғы шешімді ШҚО ЖАО / МСҚБ уәкілетті инспекторы қабылдайды.",
+          signAnalyst: "ТҮҚ бақылау бөлімінің жауапты маманы:"
+        },
+        en: {
+          gov: "State Institution «Department of Construction, Architecture and Urban Planning of East Kazakhstan Region»",
+          title: "SIGNAL RISK AUDIT & VERIFICATION REPORT ON RESIDENTIAL CONSTRUCTION",
+          sec1: "1. Complex Dossier & Cross-Verification with RK State Registries",
+          sec2: "2. Deterministic Risk Factor Scoring Matrix (R1–R6, TZ Section 5)",
+          sec3: "3. Captured Advertising Publications & Evidence (TZ Sections 3–4)",
+          sec4: "4. Auditor Resolution & Regulatory Compliance Findings",
+          jkName: "Complex Name:",
+          dev: "Developer:",
+          bin: "Business ID (BIN):",
+          phone: "Contact Phone:",
+          addr: "Construction Site Address:",
+          cad: "Cadastral Number:",
+          lic: "SMR License:",
+          purpose: "Land Plot Purpose:",
+          legal: "Legal Basis Status:",
+          readiness: "Construction Readiness:",
+          riskSummary: "Final Risk Score:",
+          disclaimer: "Legal Disclaimer (TZ Section 2): The SAQ QURYLYS system highlights indicators of risk and assists in human decision-making, but does not definitively establish a legal offence and does not transmit materials to regulatory bodies automatically. Final administrative actions remain under the discretion of the authorized MIO / GASK inspector.",
+          signAnalyst: "Authorized Housing Inspection Specialist:"
+        }
+      };
+
+      const t = actTexts[lang] || actTexts.ru;
+
       container.innerHTML = `
-        <div style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-start;">
-          <div>
-            <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b;">
-              ГУ «Управление строительства, архитектуры и градостроительства ВКО»
+        <!-- Document Header -->
+        <div style="border-bottom: 2px solid #0f172a; padding-bottom: 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 320px;">
+            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #475569; letter-spacing: 0.05em;">
+              ${t.gov}
             </div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
-              СИГНАЛЬНЫЙ АКТ ПРОВЕРКИ ОБЪЕКТА СТРОИТЕЛЬСТВА
+            <h2 style="font-size: 1.25rem; font-weight: 900; color: #0f172a; margin: 0.35rem 0 0.2rem 0; letter-spacing: -0.01em;">
+              ${t.title}
             </h2>
-            <div style="font-size: 0.8rem; color: #475569; margin-top: 0.2rem;">
-              Регистрационный номер: <strong>СА-2026/УК-${c.id.toUpperCase()}</strong> от 15.10.2026
+            <div style="font-size: 12px; color: #334155;">
+              Регистрационный номер: <strong>№SIG-2026-${c.id.toUpperCase()}</strong> · Дата фиксации: <strong>${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+              Территориальный охват: <strong>г. Усть-Каменогорск, Восточно-Казахстанская область</strong>
             </div>
           </div>
-          <div style="text-align: right;">
-            <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.95rem; padding: 0.4rem 1rem;">
-              ${risk.zoneName} · ${risk.score}/100 БАЛЛОВ
-            </span>
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.4rem;">
-              Резолюция: <strong>${c.signalStatus || 'PENDING_HUMAN'}</strong>
+          <div style="text-align: right; min-width: 220px;">
+            ${stampHtml}
+            <div style="margin-top: 0.5rem;">
+              <span class="status-badge ${risk.zoneBadgeClass}" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">
+                ${risk.zoneName} · ${risk.score}/100 БАЛЛОВ
+              </span>
             </div>
           </div>
         </div>
 
-        <div style="margin-bottom: 1.25rem; font-size: 0.85rem; line-height: 1.5;">
-          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            1. Идентификационные сведения об объекте и застройщике
+        <!-- Section 1: Passport -->
+        <div style="margin-bottom: 1.25rem; font-size: 12px;">
+          <h3 style="font-size: 13px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem; color: #0f172a;">
+            ${t.sec1}
           </h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;">
-            <div><strong>Наименование ЖК:</strong> ${getLocalized(c.names, lang)}</div>
-            <div><strong>Застройщик:</strong> ${getLocalized(c.developers, lang)}</div>
-            <div><strong>БИН организации:</strong> <code>${c.bin}</code></div>
-            <div><strong>Контактный телефон:</strong> ${c.contactPhone || 'Отдел продаж'}</div>
-            <div><strong>Местоположение:</strong> ${getLocalized(c.districts, lang)}</div>
-            <div><strong>Кадастровый номер:</strong> <code>${c.cadastreNumber || '05:102:044:112'}</code></div>
-            <div><strong>Лицензия СМР:</strong> ${c.smrLicense || 'ГСЛ II категория'}</div>
-            <div><strong>Стадия / Готовность:</strong> ${getLocalized(c.stages, lang)} (Факт: ${c.readinessFact}%, Заявлено: ${c.readinessDeclared}%)</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1.25rem; background: #f8fafc; padding: 0.85rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div><strong>${t.jkName}</strong> ${getLocalized(c.names, lang)} (${c.code || ''})</div>
+            <div><strong>${t.dev}</strong> ${getLocalized(c.developers, lang)}</div>
+            <div><strong>${t.bin}</strong> <code>${c.bin || '—'}</code></div>
+            <div><strong>${t.phone}</strong> <span style="font-weight: 700; color: #0369a1;">${c.contactPhone || '+7 (705) 999-00-11'}</span></div>
+            <div><strong>${t.addr}</strong> ${getLocalized(c.districts, lang)}</div>
+            <div><strong>${t.cad}</strong> <code>${c.cadastreNumber || '05:102:044:112'}</code></div>
+            <div><strong>${t.lic}</strong> ${c.smrLicense || 'ГСЛ II категория'}</div>
+            <div><strong>${t.purpose}</strong> ${c.landPurpose || 'Строительство жилого комплекса'}</div>
+            <div><strong>${t.readiness}</strong> Факт: <strong>${c.readinessFact}%</strong> / Заявлено: <strong>${c.readinessDeclared}%</strong></div>
+            <div><strong>${t.legal}</strong> <span style="font-weight: 700; color: ${risk.zone === 'RED' ? '#b91c1c' : risk.zone === 'YELLOW' ? '#d97706' : '#15803d'};">${getLocalized(c.legalTexts, lang)}</span></div>
           </div>
         </div>
 
-        <div style="margin-bottom: 1.25rem; font-size: 0.85rem;">
-          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            2. Результаты детерминированной оценки рисков R1–R6 (Раздел 5 ТЗ)
+        <!-- Section 2: Factors R1-R6 -->
+        <div style="margin-bottom: 1.25rem;">
+          <h3 style="font-size: 13px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem; color: #0f172a;">
+            ${t.sec2}
           </h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+          <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #cbd5e1;">
             <thead>
-              <tr style="border-bottom: 2px solid #94a3b8; text-align: left;">
-                <th style="padding: 0.45rem;">Код</th>
-                <th style="padding: 0.45rem;">Фактор риска и обоснование</th>
-                <th style="padding: 0.45rem;">Статус фактора</th>
-                <th style="padding: 0.45rem;">Балл</th>
+              <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569;">
+                <th style="padding: 6px 8px; width: 50px;">Код</th>
+                <th style="padding: 6px 8px;">Критерий оценки и документальное обоснование</th>
+                <th style="padding: 6px 8px; width: 140px;">Статус фактора</th>
+                <th style="padding: 6px 8px; width: 65px; text-align: right;">Балл</th>
               </tr>
             </thead>
             <tbody>
@@ -1572,19 +1705,19 @@
           </table>
         </div>
 
-        <!-- Attached Ads & Citations (STEP 3 Requirement) -->
-        <div style="margin-bottom: 1.25rem; font-size: 0.85rem;">
-          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            3. Зафиксированные рекламные публикации и цитаты-основания (Раздел 3 и 4 ТЗ)
+        <!-- Section 3: Captured Ads -->
+        <div style="margin-bottom: 1.25rem;">
+          <h3 style="font-size: 13px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem; color: #0f172a;">
+            ${t.sec3}
           </h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #f8fafc;">
+          <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #cbd5e1;">
             <thead>
-              <tr style="border-bottom: 2px solid #cbd5e1; text-align: left;">
-                <th style="padding: 6px;">ID</th>
-                <th style="padding: 6px;">Источник / Дата</th>
-                <th style="padding: 6px;">Зафиксированный текст и цитата</th>
-                <th style="padding: 6px;">Фактор</th>
-                <th style="padding: 6px;">Ссылка</th>
+              <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-align: left; font-size: 11px; text-transform: uppercase; color: #475569;">
+                <th style="padding: 6px 8px; width: 65px;">ID</th>
+                <th style="padding: 6px 8px; width: 110px;">Источник / Дата</th>
+                <th style="padding: 6px 8px;">Зафиксированный текст и цитата-триггер</th>
+                <th style="padding: 6px 8px; width: 80px;">Фактор</th>
+                <th style="padding: 6px 8px; width: 80px;">Ссылка</th>
               </tr>
             </thead>
             <tbody>
@@ -1593,27 +1726,32 @@
           </table>
         </div>
 
-        <!-- 11 State Registries Legal References (STEP 4 Requirement) -->
-        <div style="margin-bottom: 1.25rem; font-size: 0.85rem;">
-          <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem;">
-            4. Сведения о проверке по государственным информационным системам РК
+        <!-- Section 4: Resolution & Signature -->
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; font-size: 12px;">
+          <h3 style="font-size: 13px; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.35rem; margin-bottom: 0.65rem; color: #0f172a;">
+            ${t.sec4}
           </h3>
-          <div style="font-size: 0.8rem; line-height: 1.5; color: #334155;">
-            <div>• <strong>АО «КЖК» / Казреестр:</strong> ${c.legalStatus === 'GUARANTEE' ? 'Подтверждено наличие договора государственной гарантии №KZ-2026/049.' : 'Договор гарантии и выписки ДДУ в Казреестре отсутствуют.'}</div>
-            <div>• <strong>МИО г. Усть-Каменогорска:</strong> ${c.legalStatus === 'PERMIT' ? 'Действует разрешение акимата на привлечение средств дольщиков.' : 'Официальное разрешение акимата на привлечение средств граждан не выдавалось.'}</div>
-            <div>• <strong>УГАСК ВКО:</strong> ${risk.zone === 'RED' ? 'Вынесено предписание о прекращении незаконного сбора средств граждан.' : 'Нарушений строительных норм первой очереди не зафиксировано.'}</div>
+          <div style="margin-bottom: 0.75rem; line-height: 1.5;">
+            <strong>Официальное заключение инспектора:</strong>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.65rem; margin-top: 0.35rem; color: #0f172a; font-style: italic;">
+              «${analystComment}»
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <div>${t.signAnalyst}</div>
+              <div style="font-weight: 800; margin-top: 2px; color: #0f172a;">${analystName}</div>
+            </div>
+            <div style="text-align: right; min-width: 200px;">
+              <div style="color: #64748b; font-size: 11px;">Личная подпись уполномоченного лица:</div>
+              <div style="border-bottom: 1px solid #0f172a; width: 180px; height: 28px; display: inline-block;"></div>
+            </div>
           </div>
         </div>
 
-        <div style="border-top: 1px solid #cbd5e1; padding-top: 1rem; margin-top: 1.5rem; display: flex; justify-content: space-between; font-size: 0.82rem; color: #475569;">
-          <div>
-            <strong>Акт составил уполномоченный аналитик МИО:</strong><br/>
-            <span>${c.signalAuthor || 'Ахметов Д.К. (Главный специалист отдела контроля)'}</span>
-          </div>
-          <div style="text-align: right;">
-            <strong>Дата и время фиксации:</strong><br/>
-            <span>${c.signalUpdatedAt || '15.10.2026, 12:00'}</span>
-          </div>
+        <!-- Legal Disclaimer -->
+        <div style="font-size: 10px; color: #64748b; line-height: 1.45; border-top: 1px solid #e2e8f0; padding-top: 0.65rem; text-align: justify;">
+          ⚖️ <strong>${t.disclaimer}</strong>
         </div>
       `;
     }
