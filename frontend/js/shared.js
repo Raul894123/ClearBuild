@@ -1,4 +1,7 @@
 // Shared Logic for ClearBuild / SAQ QURYLYS Portal
+// Codemasters Hackathon 8.0 (Ust-Kamenogorsk)
+// Integrates with window.apiClient and local fallback state (clearbuild_state_v2)
+
 const STATE_KEY = 'clearbuild_state_v2';
 
 function loadAppState() {
@@ -88,7 +91,6 @@ function saveState() {
   appState.activeTab = CURRENT_ACTIVE_TAB;
   try {
     localStorage.setItem(STATE_KEY, JSON.stringify(appState));
-    // Also save legacy keys for backward compatibility
     localStorage.setItem('clearbuild_complexes', JSON.stringify(complexes));
     localStorage.setItem('clearbuild_ads', JSON.stringify(adsList));
     localStorage.setItem('clearbuild_audit_log', JSON.stringify(auditLogEntries));
@@ -109,12 +111,12 @@ function resetDemoData() {
   localStorage.removeItem('clearbuild_ads');
   localStorage.removeItem('clearbuild_audit_log');
   localStorage.removeItem('clearbuild_selected_id');
-  
+
   appState = {
     complexes: JSON.parse(JSON.stringify(RAW_COMPLEXES)),
     adsList: JSON.parse(JSON.stringify(INITIAL_ADS)),
     auditLogEntries: [
-      `[${new Date().toLocaleString()}] 🔄 Демо-данные сброшены к эталону (Кейсы A, B, C)`,
+      `[${new Date().toLocaleString()}] 🔄 Демо-данные сброшены к эталону (Кейсы A, B, C: 8 ЖК и 12 объявлений)`,
       `[15.10.2026, 09:00] Инициализация мониторинга SAQ QURYLYS г. Усть-Каменогорск`,
       `[15.10.2026, 09:05] Загружено 8 строящихся комплексов и 12 зафиксированных объявлений`
     ],
@@ -124,12 +126,12 @@ function resetDemoData() {
     actLang: CURRENT_ACT_LANG,
     activeTab: CURRENT_ACTIVE_TAB
   };
-  
+
   complexes = appState.complexes;
   adsList = appState.adsList;
   auditLogEntries = appState.auditLogEntries;
   saveState();
-  
+
   alert('Эталонные данные успешно восстановлены!');
   if (typeof refreshAllViews === 'function') {
     refreshAllViews();
@@ -152,24 +154,15 @@ function changeFactorStatus(complexId, factorCode, newStatus) {
 
   saveState();
 
-  // Background sync with FastAPI if local backend is running
-  fetch(`/api/v1/complexes/${complexId}/confirm-factor`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      factor: factorCode,
-      status: newStatus,
-      evidence: `Решение аналитика МИО через интерактивную матрицу: ${newStatus}`,
-      analyst: "Ахметов Д.К. (Аналитик МИО)"
-    })
-  }).catch(() => {
-    // Autonomous client-side mode active
-  });
+  // Call apiClient to notify backend (if connected)
+  if (typeof apiClient !== 'undefined' && apiClient.confirmFactor) {
+    apiClient.confirmFactor(complexId, factorCode, newStatus, `Решение аналитика МИО через скоринг-матрицу: ${newStatus}`, "Ахметов Д.К. (Аналитик МИО)");
+  }
 
   if (typeof refreshAllViews === 'function') {
     refreshAllViews();
   } else {
-    if (typeof renderScoringView === 'function') renderScoringView();
+    if (typeof renderScoringView === 'function') renderScoringView(complexId);
     if (typeof renderScoringTable === 'function') renderScoringTable(complexId);
     if (typeof renderRegistry === 'function') renderRegistry();
     if (typeof renderComplexCards === 'function') renderComplexCards();
@@ -193,11 +186,107 @@ function updateFactorEvidence(complexId, factorCode, newEvidence) {
   auditLogEntries.unshift(`[${timeNow}] Обновлено обоснование фактора ${factorCode} для «${getLocalized(c.names)}»`);
   saveState();
 
+  if (typeof apiClient !== 'undefined' && apiClient.confirmFactor) {
+    apiClient.confirmFactor(complexId, factorCode, f.status, newEvidence, "Ахметов Д.К. (Аналитик МИО)");
+  }
+
   if (typeof refreshAllViews === 'function') {
     refreshAllViews();
   }
 }
 
+function recordSignalDecision(complexId, decision, comment, author) {
+  const c = complexes.find(item => item.id === complexId);
+  if (!c) return;
+
+  c.signalStatus = decision;
+  c.signalUpdatedAt = new Date().toLocaleString();
+  c.signalAuthor = author || "Ахметов Д.К. (Уполномоченный инспектор)";
+  if (comment) c.signalComment = comment;
+
+  const timeNow = new Date().toLocaleTimeString();
+  const decisionText = decision === 'CONFIRMED' ? 'УТВЕРЖДЕН' : 'ВОЗВРАЩЕН НА ДОРАБОТКУ';
+  auditLogEntries.unshift(`[${timeNow}] Сигнальный акт по ЖК «${getLocalized(c.names)}»: ${decisionText} инспектором ${c.signalAuthor}`);
+  saveState();
+
+  if (typeof apiClient !== 'undefined' && apiClient.signalDecision) {
+    apiClient.signalDecision(complexId, decision, comment, author);
+  }
+
+  if (typeof refreshAllViews === 'function') {
+    refreshAllViews();
+  }
+  alert(`Сигнальный акт по ЖК «${getLocalized(c.names)}» успешно ${decision === 'CONFIRMED' ? 'утвержден' : 'возвращен на доработку'}!`);
+}
+
+// Copy BIN and open official portal
+function copyBinAndOpen(bin, url, portalName) {
+  if (navigator.clipboard && bin) {
+    const cleanBin = bin.replace(/\D/g, '');
+    navigator.clipboard.writeText(cleanBin).catch(() => {});
+  }
+  showCopyToast(`📋 БИН <strong>${bin}</strong> скопирован в буфер! Открываем ${portalName}...`);
+  setTimeout(() => {
+    window.open(url, '_blank');
+  }, 400);
+}
+
+function showCopyToast(msg) {
+  let toast = document.getElementById('copy-toast-el');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'copy-toast-el';
+    toast.className = 'copy-toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = msg;
+  toast.classList.add('show');
+  clearTimeout(window.__toastTimeout);
+  window.__toastTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+// API Config Modal Handlers
+function openApiModal() {
+  const modal = document.getElementById('api-config-modal');
+  if (modal) {
+    if (typeof apiClient !== 'undefined') {
+      apiClient.updateUIStatus();
+    }
+    modal.style.display = 'flex';
+  }
+}
+
+function closeApiModal() {
+  const modal = document.getElementById('api-config-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function testApiConnection() {
+  const inputEl = document.getElementById('backend-api-url-input');
+  if (inputEl && inputEl.value && typeof apiClient !== 'undefined') {
+    apiClient.setBaseUrl(inputEl.value.trim());
+  }
+  if (typeof apiClient !== 'undefined') {
+    const res = await apiClient.ping();
+    if (res.ok) {
+      alert(`✅ Успешное соединение с Backend API!\n\nАдрес: ${apiClient.baseUrl}\nВерсия: ${res.data.version || '1.0'}\nГород: ${res.data.city || 'Усть-Каменогорск'}\nСтатус: 200 OK`);
+    } else {
+      alert(`🟡 Сервер бэкенда по адресу ${apiClient.baseUrl} не отвечает (или выключен).\n\nClearBuild продолжает работу в автономном демонстрационном режиме поверх seed.json и localStorage.`);
+    }
+  }
+}
+
+function saveApiUrlFromModal() {
+  const inputEl = document.getElementById('backend-api-url-input');
+  if (inputEl && typeof apiClient !== 'undefined') {
+    apiClient.setBaseUrl(inputEl.value.trim());
+    testApiConnection();
+  }
+}
+
+// Cross-registry check
 function triggerCrossRegistryCheck() {
   const timeNow = new Date().toLocaleTimeString();
   auditLogEntries.unshift(`[${timeNow}] ⚡ Запущена полная перекрёстная сверка 8 ЖК по 11 государственным реестрам РК...`);
@@ -307,7 +396,7 @@ function openComplexDossier(complexId) {
         <div style="flex: 1;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.2rem;">
             <strong style="font-size: 0.82rem;">${isHypo ? '🤖 Гипотеза ИИ' : '⚠️ Подтвержденное нарушение'}</strong>
-            <span class="status-badge ${badgeColor}">${factor.status}</span>
+            <span class="status-badge ${badgeColor}">${getFactorStatusLabel(factor.status, CURRENT_LANG)}</span>
           </div>
           <div style="font-size: 0.78rem; color: var(--text-secondary);">${evidenceText}</div>
         </div>
@@ -344,6 +433,8 @@ function openComplexDossier(complexId) {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.8rem;">
         <div><strong>Застройщик:</strong> ${getLocalized(c.developers)}</div>
         <div><strong>БИН застройщика:</strong> ${c.bin}</div>
+        <div><strong>Контактный телефон:</strong> ${c.contactPhone || 'Отдел продаж'}</div>
+        <div><strong>Кадастровый номер:</strong> ${c.cadastreNumber || 'Участок МИО'}</div>
         <div><strong>Стадия строительства:</strong> ${getLocalized(c.stages)}</div>
         <div><strong>Готовность:</strong> Факт ${c.readinessFact}% / Заявлено ${c.readinessDeclared}%</div>
       </div>
