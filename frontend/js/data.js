@@ -119,7 +119,13 @@ const RAW_COMPLEXES = [
       en: "Documents submitted to GASK EKR, addressing technical remarks. Sales restricted until approved."
     },
     factors: {
-      R1: { status: "NONE", weight: 35, evidence: { ru: "Заявка на проверке в акимате.", kz: "Әкімдікте өтінім тексерілуде.", en: "Permit under review." } },
+      R1: { status: "CONFIRMED", weight: 35, evidence: { ru: "Отказ МИО ВКО в выдаче разрешения №19-04/412; гарантия КЖК отсутствует.", kz: "ШҚО ЖАО рұқсат беруден бас тартуы №19-04/412; ҚТҚ кепілдігі жоқ.", en: "Akimat refusal No. 19-04/412; no KZH guarantee." } },
+      R2: { status: "CONFIRMED", weight: 25, evidence: { ru: "Сбор первоначального взноса 30% по предварительному договору в кассу.", kz: "Алдын ала шарт бойынша кассаға 30% бастапқы жарна жинау.", en: "30% down payment deposit collected to cashier." } },
+      R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Агрессивная реклама в OLX.kz и Instagram (AD-106, AD-107).", kz: "OLX.kz және Instagram желілеріндегі агрессивті жарнама.", en: "Aggressive ads on OLX.kz and Instagram." } },
+      R4: { status: "CONFIRMED", weight: 15, evidence: { ru: "Коллективное обращение 14 дольщиков в e-Otinish №ЖТ-2026-089112.", kz: "e-Otinish арқылы 14 үлескердің ұжымдық шағымы.", en: "Collective petition of 14 citizens on e-Otinish." } },
+      R5: { status: "CONFIRMED", weight: 10, evidence: { ru: "В рекламе заявлено 80%, по акту УГАСК — 35% (разница 45 п.п. ≥ 20 п.п.).", kz: "Жарнамада 80%, МСҚБ актісі бойынша — 35% (айырма 45 п.п.).", en: "Claimed 80%, fact 35% (45 pp discrepancy)." } },
+      R6: { status: "CONFIRMED", weight: 5, evidence: { ru: "Документированный простой башенного крана и стройплощадки более 4 месяцев.", kz: "Мұнаралы кран мен құрылыс алаңының 4 айдан астам тоқтап тұруы.", en: "Documented construction standstill exceeding 4 months." } }
+    } },
       R2: { status: "CONFIRMED", weight: 25, evidence: { ru: "Предварительный договор намерения с задатком 1 000 000 ₸.", kz: "1 000 000 ₸ кепілақысы бар ниет туралы алдын ала келісімшарт.", en: "Preliminary intent contract with 1,000,000 KZT deposit." } },
       R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Реклама в соцсетях без указания реквизитов разрешения.", kz: "Әлеуметтік желілерде рұқсат деректерінсіз жарнамалау.", en: "Online promotion lacking permit credentials." } },
       R4: { status: "NONE", weight: 15, evidence: { ru: "Жалоб нет.", kz: "Шағымдар жоқ.", en: "No complaints." } },
@@ -150,7 +156,13 @@ const RAW_COMPLEXES = [
       en: "GASK EKR issued prohibition notice. Citizen complaints recorded in e-Otinish."
     },
     factors: {
-      R1: { status: "CONFIRMED", weight: 35, evidence: { ru: "Отсутствует разрешение акимата и гарантия КЖК.", kz: "Әкімдік рұқсаты да, ҚТҚ кепілдігі де жоқ.", en: "No Akimat permit and no KZH guarantee." } },
+      R1: { status: "CONFIRMED", weight: 35, evidence: { ru: "Справка МИО ВКО: разрешение на привлечение денег дольщиков отсутствует.", kz: "ШҚО ЖАО анықтамасы: үлескерлер қаражатын тартуға рұқсат жоқ.", en: "Akimat letter: no legal permit for equity funds." } },
+      R2: { status: "AI_HYPOTHESIS", weight: 25, evidence: { ru: "Гипотеза ИИ (95%): найдено «Внесите депозит 400 000 ₸». Ожидает подтверждения аналитиком!", kz: "ЖИ күдігі (95%): «400 000 ₸ депозит салыңыз». Сарапшының растауын күтуде!", en: "AI flag (95%): 'Pay 400,000 KZT deposit'. Awaiting human confirmation." } },
+      R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Реклама продажи квартир в строящемся блоке Б (AD-108, AD-109).", kz: "Б блогында пәтер сату жарнамасы (AD-108, AD-109).", en: "Active promotion in block B (AD-108, AD-109)." } },
+      R4: { status: "NONE", weight: 15, evidence: { ru: "Подтвержденных коллективных обращений нет.", kz: "Расталған ұжымдық шағым жоқ.", en: "No confirmed complaints." } },
+      R5: { status: "CONFIRMED", weight: 10, evidence: { ru: "Заявлено 75%, подтверждено 45% (расхождение 30 п.п. ≥ 20 п.п.).", kz: "75% мәлімделген, 45% расталған (айырма 30 п.п.).", en: "Claimed 75%, confirmed 45% (30 pp discrepancy)." } },
+      R6: { status: "CONFIRMED", weight: 5, evidence: { ru: "Отставание от графика строительства более чем на 6 месяцев.", kz: "Құрылыс кестесінен 6 айдан астам кешігу.", en: "Schedule delay exceeding 6 months." } }
+    } },
       R2: { status: "CONFIRMED", weight: 25, evidence: { ru: "Договор уступки права требования (цессия) и оплата наличными.", kz: "Талап ету құқығын басқаға беру (цессия) шарты және қолма-қол төлем.", en: "Assignment of claim rights (cession) with cash hand-over." } },
       R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Агрессивный таргет в Instagram с обещанием сдачи через 6 месяцев.", kz: "Instagram желісінде 6 айда тапсыру уәдесімен агрессивті жарнама.", en: "Aggressive Instagram ads promising handover in 6 months." } },
       R4: { status: "CONFIRMED", weight: 15, evidence: { ru: "Зарегистрировано коллективное обращение в e-Otinish от 05.10.2026.", kz: "05.10.2026 ж. e-Otinish арқылы ұжымдық шағым тіркелді.", en: "Collective petition filed on e-Otinish on 05.10.2026." } },
