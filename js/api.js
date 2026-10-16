@@ -78,14 +78,14 @@
       } else {
         if (dotEl) {
           dotEl.className = 'status-dot dot-yellow';
-          dotEl.title = '🟡 Ожидание Backend-сервера (Демо-данные из seed.json)';
+          dotEl.title = '🟡 Демо-режим: встроенная база (8 ЖК, 12 объявлений). Сервер не подключён.';
         }
         if (badgeEl) {
           badgeEl.className = 'status-badge badge-yellow';
-          badgeEl.innerHTML = '🟡 Ожидание Backend-сервера (Автономный режим)';
+          badgeEl.innerHTML = '🟡 Демо-режим (встроенная база данных)';
         }
         if (textEl) {
-          textEl.textContent = `Бэкенд по адресу ${this.baseUrl} не обнаружен. Включен автономный клиентский режим на базе seed.json и localStorage.`;
+          textEl.textContent = `Сервер по адресу ${this.baseUrl} не подключён. Все функции работают на встроенной демо-базе (8 ЖК, 12 объявлений), изменения сохраняются в браузере.`;
         }
       }
     },
@@ -296,10 +296,38 @@
 
   global.apiClient = apiClient;
 
+  // Should we auto-probe the backend on page load?
+  // - local dev (localhost / 127.0.0.1 / file://) → yes, FastAPI usually runs on :8000
+  // - public site (GitHub Pages) → only if a backend URL was set explicitly
+  //   (via ?api=https://host/api/v1 or the "API" modal), otherwise the browser
+  //   may show a "local network access" prompt for http://localhost:8000.
+  function shouldAutoProbe() {
+    if (typeof location === 'undefined') return false;
+    const host = location.hostname || '';
+    const isLocal = location.protocol === 'file:' || host === '' || host === 'localhost' || host === '127.0.0.1';
+    if (isLocal) return true;
+    try {
+      return !!localStorage.getItem('clearbuild_api_url');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ?api=<url> query override (e.g. ?api=https://my-backend.example.com/api/v1)
+  try {
+    const qsApi = new URLSearchParams(global.location ? global.location.search : '').get('api');
+    if (qsApi) apiClient.setBaseUrl(qsApi);
+  } catch (e) {}
+
   // Background ping on load
   if (typeof window !== 'undefined') {
     window.addEventListener('DOMContentLoaded', () => {
-      apiClient.ping();
+      if (shouldAutoProbe()) {
+        apiClient.ping();
+      } else {
+        apiClient.isConnected = false;
+        apiClient.updateUIStatus();
+      }
     });
   }
 })(typeof window !== 'undefined' ? window : this);
