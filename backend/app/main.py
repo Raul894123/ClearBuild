@@ -18,6 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.factors import OVERRIDE_STATUSES, evaluate_factors, hard_precondition_error, risk_profile
 from app.mappers import (
     SIGNAL_STATUS_TO_API,
     SIGNAL_STATUS_TO_DB,
@@ -34,7 +35,7 @@ from app.mappers import (
     verification_status_for,
 )
 from app.models import AuditLog, Complex, Publication, Signal, now
-from app.scoring import WEIGHTS, calculate_risk_for_complex
+from app.scoring import WEIGHTS
 from app.seed import init_db
 
 
@@ -103,7 +104,10 @@ class AnalyzeRequest(BaseModel):
 
 class ConfirmFactorRequest(BaseModel):
     factor: str = Field(..., description="Код фактора риска (R1, R2, R3, R4, R5, R6)")
-    status: str = Field("CONFIRMED", description="Новый статус (CONFIRMED, REJECTED, NONE)")
+    status: str = Field(
+        "CONFIRMED",
+        description="Решение: CONFIRMED, REJECTED, NONE, UNVERIFIED, AI_HYPOTHESIS; AUTO снимает решение и возвращает расчёт по данным",
+    )
     evidence: Optional[str] = Field(None, description="Обоснование решения аналитика")
     analyst: Optional[str] = Field("Ахметов Д.К. (Аналитик МИО)", description="ФИО специалиста МИО")
 
@@ -215,7 +219,12 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
         is_active_pre_commissioning_ad=not (target and target.is_commissioned),
         is_demo=False,
     )
+    if target:
+        item.complex = target
     db.add(item)
+    if target:
+        # Подтверждённая публикация сразу меняет R2/R3 — обновляем текущую сигнальную карточку
+        refresh_signal(target.current_signal, target)
     _audit(db, "Аналитик МИО (веб-интерфейс)", "publication_create", "publication", item.id, {
         "complexId": pub.complexId,
         "platform": pub.platform,
@@ -355,38 +364,66 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
     factor_code = req.factor.upper()
     if factor_code not in WEIGHTS:
         raise HTTPException(status_code=400, detail=f"Недопустимый код фактора {factor_code}. Допустимы: R1-R6")
+    status = req.status.upper()
+    if status not in OVERRIDE_STATUSES | {"AUTO"}:
+        allowed = ", ".join(sorted(OVERRIDE_STATUSES | {"AUTO"}))
+        raise HTTPException(status_code=400, detail=f"Недопустимый статус {req.status}. Допустимы: {allowed}")
 
     analyst = req.analyst or "Ахметов Д.К. (Аналитик МИО)"
-    evidence_text = req.evidence or f"Подтверждено аналитиком МИО ({analyst}) в рамках мониторинга."
-    previous = (target.factors or {}).get(factor_code, {}).get("status")
+    evidence_text = req.evidence or f"Решение аналитика МИО ({analyst}) в рамках мониторинга."
+    previous = next(f for f in evaluate_factors(target) if f["code"] == factor_code)
+
+    # Подтверждение R1 = аналитик установил отсутствие правового основания: меняем данные ЖК
+    if factor_code == "R1" and status == "CONFIRMED" and target.legal_basis_type != "absent":
+        target.legal_basis_type = "absent"
+        target.verification_status = verification_status_for("absent")
+        previous_source = target.verification_source
+        target.verification_source = f"{evidence_text} (ранее: {previous_source})" if previous_source else evidence_text
+    if status == "CONFIRMED":
+        blocked = hard_precondition_error(target, factor_code)
+        if blocked:
+            raise HTTPException(status_code=400, detail=blocked)
+
+    # R4 и R6 — флаги ЖК по ТЗ: решение аналитика пишем прямо в них
+    if factor_code == "R4" and status != "AUTO":
+        target.has_collective_complaint = status == "CONFIRMED"
+        target.collective_complaint_source = evidence_text if status == "CONFIRMED" else None
+    elif factor_code == "R6" and status != "AUTO":
+        target.has_significant_delay = status == "CONFIRMED"
+        target.delay_source = evidence_text if status == "CONFIRMED" else None
 
     # Новый словарь, чтобы SQLAlchemy зафиксировал изменение JSON-колонки
-    factors = dict(target.factors or {})
-    factors[factor_code] = {"status": req.status, "evidence": evidence_text}
-    target.factors = factors
-    if factor_code == "R4":
-        target.has_collective_complaint = req.status == "CONFIRMED"
-    elif factor_code == "R6":
-        target.has_significant_delay = req.status == "CONFIRMED"
+    overrides = dict(target.factor_overrides or {})
+    if status == "AUTO":
+        overrides.pop(factor_code, None)
+    else:
+        overrides[factor_code] = {
+            "status": status,
+            "evidence": req.evidence,
+            "analyst": analyst,
+            "at": now().isoformat(),
+        }
+    target.factor_overrides = overrides
 
-    # Пересчитываем балл строго детерминированной функцией и обновляем текущую сигнальную карточку
+    # Пересчитываем балл по данным и обновляем текущую сигнальную карточку
     refresh_signal(target.current_signal, target)
+    current = next(f for f in evaluate_factors(target) if f["code"] == factor_code)
     _audit(db, analyst, "factor_status_change", "complex", complex_id, {
         "factor": factor_code,
-        "from": previous,
-        "to": req.status,
+        "requested": status,
+        "from": previous["status"],
+        "to": current["status"],
         "evidence": evidence_text,
     })
     db.commit()
 
-    data = complex_to_api(target)
     return {
         "status": "success",
         "complex_id": complex_id,
         "factor": factor_code,
-        "factor_status": req.status,
-        "risk_profile": calculate_risk_for_complex(data),
-        "complex": data,
+        "factor_status": current["status"],
+        "risk_profile": risk_profile(target),
+        "complex": complex_to_api(target),
     }
 
 
@@ -410,14 +447,6 @@ def create_complex(req: ComplexCreateRequest, db: Session = Depends(get_db)):
         is_commissioned=commissioned,
         contact_phone="+7 (7232) 00-00-00",
         sales_account="@new_developer",
-        factors={
-            "R1": {"status": "UNVERIFIED" if legal_type == "unknown" else "NONE", "evidence": "Требуется проверка"},
-            "R2": {"status": "NONE", "evidence": "Не выявлено"},
-            "R3": {"status": "NONE", "evidence": "Не выявлено"},
-            "R4": {"status": "NONE", "evidence": "Не выявлено"},
-            "R5": {"status": "NONE", "evidence": "Не выявлено"},
-            "R6": {"status": "NONE", "evidence": "Не выявлено"},
-        },
         is_demo=False,
     )
     db.add(new_item)

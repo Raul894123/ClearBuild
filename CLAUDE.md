@@ -46,19 +46,24 @@ The README's `uvicorn backend.app.main:app` from the repo root fails with `Modul
 **Backend** (`backend/app/`): FastAPI + SQLAlchemy + SQLite. Routes live under `/api/v1/...`: health, complexes, publications, analyze (rule-based ad trigger detection), confirm-factor, signal-decision, audit-log.
 - `db.py`: engine and session. The URL comes from env `BACKEND_DB_URL`, default `backend/clearbuild_demo.db` (gitignored). Delete that file to reseed.
 - `models.py`: tables `Complex`, `Publication`, `Signal`, `AuditLog`. Column names and enum values follow TZ1, snake_case (`legal_basis_type`: absent/unknown/operator_guarantee/mio_permit, etc.). A signal decision **adds** a new `Signal` row; the current card is the latest row.
-- `mappers.py`: the only place where DB values become the API format the frontend expects (camelCase keys, `ABSENT`/`UNVERIFIED`/`KZH_GUARANTEE`/`COMMISSIONED`, `AI_HYPOTHESIS`, `PENDING_HUMAN`, dates as `ДД.ММ.ГГГГ, ЧЧ:ММ`). `COMMISSIONED` is stored as `operator_guarantee` plus `is_commissioned`.
+- `mappers.py`: the only place where DB values become the API format the frontend expects (camelCase keys, `ABSENT`/`UNVERIFIED`/`KZH_GUARANTEE`/`COMMISSIONED`, `AI_HYPOTHESIS`, `PENDING_HUMAN`). Timestamps are ISO 8601 with `+05:00`, both in the API and in the DB (`models.TZDateTime`, because SQLite drops the zone). Date-only fields stay `ДД.ММ.ГГГГ`. `COMMISSIONED` is stored as `mio_permit` plus `is_commissioned`.
 - `seed.py`: on startup (FastAPI lifespan) it creates the tables and loads `backend/seed.json` if the complexes table is empty. Seeded rows get `is_demo=true`. `backend/seed.json` differs from the root/`frontend/` `seed.json`.
-- Per-factor statuses (R1–R6) currently live in the `Complex.factors` JSON column and feed `scoring.py`.
-- Tests: `tests/conftest.py` points `BACKEND_DB_URL` at a temp file before `app.db` is imported. `test_api.py` covers the endpoints through `TestClient`.
+- `factors.py`: derives R1–R6 from DB data (`evaluate_factors`, `risk_profile`); see the rules below. The analyst's `confirm-factor` decisions are stored in `Complex.factor_overrides` and applied on top. `AUTO` removes a decision.
+- `seed.py` aborts with a clear error when an existing DB file is missing columns, because `create_all` doesn't migrate. After a schema change, delete `clearbuild_demo.db`.
+- Tests: `tests/conftest.py` points `BACKEND_DB_URL` at a temp file before `app.db` is imported. `test_factors.py` covers the TZ rules on in-memory objects, `test_api.py` covers the endpoints and the seed through `TestClient`.
 
-## Scoring rules (implemented three times — keep them in sync)
+## Scoring rules
 
-The same logic lives in `backend/app/scoring.py`, in `calculateComplexRisk` in `js/shared.js`, and in `frontend/src/services/scoring.js`.
+The zone/score logic exists in `backend/app/scoring.py`, in `calculateComplexRisk` in `js/shared.js`, and in `frontend/src/services/scoring.js`. Only the backend derives factors from data; the frontend sums hand-set statuses from `js/data.js`, so the scores can differ (jk-6).
 
 - Weights: R1=35, R2=25, R3=10, R4=15, R5=10, R6=5. `score = min(100, sum of CONFIRMED factors)`.
 - Only `CONFIRMED` factors count. `AI_HYPOTHESIS`, needs-check/`UNVERIFIED` and `NONE` all give 0 (human-in-the-loop: AI never adds points on its own).
-- R1 is awarded only when the absence of a legal basis is *established*. Unknown data gives 0, and a KZhK operator guarantee also means no R1.
+- R1 is awarded only when `legal_basis_type == absent`. `unknown` gives 0 with the label «Нужна проверка», and `operator_guarantee` or `mio_permit` give 0. Confirming R1 through `confirm-factor` sets the complex to `absent`.
+- R2/R3 come only from `confirmed` publications (`has_direct_payment_offer` / `is_active_pre_commissioning_ad`). R3 never applies to a commissioned complex. `pending_review` publications show up as `AI_HYPOTHESIS` with 0 points.
+- R4/R6 come from the `has_collective_complaint` / `has_significant_delay` flags.
+- R5 requires `stated − verified ≥ 20` (directional, no `abs`), with both dates and both sources present. If the declared readiness comes from a publication (`stated_readiness_publication_id`) that isn't confirmed yet, R5 is an AI hypothesis.
+- An analyst's CONFIRMED decision cannot bypass these hard rules (R1 needs absent, R3 needs pre-commissioning, R5 needs a gap of 20+); `confirm-factor` returns 400 in those cases.
 - Zones: RED requires score ≥ 60 **and** both R1 and R2 confirmed. YELLOW covers score ≥ 25 otherwise, including ≥ 60 without R1+R2. GREEN is < 25.
-- Invariants checked by tests and the demo: jk-2 (Case A) = 35 Yellow, jk-1 (Case B) = 70 Red, jk-3 (Case C) = 10 Green, and the edge case jk-5 = **60 Yellow**, because its R2 is still an AI hypothesis.
+- Seed invariants checked by tests (`SEED_EXPECTED` in `test_api.py`): jk-1 (Case B) = 70 Red, jk-2 (Case A) = 35 Yellow, jk-3 (Case C) = 10 Green, jk-4 = 100 Red, jk-5 (edge case) = **60 Yellow** (its R2 is still an AI hypothesis), jk-6 = 5 Green, jk-7 = 10 Green, jk-8 = 0 Green.
 
 All developer names, BINs and phone numbers are fictional demo data (marked "-Демо"). The system flags risk indicators and does not assert violations, so keep that disclaimer wording intact in UI and act text.

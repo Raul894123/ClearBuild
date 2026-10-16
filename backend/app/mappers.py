@@ -4,8 +4,9 @@ import re
 from datetime import date, datetime
 from typing import Any, Dict, Optional, Tuple
 
-from app.models import AuditLog, Complex, Publication, Signal
-from app.scoring import WEIGHTS, calculate_risk_for_complex
+from app.factors import evaluate_factors, factors_summary, risk_profile
+from app.models import TZ, AuditLog, Complex, Publication, Signal, to_tz
+from app.scoring import WEIGHTS, calculate_risk
 
 # --------------------------------------------------------------------------
 # Перечисления: API -> БД
@@ -19,7 +20,7 @@ LEGAL_BASIS_TO_DB: Dict[str, str] = {
     "MIO_PERMIT": "mio_permit",
     "PERMIT": "mio_permit",
     # Введённый в эксплуатацию объект: is_commissioned = True
-    "COMMISSIONED": "operator_guarantee",
+    "COMMISSIONED": "mio_permit",
 }
 LEGAL_BASIS_TO_API: Dict[str, str] = {
     "absent": "ABSENT",
@@ -79,7 +80,10 @@ def publication_status_to_db(value: Optional[str]) -> str:
 
 
 # --------------------------------------------------------------------------
-# Даты: формат фронтенда «ДД.ММ.ГГГГ» и «ДД.ММ.ГГГГ, ЧЧ:ММ»
+# Даты и время.
+# Время в API — ISO 8601 с поясом +05:00 («2026-10-14T09:15:00+05:00»).
+# Даты без времени — «ДД.ММ.ГГГГ», как в seed.json и на фронтенде.
+# На входе принимается ISO и старый формат «ДД.ММ.ГГГГ, ЧЧ:ММ (пометка)» (считается +05:00).
 # --------------------------------------------------------------------------
 _DT_RE = re.compile(
     r"^\s*(\d{1,2})\.(\d{1,2})\.(\d{4})(?:,?\s*(\d{1,2}):(\d{2})(?::\d{2})?)?\s*(?:\((.*)\))?\s*$"
@@ -99,12 +103,12 @@ def parse_datetime(value: Optional[str]) -> Tuple[Optional[datetime], Optional[s
     if m:
         day, month, year, hour, minute, note = m.groups()
         try:
-            dt = datetime(int(year), int(month), int(day), int(hour or 0), int(minute or 0))
+            dt = datetime(int(year), int(month), int(day), int(hour or 0), int(minute or 0), tzinfo=TZ)
         except ValueError:
             return None, None
         return dt, (note or None)
     try:
-        return datetime.fromisoformat(value.strip()).replace(tzinfo=None, microsecond=0), None
+        return to_tz(datetime.fromisoformat(value.strip())).replace(microsecond=0), None
     except ValueError:
         return None, None
 
@@ -114,7 +118,7 @@ def fmt_date(value: Optional[date]) -> Optional[str]:
 
 
 def fmt_datetime(value: Optional[datetime]) -> Optional[str]:
-    return value.strftime("%d.%m.%Y, %H:%M") if value else None
+    return to_tz(value).isoformat(timespec="seconds") if value else None
 
 
 # --------------------------------------------------------------------------
@@ -152,22 +156,19 @@ def complex_to_api(c: Complex) -> Dict[str, Any]:
         "signalAuthor": signal.reviewed_by if signal else None,
         "signalUpdatedAt": fmt_datetime(signal.reviewed_at or signal.created_at) if signal else None,
         "signalComment": signal.comment if signal else None,
-        "factors": c.factors or {},
+        "factors": factors_summary(evaluate_factors(c)),
         "isDemo": c.is_demo,
     }
 
 
 def complex_to_api_with_risk(c: Complex) -> Dict[str, Any]:
     data = complex_to_api(c)
-    data["riskProfile"] = calculate_risk_for_complex(data)
+    data["riskProfile"] = risk_profile(c)
     return data
 
 
 def publication_to_api(p: Publication) -> Dict[str, Any]:
     hypo = p.ai_hypothesis or {}
-    captured = fmt_datetime(p.captured_at)
-    if captured and p.capture_note:
-        captured = f"{captured} ({p.capture_note})"
     factor = hypo.get("proposedFactor")
     return {
         "id": p.id,
@@ -177,7 +178,8 @@ def publication_to_api(p: Publication) -> Dict[str, Any]:
         "phone": p.phone,
         "url": p.url,
         "pubDate": fmt_date(p.published_at),
-        "capturedAt": captured,
+        "capturedAt": fmt_datetime(p.captured_at),
+        "captureNote": p.capture_note,
         "text": p.text_content,
         "triggerSpan": hypo.get("quote"),
         "proposedFactor": factor,
@@ -202,15 +204,16 @@ def audit_to_api(a: AuditLog) -> Dict[str, Any]:
 
 
 def signal_snapshot(c: Complex) -> Dict[str, Any]:
-    """Балл, зона и сработавшие факторы для строки Signal по текущим статусам факторов."""
-    risk = calculate_risk_for_complex({"factors": c.factors or {}})
-    factors = c.factors or {}
+    """Балл, зона и сработавшие факторы для строки Signal по данным ЖК."""
+    factors = evaluate_factors(c)
+    active = [f for f in factors if f["active"]]
+    risk = calculate_risk([f["code"] for f in active])
     return {
         "total_score": risk["score"],
         "risk_zone": risk["zone"].lower(),
         "active_factors": [
-            {"code": code, "points": WEIGHTS[code], "evidence": (factors.get(code) or {}).get("evidence")}
-            for code in risk["confirmed_factors"]
+            {"code": f["code"], "points": f["points"], "reason": f["reason"], "evidence": f["evidence"]}
+            for f in active
         ],
     }
 
