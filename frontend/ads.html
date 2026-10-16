@@ -147,33 +147,95 @@
 
   <!-- Add Ad Modal -->
   <div class="modal-overlay" id="add-ad-modal">
-    <div class="modal-card" style="max-width: 600px;">
+    <div class="modal-card" style="max-width: 620px;">
       <div class="modal-header">
-        <h3 style="font-size: 1.1rem; font-weight: 800;">Добавить публикацию для анализа</h3>
+        <h3 style="font-size: 1.1rem; font-weight: 800;">Добавить публикацию для анализа ИИ</h3>
         <button onclick="closeAddAdModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <div>
+          <div style="font-size: 0.76rem; font-weight: 800; color: var(--brand-primary); margin-bottom: 0.35rem;">⚡ Быстрые демо-примеры (нажмите, чтобы заполнить поля в 1 клик):</div>
+          <div class="presets-grid" id="ai-presets-bar-buttons">
+            <button type="button" class="preset-demo-btn" onclick="applyAiPreset('preset-nurly')">
+              <span class="preset-tag" style="color:#d97706;">🔥 Сценарий 1 · ЖК Нурлы Жол (Кейс A → Красная зона)</span>
+              <span class="preset-desc">Незаконная бронь и взнос 20% в кассу без гарантии КЖК</span>
+            </button>
+            <button type="button" class="preset-demo-btn" onclick="applyAiPreset('preset-shared-phone')">
+              <span class="preset-tag" style="color:#2563eb;">📞 Сценарий 2 · Общий телефон (candidates[])</span>
+              <span class="preset-desc">Номер +7 (705) 999-00-11 без названия ЖК (поиск кандидатов)</span>
+            </button>
+            <button type="button" class="preset-demo-btn" onclick="applyAiPreset('preset-overstate')">
+              <span class="preset-tag" style="color:#7c3aed;">🏗️ Сценарий 3 · Завышение этапа (Фактор R5)</span>
+              <span class="preset-desc">Реклама «Готовность 85%» при котловане 10% (ЖК Сармат)</span>
+            </button>
+            <button type="button" class="preset-demo-btn" onclick="applyAiPreset('preset-clean')">
+              <span class="preset-tag" style="color:#16a34a;">✅ Сценарий 4 · Законная реклама (0 баллов)</span>
+              <span class="preset-desc">Официальный ДДУ через гарантию КЖК (ЖК Ертис Сити)</span>
+            </button>
+          </div>
+        </div>
+        <div class="ocr-dropzone" id="ocr-upload-box" onclick="document.getElementById('ocr-file-input').click()">
+          <input type="file" id="ocr-file-input" accept="image/*" style="display:none;" onchange="handleOcrFileUpload(this)" />
+          <div style="font-size: 0.82rem; font-weight: 800; color: var(--brand-primary);">📷 Загрузить скриншот объявления (OCR-распознавание текста)</div>
+          <div style="font-size: 0.72rem; color: var(--text-secondary);">Загрузите картинку из Instagram / Krisha.kz или выберите демо-пресет выше</div>
+          <div class="ocr-preview-strip" id="ocr-preview-strip">
+            <span style="font-size:1.3rem;">🖼️</span>
+            <div style="flex:1;">
+              <div style="font-size:0.75rem; font-weight:700; color:#15803d;" id="ocr-status-text">Скриншот распознан OCR-модулем</div>
+              <div style="font-size:0.68rem; color:var(--text-muted);">Цифровой отпечаток снимка прикреплён к карточке фиксации</div>
+            </div>
+          </div>
+        </div>
         <div>
           <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Жилой комплекс</label>
           <select id="new-ad-complex-id" class="search-input"></select>
         </div>
-        <div>
-          <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Площадка</label>
-          <select id="new-ad-platform" class="search-input">
-            <option value="Krisha.kz">Krisha.kz</option>
-            <option value="Instagram">Instagram (@realty_vko)</option>
-            <option value="OLX.kz">OLX.kz</option>
-            <option value="Telegram">Telegram канал</option>
-          </select>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Площадка</label>
+            <select id="new-ad-platform" class="search-input">
+              <option value="Krisha.kz">Krisha.kz</option>
+              <option value="Instagram">Instagram (@realty_vko)</option>
+              <option value="OLX.kz">OLX.kz</option>
+              <option value="Telegram">Telegram канал</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Телефон отдела продаж</label>
+            <input type="text" id="new-ad-phone" class="search-input" placeholder="+7 (705) 999-00-11" />
+          </div>
         </div>
         <div>
           <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.3rem;">Текст объявления</label>
           <textarea id="new-ad-text" class="search-input" rows="4" placeholder="Вставьте текст объявления (например: «Готовность 80%! Бронирование с первоначальным взносом 20% в кассу»)..."></textarea>
         </div>
+        <div>
+          <button class="btn btn-secondary" type="button" onclick="runLiveAIAnalysis()" style="width: 100%;">
+            🤖 Проверить текст на нарушения (ИИ-анализ)
+          </button>
+        </div>
+        <div id="ai-live-preview" style="display: none; background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem;"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeAddAdModal()">Отмена</button>
-        <button class="btn btn-primary" onclick="submitManualAd()">⚡ Проанализировать ИИ</button>
+        <button class="btn btn-primary" onclick="submitManualAd()">💾 Сохранить и зафиксировать</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screenshot Evidence Modal -->
+  <div class="modal-overlay" id="screenshot-modal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Доказательная база · Архив фиксации</div>
+          <h3 style="font-size: 1.05rem; font-weight: 800;" id="screenshot-modal-title">Снимок экрана объявления</h3>
+        </div>
+        <button onclick="closeAdScreenshotModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body" id="screenshot-modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAdScreenshotModal()">Закрыть</button>
       </div>
     </div>
   </div>
@@ -217,10 +279,25 @@
       const tbody = document.getElementById('ads-table-body');
       if (!tbody) return;
 
-      tbody.innerHTML = adsList.map(a => {
+      const tScreen = CURRENT_LANG === 'kz' ? '🖼️ Скриншот' : CURRENT_LANG === 'en' ? '🖼️ Screenshot' : '🖼️ Снимок экрана';
+      const tAccept = CURRENT_LANG === 'kz' ? '✅ Растау' : CURRENT_LANG === 'en' ? '✅ Confirm' : '✅ Подтвердить';
+      const tReject = CURRENT_LANG === 'kz' ? '✕ Қабылдамау' : CURRENT_LANG === 'en' ? '✕ Reject' : '✕ Отклонить';
+
+      tbody.innerHTML = adsList.map(rawAd => {
+        const a = typeof getLocalizedAd === 'function' ? getLocalizedAd(rawAd, CURRENT_LANG) : rawAd;
         const complex = complexes.find(c => c.id === a.complexId);
-        const compName = complex ? getLocalized(complex.names) : a.complexId;
-        const badgeClass = a.status === 'CONFIRMED' ? 'badge-red' : a.status === 'VERIFIED_OK' ? 'badge-green' : 'badge-yellow';
+        const compName = complex ? getLocalized(complex.names) : (a.complexId || 'ЖК не привязан');
+        const isRejected = a.status === 'REJECTED';
+        const isConfirmed = a.status === 'CONFIRMED';
+        const isVerifiedOk = a.status === 'VERIFIED_OK';
+        const badgeClass = (isVerifiedOk || isRejected) ? 'badge-green' : isConfirmed ? 'badge-red' : 'badge-yellow';
+        const statusLabel = isRejected
+          ? (CURRENT_LANG === 'kz' ? '✕ Қабылданбады (0 б.)' : CURRENT_LANG === 'en' ? '✕ Rejected (0 pts)' : '✕ Отклонено инспектором (0 б.)')
+          : isVerifiedOk
+            ? (CURRENT_LANG === 'kz' ? '✅ Заңды жарнама' : CURRENT_LANG === 'en' ? '✅ Lawful Ad' : '✅ Проверено (Нарушений нет)')
+            : isConfirmed
+              ? (CURRENT_LANG === 'kz' ? '⚠️ Бұзушылық расталды' : CURRENT_LANG === 'en' ? '⚠️ Violation Confirmed' : '⚠️ Нарушение подтверждено')
+              : (CURRENT_LANG === 'kz' ? '🤖 Инспектор шешімін күтуде (0 б.)' : CURRENT_LANG === 'en' ? '🤖 Awaiting Inspector (0 pts)' : '🤖 Ждёт решения инспектора (0 б.)');
 
         const adDate = a.date || a.pubDate || a.capturedAt || '14.10.2026';
         const captureTime = a.capturedAt || a.date || a.pubDate || '14.10.2026, 12:00';
@@ -240,30 +317,40 @@
 
         const triggersHtml = (a.triggers || []).map(tr => {
           return `<span style="background: rgba(239,68,68,0.12); color: #dc2626; border: 1px solid rgba(239,68,68,0.25); padding: 1px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">${tr}</span>`;
-        }).join(' ');
+        }).join(' ') || `<span class="trigger-chip">${a.triggerSpan || 'Прямой сбор средств'}</span>`;
 
         return `
           <tr>
             <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text-muted);">${a.id}</td>
             <td>
-              <strong>${a.source}</strong>
+              <strong>${a.platform || a.source}</strong>
               <div style="font-size: 0.72rem; color: var(--text-muted);">${adDate}</div>
             </td>
             <td>
               <strong>${compName}</strong>
+              <div style="font-size: 0.72rem; color: var(--text-secondary);">${a.phone || ''}</div>
             </td>
             <td style="max-width: 340px; font-size: 0.82rem; line-height: 1.45;">
               <div>${highlightedAdText}</div>
-              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem;">
+              <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                 <span>📸 Фиксация: ${captureTime}</span>
+                <span>·</span>
+                <button type="button" class="btn btn-secondary btn-sm" style="padding: 0.1rem 0.45rem; font-size: 0.68rem;" onclick="openAdScreenshotModal('${a.id}')">${tScreen}</button>
                 <span>·</span>
                 <a href="${adUrl}" target="_blank" style="color: var(--brand-primary); text-decoration: underline;">🔗 Источник</a>
               </div>
             </td>
             <td>${triggersHtml}</td>
-            <td style="font-size: 0.78rem; font-weight: 600; color: var(--brand-primary);">${a.aiHypothesis}</td>
             <td>
-              <span class="status-badge ${badgeClass}">${a.status}</span>
+              <div style="font-size: 0.78rem; font-weight: 600; color: var(--brand-primary);">${a.aiHypothesis || (a.proposedFactor ? a.proposedFactor : '0 б.')}</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted);">Уверенность: ${a.confidence ?? 0}%</div>
+            </td>
+            <td style="min-width: 155px;">
+              <span class="status-badge ${badgeClass}" style="display: inline-block; margin-bottom: 0.4rem;">${statusLabel}</span>
+              <div class="no-print" style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.7rem; border-color:#16a34a; color:#15803d;" onclick="verifyPublicationDecision('${a.id}', 'accept')">${tAccept}</button>
+                <button class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.45rem; font-size: 0.7rem; border-color:#dc2626; color:#b91c1c;" onclick="verifyPublicationDecision('${a.id}', 'reject')">${tReject}</button>
+              </div>
             </td>
           </tr>
         `;
@@ -272,9 +359,13 @@
 
     function openAddAdModal() {
       const sel = document.getElementById('new-ad-complex-id');
-      sel.innerHTML = complexes.map(c => {
+      const autoOpt = `<option value="">🔍 Авто-определение ЖК (по тексту и телефону)</option>`;
+      sel.innerHTML = autoOpt + complexes.map(c => {
         return `<option value="${c.id}">${getLocalized(c.names)} (${c.code})</option>`;
       }).join('');
+      window.__lastAnalyzeResult = null;
+      const preview = document.getElementById('ai-live-preview');
+      if (preview) preview.style.display = 'none';
       document.getElementById('add-ad-modal').style.display = 'flex';
     }
 
@@ -282,9 +373,93 @@
       document.getElementById('add-ad-modal').style.display = 'none';
     }
 
-    function submitManualAd() {
-      const complexId = document.getElementById('new-ad-complex-id').value;
+    function selectCandidateComplexInModal(candidateId) {
+      const sel = document.getElementById('new-ad-complex-id');
+      if (sel) sel.value = candidateId;
+      runLiveAIAnalysis();
+    }
+
+    async function runLiveAIAnalysis() {
+      const text = (document.getElementById('new-ad-text').value || '').trim();
+      const complexIdRaw = document.getElementById('new-ad-complex-id').value;
+      const phoneRaw = (document.getElementById('new-ad-phone').value || '').trim();
+      const preview = document.getElementById('ai-live-preview');
+      if (!text || !preview) {
+        alert('Введите текст объявления для анализа ИИ');
+        return;
+      }
+
+      preview.style.display = 'block';
+      preview.innerHTML = `<div style="color: var(--text-muted); font-weight: 600;">⏳ Выполняется ИИ-анализ публикации (POST /api/v1/analyze)...</div>`;
+
+      const analyzeReq = {
+        text: text,
+        complexId: complexIdRaw ? complexIdRaw : null,
+        phone: phoneRaw ? phoneRaw : null
+      };
+
+      const res = (typeof apiClient !== 'undefined' && apiClient.analyze)
+        ? await apiClient.analyze(analyzeReq)
+        : (typeof runLocalAnalyze === 'function' ? runLocalAnalyze(analyzeReq) : null);
+
+      if (!res) return;
+      window.__lastAnalyzeResult = res;
+
+      const sel = document.getElementById('new-ad-complex-id');
+      if (sel && !complexIdRaw && res.complexId) {
+        sel.value = res.complexId;
+      }
+
+      let complexBindingHtml = '';
+      if (res.complexId) {
+        const matchedC = complexes.find(item => item.id === res.complexId);
+        const cTitle = matchedC ? `${getLocalized(matchedC.names)} (${matchedC.id})` : res.complexId;
+        complexBindingHtml = `<div style="margin-bottom: 0.45rem; font-size: 0.78rem;">🎯 <strong>Привязка к ЖК:</strong> <code>${cTitle}</code></div>`;
+      } else if (Array.isArray(res.candidates) && res.candidates.length > 0) {
+        const candBtns = res.candidates.map(cid => {
+          const cObj = complexes.find(item => item.id === cid);
+          const label = cObj ? `${getLocalized(cObj.names)} (${cid})` : cid;
+          return `<button type="button" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;" onclick="selectCandidateComplexInModal('${cid}')">🏗️ ${label}</button>`;
+        }).join(' ');
+        complexBindingHtml = `
+          <div style="margin-bottom: 0.5rem; padding: 0.5rem; border-radius: 6px; background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; font-size: 0.78rem;">
+            <div>⚠️ <strong>Неоднозначная привязка (<code>complexId: null</code>):</strong> кандидаты <code>${JSON.stringify(res.candidates)}</code>:</div>
+            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.35rem;">${candBtns}</div>
+          </div>
+        `;
+      } else {
+        complexBindingHtml = `<div style="margin-bottom: 0.45rem; font-size: 0.78rem; color: var(--text-secondary);">ℹ️ ЖК автоматически не определён (<code>complexId: null</code>).</div>`;
+      }
+
+      const summaryHeader = res.proposedFactor
+        ? `🤖 Ведущая гипотеза: <strong>${res.proposedFactor}</strong> (Уверенность: <strong>${res.confidence ?? 0}%</strong>)`
+        : `🤖 Ведущая гипотеза: <strong>не выявлено (<code>proposedFactor: null</code>, 0%)</strong>`;
+
+      const hypsHtml = (res.hypotheses || []).map(h => {
+        const bClass = h.strength === 'strong' ? 'badge-red' : h.strength === 'weak' ? 'badge-yellow' : 'badge-green';
+        const sLabel = h.strength === 'strong' ? `🔴 Сильный (${h.confidence}%)` : h.strength === 'weak' ? `🟡 Слабый (${h.confidence}%)` : `⚪ Нет (0%)`;
+        return `
+          <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 0.45rem 0.6rem; background: var(--bg-surface);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="font-size: 0.76rem;">${h.factor} (+${h.weight} б.) · ${h.name || ''}</strong>
+              <span class="status-badge ${bClass}" style="font-size: 0.68rem;">${sLabel}</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-secondary); margin-top: 0.15rem;">${h.explanation || ''}</div>
+          </div>
+        `;
+      }).join('');
+
+      preview.innerHTML = `
+        <div style="font-weight: 800; color: var(--brand-primary); margin-bottom: 0.4rem;">${summaryHeader}</div>
+        ${complexBindingHtml}
+        <div style="display: flex; flex-direction: column; gap: 0.35rem;">${hypsHtml}</div>
+      `;
+    }
+
+    async function submitManualAd() {
+      const complexIdRaw = document.getElementById('new-ad-complex-id').value;
       const platform = document.getElementById('new-ad-platform').value;
+      const phone = (document.getElementById('new-ad-phone').value || '').trim();
       const text = document.getElementById('new-ad-text').value.trim();
 
       if (!text) {
@@ -292,56 +467,54 @@
         return;
       }
 
-      const matchedComplex = complexes.find(c => c.id === complexId);
-      const lower = text.toLowerCase();
-      const triggers = [];
-      let hypothesisTitle = 'Информационная реклама';
+      const analyzeReq = { text, complexId: complexIdRaw || null, phone: phone || null };
+      const analysis = window.__lastAnalyzeResult || (
+        (typeof apiClient !== 'undefined' && apiClient.analyze)
+          ? await apiClient.analyze(analyzeReq)
+          : (typeof runLocalAnalyze === 'function' ? runLocalAnalyze(analyzeReq) : {})
+      );
 
-      if (lower.includes('бронь') || lower.includes('депозит') || lower.includes('взнос') || lower.includes('касс') || lower.includes('наличн')) {
-        triggers.push('признаки сбора средств до ДДУ');
-        hypothesisTitle = 'R2 (+25 баллов): Незаконный сбор денег';
-      }
-
-      // Check R5 readiness delta
-      const readinessMatch = text.match(/готовность(?:\s+объекта|\s+дома|\s+уже)?\s*(\d{1,3})\s*%/i);
-      if (readinessMatch && matchedComplex) {
-        const declaredPct = parseInt(readinessMatch[1], 10);
-        const factPct = matchedComplex.readinessFact || 0;
-        const delta = Math.abs(declaredPct - factPct);
-        if (delta >= 20) {
-          triggers.push(`расхождение готовности ${delta} п.п.`);
-          hypothesisTitle += ` + R5 (+10 б.): Разница готовности (заявлено ${declaredPct}%, факт ${factPct}%)`;
-          matchedComplex.factors.R5.status = 'CONFIRMED';
-          matchedComplex.readinessDeclared = declaredPct;
-        }
-      }
-
+      const resolvedComplexId = complexIdRaw || (analysis && analysis.complexId) || null;
+      const propFactor = (analysis && analysis.proposedFactor !== undefined) ? analysis.proposedFactor : null;
+      const confVal = (analysis && analysis.confidence !== undefined && analysis.confidence !== null) ? analysis.confidence : 0;
       const newId = 'AD-' + (100 + adsList.length + 1);
       const nowStr = new Date().toLocaleString();
 
-      adsList.unshift({
+      const newAd = {
         id: newId,
-        complexId,
+        complexId: resolvedComplexId,
         source: platform,
         platform: platform,
+        phone: phone || undefined,
         date: "15.10.2026",
         pubDate: "15.10.2026",
         capturedAt: nowStr,
         url: "https://clearbuild.kz/ads/" + newId,
         rawText: text,
         text: text,
-        triggers: triggers.length ? triggers : ["проверка условий"],
-        aiHypothesis: hypothesisTitle,
-        status: "CONFIRMED"
-      });
+        triggerSpan: (analysis && analysis.triggerSpan) || '',
+        triggers: (analysis && analysis.triggers && analysis.triggers.length) ? analysis.triggers : ["проверка условий"],
+        proposedFactor: propFactor,
+        confidence: confVal,
+        aiHypothesis: propFactor ? `${propFactor}: Гипотеза ИИ (${confVal}%)` : 'Признаков риска не обнаружено (0 б.)',
+        status: "AI_HYPOTHESIS"
+      };
 
-      auditLogEntries.unshift(`[${nowStr}] Добавлено объявление ${newId} для ${getLocalized(matchedComplex.names)}`);
-      saveState();
+      if (typeof apiClient !== 'undefined' && apiClient.addPublication) {
+        await apiClient.addPublication(newAd);
+      }
+
+      if (typeof apiClient !== 'undefined' && apiClient.isConnected && typeof syncWithBackend === 'function') {
+        await syncWithBackend();
+      } else {
+        adsList.unshift(newAd);
+        saveState();
+      }
 
       closeAddAdModal();
       document.getElementById('new-ad-text').value = '';
       renderAdsTable();
-      alert('Объявление добавлено и проанализировано ИИ!');
+      showCopyToast(`✅ Публикация <strong>${newId}</strong> добавлена и проанализирована ИИ!`);
     }
 
     window.pageRefresh = function() {

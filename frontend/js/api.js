@@ -1,6 +1,6 @@
 // ClearBuild (SAQ QURYLYS) — Unified API Client
 // Codemasters Hackathon 8.0 (г. Усть-Каменогорск)
-// Поддерживает подключение к FastAPI бэкенду и полностью автономную работу (Seed / localStorage)
+// Поддерживает подключение к FastAPI + SQLite бэкенду и автономный режим (Seed / localStorage)
 
 (function(global) {
   'use strict';
@@ -39,6 +39,9 @@
           this.lastPing = new Date();
           this.backendInfo = data;
           this.updateUIStatus();
+          if (typeof global.syncWithBackend === 'function') {
+            global.syncWithBackend().catch(err => console.warn('[apiClient] Background sync error:', err));
+          }
           return { ok: true, data };
         }
       } catch (e) {
@@ -63,14 +66,14 @@
       if (this.isConnected) {
         if (dotEl) {
           dotEl.className = 'status-dot dot-green';
-          dotEl.title = '🟢 Подключён к Backend API (200 OK)';
+          dotEl.title = '🟢 Подключён к Backend API (FastAPI + SQLite · 200 OK)';
         }
         if (badgeEl) {
           badgeEl.className = 'status-badge badge-green';
-          badgeEl.innerHTML = '🟢 Подключён к Backend API';
+          badgeEl.innerHTML = '🟢 Подключён к Backend API (SQLite)';
         }
         if (textEl) {
-          textEl.textContent = `Сервер отвечает на ${this.baseUrl}/health. Данные синхронизируются в реальном времени.`;
+          textEl.textContent = `Сервер отвечает на ${this.baseUrl}/health. Данные ЖК, публикаций и журнала решений синхронизированы с SQLite.`;
         }
       } else {
         if (dotEl) {
@@ -79,7 +82,7 @@
         }
         if (badgeEl) {
           badgeEl.className = 'status-badge badge-yellow';
-          badgeEl.innerHTML = '🟡 Ожидание Backend-сервера (Демо-режим)';
+          badgeEl.innerHTML = '🟡 Ожидание Backend-сервера (Автономный режим)';
         }
         if (textEl) {
           textEl.textContent = `Бэкенд по адресу ${this.baseUrl} не обнаружен. Включен автономный клиентский режим на базе seed.json и localStorage.`;
@@ -87,28 +90,56 @@
       }
     },
 
-    async getComplexes() {
+    async getComplexes(zone = null) {
       if (this.isConnected) {
         try {
-          const res = await fetch(`${this.baseUrl}/complexes`);
+          const qs = zone && zone !== 'ALL' ? `?zone=${encodeURIComponent(zone)}` : '';
+          const res = await fetch(`${this.baseUrl}/complexes${qs}`);
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) return data;
+            if (Array.isArray(data)) return data;
           }
         } catch (e) {
           console.warn('[apiClient] Fetch complexes failed, fallback to memory', e);
         }
       }
-      return (typeof complexes !== 'undefined' && complexes) ? complexes : [];
+      const list = (typeof complexes !== 'undefined' && complexes) ? complexes : [];
+      if (zone && zone !== 'ALL') {
+        return list.filter(c => {
+          const r = typeof calculateComplexRisk === 'function' ? calculateComplexRisk(c) : (c.riskProfile || {});
+          return (r.zone || '').toUpperCase() === zone.toUpperCase();
+        });
+      }
+      return list;
     },
 
-    async getPublications() {
+    async getComplexById(complexId) {
+      if (!complexId) return null;
       if (this.isConnected) {
         try {
-          const res = await fetch(`${this.baseUrl}/publications`);
+          const res = await fetch(`${this.baseUrl}/complexes/${encodeURIComponent(complexId)}`);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          console.warn(`[apiClient] Fetch complex ${complexId} failed, fallback to memory`, e);
+        }
+      }
+      const list = (typeof complexes !== 'undefined' && complexes) ? complexes : [];
+      return list.find(c => c.id === complexId) || null;
+    },
+
+    async getPublications(params = {}) {
+      if (this.isConnected) {
+        try {
+          const searchParams = new URLSearchParams();
+          if (params.complex_id) searchParams.set('complex_id', params.complex_id);
+          if (params.status) searchParams.set('status', params.status);
+          const qs = searchParams.toString() ? `?${searchParams.toString()}` : '';
+          const res = await fetch(`${this.baseUrl}/publications${qs}`);
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) return data;
+            if (Array.isArray(data)) return data;
           }
         } catch (e) {
           console.warn('[apiClient] Fetch publications failed, fallback to memory', e);
@@ -133,6 +164,31 @@
         }
       }
       return { status: 'success', local: true, publication: pubData };
+    },
+
+    async verifyPublication(pubId, decision, comment = null, analyst = null) {
+      if (this.isConnected) {
+        try {
+          const res = await fetch(`${this.baseUrl}/publications/${encodeURIComponent(pubId)}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              decision: decision, // "accept" | "reject"
+              comment: comment || undefined,
+              analyst: analyst || 'Ахметов Д.К. (Аналитик МИО)'
+            })
+          });
+          if (res.ok) {
+            return await res.json();
+          } else {
+            const errBody = await res.json().catch(() => ({}));
+            return { ok: false, status: 'error', error: errBody.detail || `HTTP ${res.status}` };
+          }
+        } catch (e) {
+          console.warn('[apiClient] Verify publication on backend failed, updating locally', e);
+        }
+      }
+      return { status: 'success', local: true, decision };
     },
 
     async addComplex(complexData) {
@@ -165,16 +221,19 @@
             return await res.json();
           }
         } catch (e) {
-          console.warn('[apiClient] AI analyze on backend failed, running local AI', e);
+          console.warn('[apiClient] AI analyze on backend failed, running local AI fallback', e);
         }
       }
-      return null; // Will trigger client-side AI analysis fallback
+      if (typeof global.runLocalAnalyze === 'function') {
+        return global.runLocalAnalyze(analyzeReq);
+      }
+      return null;
     },
 
     async confirmFactor(complexId, factorCode, status, evidence, analyst) {
       if (this.isConnected) {
         try {
-          const res = await fetch(`${this.baseUrl}/complexes/${complexId}/confirm-factor`, {
+          const res = await fetch(`${this.baseUrl}/complexes/${encodeURIComponent(complexId)}/confirm-factor`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -186,6 +245,9 @@
           });
           if (res.ok) {
             return await res.json();
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            return { ok: false, status: 'blocked', error: errData.detail || `Ошибка ${res.status}` };
           }
         } catch (e) {
           console.warn('[apiClient] Confirm factor on backend failed, state updated locally', e);
@@ -197,7 +259,7 @@
     async signalDecision(complexId, decision, comment, author) {
       if (this.isConnected) {
         try {
-          const res = await fetch(`${this.baseUrl}/complexes/${complexId}/signal-decision`, {
+          const res = await fetch(`${this.baseUrl}/complexes/${encodeURIComponent(complexId)}/signal-decision`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -214,6 +276,21 @@
         }
       }
       return { status: 'success', local: true };
+    },
+
+    async getAuditLog(limit = 50) {
+      if (this.isConnected) {
+        try {
+          const res = await fetch(`${this.baseUrl}/audit-log?limit=${encodeURIComponent(limit)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) return data;
+          }
+        } catch (e) {
+          console.warn('[apiClient] Fetch audit-log failed, fallback to memory', e);
+        }
+      }
+      return (typeof auditLog !== 'undefined' && auditLog) ? auditLog : [];
     }
   };
 

@@ -104,7 +104,7 @@
       "signalComment": "Кейс A по ТЗ: правовое основание ещё на проверке (R1 = 0 б.), но зафиксирована платная бронь R2 (+25) и реклама R3 (+10) = 35 баллов (Жёлтая зона).",
       "factors": {
         "R1": {
-          "status": "NONE",
+          "status": "UNVERIFIED",
           "evidence": "Статус «Нужна проверка»: ожидание ответа МИО ВКО по запросу №09-21/304. Балл не начисляется (0 б.)."
         },
         "R2": {
@@ -356,7 +356,7 @@
           "evidence": "Действующее разрешение МИО №РД-2026/18 от 20.03.2026 проверено."
         },
         "R2": {
-          "status": "CONFIRMED",
+          "status": "NONE",
           "evidence": "Оплата принимается строго на спецсчёт в БВУ по зарегистрированным ДДУ."
         },
         "R3": {
@@ -368,11 +368,11 @@
           "evidence": "Коллективных жалоб о незаконном сборе средств нет."
         },
         "R5": {
-          "status": "AI_HYPOTHESIS",
+          "status": "CONFIRMED",
           "evidence": "В рекламе указано 90% готовности (10.10.2026), по отчёту банка №41 (03.10.2026) — 65% (разница 25 п.п.)."
         },
         "R6": {
-          "status": "NONE",
+          "status": "CONFIRMED",
           "evidence": "Перенос планового ввода с III кв. 2026 на I кв. 2027 (простой подрядчика по фасадам)."
         }
       }
@@ -516,7 +516,9 @@
       "triggerSpan": "внести платный депозит 500 000 тг по договору бронирования до старта официальных продаж! Первоначальный взнос 20% в кассу застройщика",
       "proposedFactor": "R2",
       "confidence": 96,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-102",
@@ -531,7 +533,9 @@
       "triggerSpan": "Готовность объекта уже 65%! ... при оплате первоначального взноса наличными сегодня",
       "proposedFactor": "R5",
       "confidence": 92,
-      "status": "AI_HYPOTHESIS"
+      "status": "AI_HYPOTHESIS",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-103",
@@ -546,7 +550,9 @@
       "triggerSpan": "платная бронь квартиры за 300 000 тг с жёсткой фиксацией цены за квадрат",
       "proposedFactor": "R2",
       "confidence": 95,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-104",
@@ -561,7 +567,9 @@
       "triggerSpan": "в строящемся ЖК «Сатпаев Сити Парк» ... Сдача во II квартале 2028 года",
       "proposedFactor": "R3",
       "confidence": 98,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-105",
@@ -576,7 +584,9 @@
       "triggerSpan": "Строительство защищено гарантией АО «КЖК» №ГД-2026/049. Заключение официальных ДДУ",
       "proposedFactor": "R3",
       "confidence": 99,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-106",
@@ -591,7 +601,9 @@
       "triggerSpan": "Первоначальный взнос 30% по предварительному договору инвестирования",
       "proposedFactor": "R2",
       "confidence": 97,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-107",
@@ -606,7 +618,9 @@
       "triggerSpan": "Внесите 1 000 000 тг сегодня для резерва квартиры ... без участия банков",
       "proposedFactor": "R2",
       "confidence": 94,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-108",
@@ -621,7 +635,9 @@
       "triggerSpan": "Внесите депозит 400 000 тг по договору резервирования сегодня",
       "proposedFactor": "R2",
       "confidence": 95,
-      "status": "AI_HYPOTHESIS"
+      "status": "AI_HYPOTHESIS",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-109",
@@ -636,7 +652,9 @@
       "triggerSpan": "готовность уже 75%! Открыта продажа 2-комнатных квартир на стадии строительства",
       "proposedFactor": "R5",
       "confidence": 91,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-110",
@@ -651,7 +669,9 @@
       "triggerSpan": "Дом почти готов — готовность 90% (по отчёту БВУ 65%)",
       "proposedFactor": "R5",
       "confidence": 89,
-      "status": "AI_HYPOTHESIS"
+      "status": "AI_HYPOTHESIS",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-111",
@@ -666,7 +686,9 @@
       "triggerSpan": "Продажа квартир исключительно по ДДУ через уполномоченный банк",
       "proposedFactor": "R3",
       "confidence": 97,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-112",
@@ -681,189 +703,9 @@
       "triggerSpan": "торг за наличный расчёт (ИИ пометил слово «наличный», но дом уже введён в эксплуатацию — ложноположительное срабатывание отклонено)",
       "proposedFactor": "R2",
       "confidence": 62,
-      "status": "REJECTED"
-    }
-  ],
-  "ads": [
-    {
-      "id": "AD-101",
-      "complexId": "jk-1",
-      "platform": "Krisha.kz",
-      "account": "Отдел продаж (@oskemen_invest_flat)",
-      "phone": "+7 (705) 999-00-11",
-      "url": "https://krisha.kz/a/show/698100101-demo",
-      "pubDate": "13.10.2026",
-      "capturedAt": "14.10.2026, 09:15 (Snapshot #101)",
-      "text": "ЖК «Ертіс Рівер Тауэрс» на Стрелке! Видовые квартиры на Иртыш. Успейте внести платный депозит 500 000 тг по договору бронирования до старта официальных продаж! Первоначальный взнос 20% в кассу застройщика, рассрочка от застройщика на 36 мес.",
-      "triggerSpan": "внести платный депозит 500 000 тг по договору бронирования до старта официальных продаж! Первоначальный взнос 20% в кассу застройщика",
-      "proposedFactor": "R2",
-      "confidence": 96,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-102",
-      "complexId": "jk-1",
-      "platform": "Instagram",
-      "account": "@oskemen_invest_flat",
-      "phone": "+7 (705) 999-00-11",
-      "url": "https://instagram.com/p/C8demoErtis102",
-      "pubDate": "13.10.2026",
-      "capturedAt": "14.10.2026, 09:42 (Snapshot #102 · OCR Stories)",
-      "text": "Сторис ЖК Ертіс Рівер Тауэрс: Готовность объекта уже 65%! Осталось 4 квартиры по акционной цене 390 000 тг/м² при оплате первоначального взноса наличными сегодня!",
-      "triggerSpan": "Готовность объекта уже 65%! ... при оплате первоначального взноса наличными сегодня",
-      "proposedFactor": "R5",
-      "confidence": 92,
-      "status": "AI_HYPOTHESIS"
-    },
-    {
-      "id": "AD-103",
-      "complexId": "jk-2",
-      "platform": "Telegram",
-      "account": "@ukg_nedvizhimost / @satpayev_city_demo",
-      "phone": "+7 (777) 404-22-10",
-      "url": "https://t.me/ukg_nedvizhimost/4812-demo",
-      "pubDate": "12.10.2026",
-      "capturedAt": "13.10.2026, 14:20 (Snapshot #103)",
-      "text": "Новый ЖК «Сатпаев Сити Парк» на КШТ! Старт котлована! Доступна платная бронь квартиры за 300 000 тг с жёсткой фиксацией цены за квадрат. Оформляем предварительное соглашение.",
-      "triggerSpan": "платная бронь квартиры за 300 000 тг с жёсткой фиксацией цены за квадрат",
-      "proposedFactor": "R2",
-      "confidence": 95,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-104",
-      "complexId": "jk-2",
-      "platform": "Instagram",
-      "account": "@satpayev_city_demo",
-      "phone": "+7 (777) 404-22-10",
-      "url": "https://instagram.com/p/C8demoSatpayev104",
-      "pubDate": "12.10.2026",
-      "capturedAt": "13.10.2026, 14:25 (Snapshot #104)",
-      "text": "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 88). Сдача во II квартале 2028 года.",
-      "triggerSpan": "в строящемся ЖК «Сатпаев Сити Парк» ... Сдача во II квартале 2028 года",
-      "proposedFactor": "R3",
-      "confidence": 98,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-105",
-      "complexId": "jk-3",
-      "platform": "Krisha.kz",
-      "account": "@altaipremium_ukg",
-      "phone": "+7 (7232) 70-05-05",
-      "url": "https://krisha.kz/a/show/698100105-demo",
-      "pubDate": "11.10.2026",
-      "capturedAt": "12.10.2026, 11:00 (Snapshot #105)",
-      "text": "ЖК «Алтай Премиум Резиденс» (Левый берег). Строительство защищено гарантией АО «КЖК» №ГД-2026/049. Заключение официальных ДДУ через Казреестр, ипотека Отбасы Банка.",
-      "triggerSpan": "Строительство защищено гарантией АО «КЖК» №ГД-2026/049. Заключение официальных ДДУ",
-      "proposedFactor": "R3",
-      "confidence": 99,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-106",
-      "complexId": "jk-4",
-      "platform": "OLX.kz",
-      "account": "@oskemen_invest_flat",
-      "phone": "+7 (705) 999-00-11",
-      "url": "https://olx.kz/d/obyavlenie/ulba-gardens-demo-106",
-      "pubDate": "09.10.2026",
-      "capturedAt": "10.10.2026, 16:40 (Snapshot #106)",
-      "text": "Срочная продажа от инвестора и застройщика в ЖК «Ульба Гарденс»! Первоначальный взнос 30% по предварительному договору инвестирования, остальное в рассрочку до сдачи дома. Готовность дома 80%!",
-      "triggerSpan": "Первоначальный взнос 30% по предварительному договору инвестирования",
-      "proposedFactor": "R2",
-      "confidence": 97,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-107",
-      "complexId": "jk-4",
-      "platform": "Instagram",
-      "account": "@oskemen_invest_flat",
-      "phone": "+7 (705) 999-00-11",
-      "url": "https://instagram.com/p/C8demoUlba107",
-      "pubDate": "10.10.2026",
-      "capturedAt": "11.10.2026, 10:05 (Snapshot #107)",
-      "text": "ЖК «Ульба Гарденс» на Протозанова! Внесите 1 000 000 тг сегодня для резерва квартиры с видом на Ульбу без участия банков и лишних справок!",
-      "triggerSpan": "Внесите 1 000 000 тг сегодня для резерва квартиры ... без участия банков",
-      "proposedFactor": "R2",
-      "confidence": 94,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-108",
-      "complexId": "jk-5",
-      "platform": "Telegram",
-      "account": "@nurly_zhol_ukg",
-      "phone": "+7 (705) 999-00-11",
-      "url": "https://t.me/ukg_nedvizhimost/5108-demo",
-      "pubDate": "13.10.2026",
-      "capturedAt": "14.10.2026, 10:30 (Snapshot #108)",
-      "text": "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 112). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
-      "triggerSpan": "Внесите депозит 400 000 тг по договору резервирования сегодня",
-      "proposedFactor": "R2",
-      "confidence": 95,
-      "status": "AI_HYPOTHESIS"
-    },
-    {
-      "id": "AD-109",
-      "complexId": "jk-5",
-      "platform": "Instagram",
-      "account": "@nurly_zhol_ukg",
-      "phone": "+7 (705) 999-00-11",
-      "url": "https://instagram.com/p/C8demoNurly109",
-      "pubDate": "13.10.2026",
-      "capturedAt": "14.10.2026, 10:35 (Snapshot #109)",
-      "text": "Строительство ЖК «Нурлы Жол Оскемен» идёт полным ходом, готовность уже 75%! Открыта продажа 2-комнатных квартир на стадии строительства.",
-      "triggerSpan": "готовность уже 75%! Открыта продажа 2-комнатных квартир на стадии строительства",
-      "proposedFactor": "R5",
-      "confidence": 91,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-110",
-      "complexId": "jk-6",
-      "platform": "Krisha.kz",
-      "account": "@ecostroy_vko",
-      "phone": "+7 (701) 555-88-99",
-      "url": "https://krisha.kz/a/show/698100110-demo",
-      "pubDate": "10.10.2026",
-      "capturedAt": "11.10.2026, 12:15 (Snapshot #110)",
-      "text": "ЖК «КШТ Эко Квартал» (ул. Увалиева). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
-      "triggerSpan": "Дом почти готов — готовность 90% (по отчёту БВУ 65%)",
-      "proposedFactor": "R5",
-      "confidence": 89,
-      "status": "AI_HYPOTHESIS"
-    },
-    {
-      "id": "AD-111",
-      "complexId": "jk-7",
-      "platform": "Krisha.kz",
-      "account": "@irtysh_plaza_official",
-      "phone": "+7 (7232) 55-12-34",
-      "url": "https://krisha.kz/a/show/698100111-demo",
-      "pubDate": "12.10.2026",
-      "capturedAt": "12.10.2026, 15:00 (Snapshot #111)",
-      "text": "ЖК «Иртыш Плаза», ул. Казахстан, 75. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
-      "triggerSpan": "Продажа квартир исключительно по ДДУ через уполномоченный банк",
-      "proposedFactor": "R3",
-      "confidence": 97,
-      "status": "CONFIRMED"
-    },
-    {
-      "id": "AD-112",
-      "complexId": "jk-8",
-      "platform": "Krisha.kz",
-      "account": "@sogra_park_dom",
-      "phone": "+7 (7232) 61-00-99",
-      "url": "https://krisha.kz/a/show/698100112-demo",
-      "pubDate": "01.10.2026",
-      "capturedAt": "05.10.2026, 13:10 (Snapshot #112)",
-      "text": "ЖК «Согра Парк» — ДОМ СДАН! Акт ввода в эксплуатацию №АВ-2026/77. Ключи в день сделки, подходят все виды ипотеки. Звоните в отдел продаж, торг за наличный расчёт.",
-      "triggerSpan": "торг за наличный расчёт (ИИ пометил слово «наличный», но дом уже введён в эксплуатацию — ложноположительное срабатывание отклонено)",
-      "proposedFactor": "R2",
-      "confidence": 62,
-      "status": "REJECTED"
+      "status": "REJECTED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": false
     }
   ]
 }
