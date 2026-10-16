@@ -15,7 +15,7 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000" ^| findstr "LISTENING
 echo.
 echo [1/2] Ustanovka zavisimostej (pip install -r requirements.txt)...
 python -m pip install -q -r requirements.txt
-echo [2/2] Zapusk: uvicorn app.main:app --port 8000
+echo [2/2] Zapusk: uvicorn app.main:app --reload --port 8000
 echo.
-python -m uvicorn app.main:app --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 pause
