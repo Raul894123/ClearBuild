@@ -9,18 +9,40 @@
 Перевод в значения, которые ждёт фронтенд (camelCase / UPPER_CASE), — в app/mappers.py.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import JSON, Boolean, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
 
 from app.db import Base
 
+# Время Усть-Каменогорска (ВКО), UTC+05:00
+TZ = timezone(timedelta(hours=5), "+05:00")
+
 
 def now() -> datetime:
-    """Текущее локальное время сервера без микросекунд."""
-    return datetime.now().replace(microsecond=0)
+    """Текущее время в поясе +05:00 без микросекунд."""
+    return datetime.now(TZ).replace(microsecond=0)
+
+
+def to_tz(value: datetime) -> datetime:
+    """Наивное время считается временем +05:00, aware-время переводится в +05:00."""
+    return value.replace(tzinfo=TZ) if value.tzinfo is None else value.astimezone(TZ)
+
+
+class TZDateTime(TypeDecorator):
+    """Хранит время ISO-строкой с поясом («2026-10-14T09:15:00+05:00»): SQLite сам пояс не сохраняет."""
+
+    impl = String(32)
+    cache_ok = True
+
+    def process_bind_param(self, value: Optional[datetime], dialect) -> Optional[str]:
+        return to_tz(value).isoformat(timespec="seconds") if value is not None else None
+
+    def process_result_value(self, value: Optional[str], dialect) -> Optional[datetime]:
+        return to_tz(datetime.fromisoformat(value)) if value else None
 
 
 class Complex(Base):
@@ -50,21 +72,28 @@ class Complex(Base):
     legal_basis_text: Mapped[Optional[str]] = mapped_column(Text)
     verification_status: Mapped[str] = mapped_column(String(32), default="needs_check")
     verification_source: Mapped[Optional[str]] = mapped_column(Text)
-    # Объект введён в эксплуатацию (в API — legalBasisType = COMMISSIONED)
+    # Объект введён в эксплуатацию: legal_basis_type = mio_permit, в API — legalBasisType = COMMISSIONED
     is_commissioned: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Публикация, из которой взята заявленная готовность. Пока она не подтверждена, R5 — гипотеза ИИ.
+    # Без внешнего ключа: complexes и publications ссылаются друг на друга.
+    stated_readiness_publication_id: Mapped[Optional[str]] = mapped_column(String(32))
+
     has_collective_complaint: Mapped[bool] = mapped_column(Boolean, default=False)  # R4
+    collective_complaint_source: Mapped[Optional[str]] = mapped_column(Text)
     has_significant_delay: Mapped[bool] = mapped_column(Boolean, default=False)  # R6
+    delay_source: Mapped[Optional[str]] = mapped_column(Text)
 
     contact_phone: Mapped[Optional[str]] = mapped_column(String(64))
     sales_account: Mapped[Optional[str]] = mapped_column(String(255))
 
-    # Статусы факторов R1–R6 по решению аналитика: {"R1": {"status": "CONFIRMED", "evidence": "..."}}
-    factors: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Решения аналитика через confirm-factor поверх данных:
+    # {"R2": {"status": "CONFIRMED", "evidence": "...", "analyst": "...", "at": "2026-10-16T17:48:00+05:00"}}
+    factor_overrides: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
+    created_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
+    updated_at: Mapped[datetime] = mapped_column(TZDateTime, default=now, onupdate=now)
 
     publications: Mapped[List["Publication"]] = relationship(back_populates="complex")
     signals: Mapped[List["Signal"]] = relationship(back_populates="complex", order_by="Signal.id")
@@ -84,7 +113,7 @@ class Publication(Base):
     phone: Mapped[Optional[str]] = mapped_column(String(64))
     url: Mapped[Optional[str]] = mapped_column(String(512))
     published_at: Mapped[Optional[date]] = mapped_column(Date)
-    captured_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    captured_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
     # Пометка снимка, например «Snapshot #102 · OCR Stories»
     capture_note: Mapped[Optional[str]] = mapped_column(String(255))
     text_content: Mapped[str] = mapped_column(Text)
@@ -95,7 +124,7 @@ class Publication(Base):
     has_direct_payment_offer: Mapped[bool] = mapped_column(Boolean, default=False)  # R2
     is_active_pre_commissioning_ad: Mapped[bool] = mapped_column(Boolean, default=False)  # R3
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    created_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
 
     complex: Mapped[Optional[Complex]] = relationship(back_populates="publications")
 
@@ -114,8 +143,8 @@ class Signal(Base):
     status: Mapped[str] = mapped_column(String(16), default="draft")
     comment: Mapped[Optional[str]] = mapped_column(Text)
     reviewed_by: Mapped[Optional[str]] = mapped_column(String(255))
-    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(TZDateTime)
+    created_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
 
     complex: Mapped[Complex] = relationship(back_populates="signals")
 
@@ -124,7 +153,7 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
+    created_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
     actor: Mapped[str] = mapped_column(String(255))
     action: Mapped[str] = mapped_column(String(64))
     entity_type: Mapped[str] = mapped_column(String(32))

@@ -5,7 +5,7 @@
 фактов и ИИ-гипотез (Human-in-the-Loop) и строгое распределение по цветовым зонам.
 """
 
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Веса факторов риска строго по Разделу 5 ТЗ SAQ QURYLYS:
 # R1: 35 (Установлено отсутствие применимого правового основания.
@@ -32,6 +32,23 @@ FACTOR_NAMES: Dict[str, str] = {
     "R5": "Расхождение заявленной и фактической готовности ≥20 п.п.",
     "R6": "Подтверждённый простой или просрочка строительства",
 }
+
+
+def zone_for(score: int, has_r1: bool, has_r2: bool) -> Tuple[str, str, str]:
+    """Цветовая зона по баллу: (код, название, обоснование)."""
+    if score >= 60 and has_r1 and has_r2:
+        return "RED", "Красная", (
+            f"Балл {score} (≥60) и одновременно подтверждены R1 (нет основания) "
+            "и R2 (сбор средств)."
+        )
+    if score >= 25:
+        if score >= 60:
+            return "YELLOW", "Жёлтая", (
+                f"Балл {score} (≥60), но отсутствует одновременная комбинация "
+                "подтверждённых R1+R2 — по правилу Раздела 5 ТЗ присвоена Жёлтая зона."
+            )
+        return "YELLOW", "Жёлтая", f"Балл {score} в диапазоне 25–59 баллов."
+    return "GREEN", "Зелёная", "Балл 0–24: существенных подтверждённых признаков нарушения не выявлено."
 
 
 def calculate_risk(
@@ -63,27 +80,7 @@ def calculate_risk(
     has_r2 = "R2" in unique_confirmed
 
     # 3. Определение цветовой зоны строго по Разделу 5 ТЗ
-    if confirmed_score >= 60 and has_r1 and has_r2:
-        zone = "RED"
-        zone_label = "Красная"
-        zone_reason = (
-            f"Балл {confirmed_score} (≥60) и одновременно подтверждены R1 (нет основания) "
-            "и R2 (сбор средств)."
-        )
-    elif confirmed_score >= 25:
-        zone = "YELLOW"
-        zone_label = "Жёлтая"
-        if confirmed_score >= 60:
-            zone_reason = (
-                f"Балл {confirmed_score} (≥60), но отсутствует одновременная комбинация "
-                "подтверждённых R1+R2 — по правилу Раздела 5 ТЗ присвоена Жёлтая зона."
-            )
-        else:
-            zone_reason = f"Балл {confirmed_score} в диапазоне 25–59 баллов."
-    else:
-        zone = "GREEN"
-        zone_label = "Зелёная"
-        zone_reason = "Балл 0–24: существенных подтверждённых признаков нарушения не выявлено."
+    zone, zone_label, zone_reason = zone_for(confirmed_score, has_r1, has_r2)
 
     return {
         "score": confirmed_score,
