@@ -5,7 +5,7 @@
 
 from typing import Annotated, List, Literal, Optional
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import AliasChoices, BaseModel, BeforeValidator, Field
 
 
 def _upper(v):
@@ -35,10 +35,23 @@ ZoneFilter = Annotated[Literal["red", "yellow", "green", "all"], Lower]
 
 
 class AnalyzeRequest(BaseModel):
-    text: str = Field(..., description="Текст рекламного объявления или результат OCR")
+    """Нужен хотя бы один из text / ocr_text."""
+
+    text: Optional[str] = Field(None, description="Текст рекламного объявления")
+    ocr_text: Optional[str] = Field(
+        None, validation_alias=AliasChoices("ocr_text", "ocrText"),
+        description="Текст, распознанный со скриншота (анализируется как текст, OCR на сервере нет)",
+    )
+    screenshot_url: Optional[str] = Field(
+        None, validation_alias=AliasChoices("screenshot_url", "screenshotUrl"), description="Ссылка на скриншот",
+    )
     phone: Optional[str] = Field(None, description="Контактный телефон отдела продаж")
+    account: Optional[str] = Field(None, description="Аккаунт автора, например @oskemen_invest_flat")
     platform: Optional[str] = Field(None, description="Платформа размещения (Krisha.kz, Instagram, Telegram и т.д.)")
-    complex_id: Optional[str] = Field(None, description="ID комплекса (если выбран вручную), AUTO — определить по тексту")
+    complex_id: Optional[str] = Field(
+        None, validation_alias=AliasChoices("complex_id", "complexId"),
+        description="ID комплекса, если выбран вручную; AUTO или пусто — определить по тексту",
+    )
 
 
 class ConfirmFactorRequest(BaseModel):
@@ -49,17 +62,20 @@ class ConfirmFactorRequest(BaseModel):
 
 
 class PublicationCreateRequest(BaseModel):
+    """Поля как у публикаций в seed.json. rawText и date — устаревшие имена text и pubDate (их шлёт фронтенд)."""
+
     complexId: Optional[str] = Field(None, description="ID жилого комплекса (может быть пустым до привязки)")
     platform: str = Field("Krisha.kz", description="Платформа публикации")
     account: str = Field("Отдел продаж", description="Аккаунт автора")
     phone: str = Field("", description="Контактный телефон")
-    date: Optional[str] = Field(None, description="Дата публикации (устаревшее имя поля, см. pubDate)")
-    pubDate: Optional[str] = Field(None, description="Дата публикации, ДД.ММ.ГГГГ")
-    capturedAt: Optional[str] = Field(None, description="Время фиксации; по умолчанию — текущее время сервера")
     url: str = Field("", description="URL адрес объявления")
-    rawText: Optional[str] = Field(None, description="Текст публикации")
-    text: Optional[str] = Field(None, description="Текст публикации (альтернативное имя поля)")
+    text: Optional[str] = Field(None, description="Текст публикации")
+    pubDate: Optional[str] = Field(None, description="Дата публикации, ДД.ММ.ГГГГ или ISO; по умолчанию — сегодня")
+    capturedAt: Optional[str] = Field(None, description="Время фиксации, ISO или «ДД.ММ.ГГГГ, ЧЧ:ММ»; по умолчанию — сейчас")
     screenshotUrl: Optional[str] = Field(None, description="Ссылка на скриншот")
+    ocrText: Optional[str] = Field(None, description="Текст со скриншота: анализируется вместе с text")
+    rawText: Optional[str] = Field(None, description="Устаревшее имя поля text")
+    date: Optional[str] = Field(None, description="Устаревшее имя поля pubDate")
     status: PublicationStatus = Field("AI_HYPOTHESIS", description="AI_HYPOTHESIS (на проверке), CONFIRMED или REJECTED")
     hasDirectPaymentOffer: Optional[bool] = Field(None, description="Фактор R2; по умолчанию — по гипотезе ИИ")
     isActivePreCommissioningAd: Optional[bool] = Field(None, description="Фактор R3; по умолчанию — по тексту объявления")

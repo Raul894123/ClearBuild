@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.analyzer import analyze
 from app.db import get_db
 from app.factors import evaluate_factors, hard_precondition_error, risk_profile
 from app.mappers import (
@@ -44,7 +45,6 @@ from app.schemas import (
     SignalDecisionRequest,
     ZoneFilter,
 )
-from app.scoring import WEIGHTS
 from app.seed import init_db
 
 
@@ -72,9 +72,6 @@ app.add_middleware(
 
 # Все эндпоинты подключаются дважды: /api/v1/... (фронтенд, ТЗ2) и /api/... (алиасы по ТЗ1), см. конец файла
 router = APIRouter()
-
-# Признаки рекламы продажи квартир (фактор R3), если флаг не передан явно
-SALE_AD_RE = re.compile(r"квартир|продаж|брон|резерв|планировк|пресейл|рассрочк|ипотек|ДДУ", re.IGNORECASE)
 
 
 # --------------------------------------------------------------------------
@@ -156,22 +153,17 @@ def get_publications(db: Session = Depends(get_db)):
 
 @router.post("/publications", summary="Добавление нового рекламного объявления вручную")
 def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_db)):
-    text = (pub.rawText or pub.text or "").strip()
-    if not text:
-        raise HTTPException(status_code=422, detail="Текст публикации (rawText или text) обязателен")
-    if pub.complexId and not db.get(Complex, pub.complexId):
-        raise HTTPException(status_code=404, detail=f"Комплекс {pub.complexId} не найден")
+    text = (pub.text or pub.rawText or "").strip()
+    ocr_text = (pub.ocrText or "").strip()
+    if not text and not ocr_text:
+        raise HTTPException(status_code=422, detail="Нужен текст публикации (text) или текст со скриншота (ocrText)")
+    target = _get_complex_or_404(db, pub.complexId) if pub.complexId else None
 
-    analysis = _run_analysis(db, AnalyzeRequest(
-        text=text,
-        phone=pub.phone,
-        platform=pub.platform,
-        complex_id=pub.complexId,
-    ))
+    analysis = _analyze(db, text=text, ocr_text=ocr_text, phone=pub.phone, account=pub.account,
+                        screenshot_url=pub.screenshotUrl, explicit=target)
+    hypotheses = {h["factor"]: h for h in analysis["hypotheses"]}
 
     captured_at, note = parse_datetime(pub.capturedAt)
-    factor = analysis["proposedFactor"]
-    target = db.get(Complex, pub.complexId) if pub.complexId else None
     item = Publication(
         id=_next_id(db, Publication, "AD-", floor=100),
         complex_id=pub.complexId,
@@ -182,18 +174,22 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
         published_at=parse_date(pub.pubDate or pub.date) or now().date(),
         captured_at=captured_at or now(),
         capture_note=note,
-        text_content=text,
+        text_content=text or ocr_text,
         screenshot_url=pub.screenshotUrl,
         ai_hypothesis={
-            "proposedFactor": factor,
-            "quote": analysis.get("triggerSpan"),
-            "confidence": analysis.get("confidence"),
-            "explanation": analysis.get("explanation"),
+            "proposedFactor": analysis["proposedFactor"],
+            "quote": analysis["triggerSpan"],
+            "confidence": analysis["confidence"],
+            "explanation": analysis["explanation"],
+            "hypotheses": [{"factor": h["factor"], "confidence": h["confidence"], "quote": h["quote"]} for h in hypotheses.values()],
+            # Без complexId публикация не привязывается автоматически: анализатор только предлагает ЖК
+            "suggestedComplexId": None if target else analysis["complexId"],
+            "ocrText": ocr_text or None,
         },
         status=publication_status_to_db(pub.status),
-        has_direct_payment_offer=pub.hasDirectPaymentOffer if pub.hasDirectPaymentOffer is not None else factor == "R2",
+        has_direct_payment_offer=pub.hasDirectPaymentOffer if pub.hasDirectPaymentOffer is not None else "R2" in hypotheses,
         is_active_pre_commissioning_ad=(
-            (pub.isActivePreCommissioningAd if pub.isActivePreCommissioningAd is not None else bool(SALE_AD_RE.search(text)))
+            (pub.isActivePreCommissioningAd if pub.isActivePreCommissioningAd is not None else "R3" in hypotheses)
             and not (target and target.is_commissioned)
         ),
         is_demo=False,
@@ -207,7 +203,7 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
     _audit(db, "Аналитик МИО (веб-интерфейс)", "publication_create", "publication", item.id, {
         "complexId": pub.complexId,
         "platform": pub.platform,
-        "proposedFactor": factor,
+        "hypotheses": list(hypotheses),
     })
     db.commit()
     return {
@@ -255,123 +251,20 @@ def verify_publication(publication_id: str, req: PublicationVerifyRequest, db: S
     }
 
 
-@router.post("/analyze", summary="ИИ-анализатор объявлений с извлечением триггеров и гипотезой фактора")
+@router.post("/analyze", summary="ИИ-анализатор объявлений: гипотезы R2, R3, R5 с триггерами и уверенностью (в балл не идут)")
 def analyze_advertisement(req: AnalyzeRequest, db: Session = Depends(get_db)):
-    return _run_analysis(db, req)
+    explicit = None
+    if req.complex_id and req.complex_id.upper() != "AUTO":
+        explicit = _get_complex_or_404(db, req.complex_id)
+    return _analyze(db, text=req.text, ocr_text=req.ocr_text, phone=req.phone, account=req.account,
+                    screenshot_url=req.screenshot_url, explicit=explicit)
 
 
-def _run_analysis(db: Session, req: AnalyzeRequest) -> Dict[str, Any]:
-    raw_text = req.text.strip()
-    if not raw_text:
-        raise HTTPException(status_code=400, detail="Текст объявления не может быть пустым")
-
-    complexes = [complex_to_api(c) for c in _all_complexes(db)]
-
-    # 1. Поиск привязанного ЖК
-    matched_complex = None
-    if req.complex_id and req.complex_id != "AUTO":
-        for c in complexes:
-            if c.get("id") == req.complex_id:
-                matched_complex = c
-                break
-
-    if not matched_complex:
-        lower_text = raw_text.lower()
-        for c in complexes:
-            clean_name = re.sub(r"[«»]", "", c.get("name", "")).split("(")[0].replace("ЖК", "").strip().lower()
-            if (clean_name and clean_name in lower_text) or (req.phone and c.get("contactPhone") == req.phone):
-                matched_complex = c
-                break
-
-    if not matched_complex and complexes:
-        matched_complex = complexes[0]
-
-    # 2. Детекция триггеров R2 (платная бронь, депозит, взнос, касса, резерв, рассрочка)
-    r2_patterns = [
-        r"платн[а-я]+\s+брон[а-я]+",
-        r"забронировать\s+квартиру[^.!?;]*",
-        r"внес[а-я]+\s+(?:платный\s+)?депозит[^.!?;]*",
-        r"первоначальн[а-я]+\s+взнос[^.!?;]*",
-        r"по\s+договору\s+(?:резервирования|бронирования|инвестирования)[^.!?;]*",
-        r"в\s+кассу\s+застройщика[^.!?;]*",
-        r"рассрочк[а-я]+\s+на\s+\d+\s+мес[^.!?;]*",
-        r"бронь",
-        r"депозит",
-        r"первоначальный взнос",
-        r"в кассу",
-        r"резерв",
-        r"рассрочка",
-    ]
-    r2_regex = re.compile(r"|".join(f"(?:{p})" for p in r2_patterns), re.IGNORECASE)
-    r2_matches = r2_regex.findall(raw_text)
-
-    # 3. Детекция безопасных формулировок ДДУ и гарантии КЖК
-    safe_ddu_regex = re.compile(
-        r"(?:гаранти[а-я]+\s+(?:единого\s+оператора|ао\s+«?кжк»?)|"
-        r"оформление\s+(?:строго\s+)?по\s+(?:официальным\s+)?(?:договорам\s+долевого\s+участия|дду))",
-        re.IGNORECASE,
-    )
-    safe_matches = safe_ddu_regex.findall(raw_text)
-
-    # 4. Детекция готовности для R5
-    readiness_match = re.search(r"готовность(?:\s+объекта|\s+дома|\s+уже)?\s*(\d{1,3})\s*%", raw_text, re.IGNORECASE)
-    r5_detected = False
-    declared_pct = None
-    if readiness_match and matched_complex:
-        declared_pct = int(readiness_match.group(1))
-        conf_pct = matched_complex.get("confirmedReadiness", {}).get("pct") or 0
-        if abs(declared_pct - conf_pct) >= 20:
-            r5_detected = True
-
-    # 5. Определение предлагаемого фактора
-    if r2_matches and not safe_matches:
-        proposed_factor = "R2"
-        confidence = 94
-        trigger_span = r2_matches[0] if isinstance(r2_matches[0], str) else str(r2_matches[0])
-        explanation = (
-            f"ИИ обнаружил прямое предложение внести деньги до проверки правовых оснований: «{trigger_span}». "
-            f"Рекомендуется начислить фактор R2 (+{WEIGHTS['R2']} баллов)."
-        )
-    elif r5_detected:
-        proposed_factor = "R5"
-        confidence = 91
-        trigger_span = readiness_match.group(0)
-        explanation = (
-            f"ИИ обнаружил расхождение готовности ≥20 п.п.: в рекламе заявлено {declared_pct}%, "
-            f"фактическая готовность МИО/ГАСК: {matched_complex.get('confirmedReadiness', {}).get('pct')}%. "
-            f"Рекомендуется фактор R5 (+{WEIGHTS['R5']} баллов)."
-        )
-    else:
-        proposed_factor = "R3"
-        confidence = 88
-        trigger_span = raw_text[:80] + "..." if len(raw_text) > 80 else raw_text
-        explanation = (
-            f"Обнаружена стандартная реклама строящегося объекта (R3 +{WEIGHTS['R3']} баллов). "
-            "Признаков незаконного сбора денег в обход ДДУ не выявлено."
-        )
-
-    # Проверка коллизий телефона отдела продаж (Бонус Раздела 11)
-    phone_collisions = []
-    if req.phone:
-        for c in complexes:
-            if c.get("contactPhone") == req.phone and c.get("id") != (matched_complex.get("id") if matched_complex else ""):
-                phone_collisions.append({
-                    "id": c.get("id"),
-                    "name": c.get("name"),
-                    "legalBasisType": c.get("legalBasisType"),
-                })
-
-    return {
-        "proposedFactor": proposed_factor,
-        "factorWeight": WEIGHTS.get(proposed_factor, 0),
-        "confidence": confidence,
-        "triggerSpan": trigger_span,
-        "explanation": explanation,
-        "matchedComplexId": matched_complex.get("id") if matched_complex else None,
-        "matchedComplexName": matched_complex.get("name") if matched_complex else None,
-        "humanConfirmationRequired": True,
-        "phoneCollisions": phone_collisions,
-    }
+def _analyze(db: Session, explicit: Optional[Complex] = None, **kwargs) -> Dict[str, Any]:
+    try:
+        return analyze(_all_complexes(db), explicit_complex=explicit, **kwargs)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.post("/complexes/{complex_id}/confirm-factor", summary="Подтверждение или отклонение фактора аналитиком (Human-in-the-Loop)")
