@@ -138,8 +138,11 @@ def seed_database(db: Session) -> None:
                 "confidence": item.get("confidence"),
             },
             status=publication_status_to_db(item.get("status")),
-            has_direct_payment_offer=factor == "R2",
-            is_active_pre_commissioning_ad=item.get("complexId") not in commissioned_ids,
+            # Флаги R2/R3 заданы в seed.json явно по тексту объявления; без них — по гипотезе ИИ
+            has_direct_payment_offer=item.get("hasDirectPaymentOffer", factor == "R2"),
+            is_active_pre_commissioning_ad=(
+                item.get("isActivePreCommissioningAd", True) and item.get("complexId") not in commissioned_ids
+            ),
             is_demo=True,
             created_at=seeded_at,
         ))

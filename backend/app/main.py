@@ -11,14 +11,13 @@ import re
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.factors import OVERRIDE_STATUSES, evaluate_factors, hard_precondition_error, risk_profile
+from app.factors import evaluate_factors, hard_precondition_error, risk_profile
 from app.mappers import (
     SIGNAL_STATUS_TO_API,
     SIGNAL_STATUS_TO_DB,
@@ -32,9 +31,19 @@ from app.mappers import (
     publication_to_api,
     refresh_signal,
     signal_snapshot,
+    signal_to_api,
     verification_status_for,
 )
 from app.models import AuditLog, Complex, Publication, Signal, now
+from app.schemas import (
+    AnalyzeRequest,
+    ComplexCreateRequest,
+    ConfirmFactorRequest,
+    PublicationCreateRequest,
+    PublicationVerifyRequest,
+    SignalDecisionRequest,
+    ZoneFilter,
+)
 from app.scoring import WEIGHTS
 from app.seed import init_db
 
@@ -60,6 +69,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Все эндпоинты подключаются дважды: /api/v1/... (фронтенд, ТЗ2) и /api/... (алиасы по ТЗ1), см. конец файла
+router = APIRouter()
+
+# Признаки рекламы продажи квартир (фактор R3), если флаг не передан явно
+SALE_AD_RE = re.compile(r"квартир|продаж|брон|резерв|планировк|пресейл|рассрочк|ипотек|ДДУ", re.IGNORECASE)
 
 
 # --------------------------------------------------------------------------
@@ -88,65 +103,19 @@ def _next_id(db: Session, model, prefix: str, floor: int = 0) -> str:
     return f"{prefix}{max([floor] + [_id_number(i) for i in ids]) + 1}"
 
 
+def _sorted_publications(items) -> List[Publication]:
+    """Ручные публикации сверху (новые первыми), затем сид в исходном порядке AD-101…AD-112."""
+    return sorted(items, key=lambda p: (p.is_demo, _id_number(p.id) if p.is_demo else -_id_number(p.id)))
+
+
 def _audit(db: Session, actor: str, action: str, entity_type: str, entity_id: str, details: Dict[str, Any]) -> None:
     db.add(AuditLog(actor=actor, action=action, entity_type=entity_type, entity_id=entity_id, details=details))
 
 
 # --------------------------------------------------------------------------
-# Pydantic Модели
-# --------------------------------------------------------------------------
-class AnalyzeRequest(BaseModel):
-    text: str = Field(..., description="Текст рекламного объявления или результат OCR")
-    phone: Optional[str] = Field(None, description="Контактный телефон отдела продаж")
-    platform: Optional[str] = Field(None, description="Платформа размещения (Krisha.kz, Instagram, Telegram и т.д.)")
-    complex_id: Optional[str] = Field(None, description="ID комплекса (если выбран вручную)")
-
-
-class ConfirmFactorRequest(BaseModel):
-    factor: str = Field(..., description="Код фактора риска (R1, R2, R3, R4, R5, R6)")
-    status: str = Field(
-        "CONFIRMED",
-        description="Решение: CONFIRMED, REJECTED, NONE, UNVERIFIED, AI_HYPOTHESIS; AUTO снимает решение и возвращает расчёт по данным",
-    )
-    evidence: Optional[str] = Field(None, description="Обоснование решения аналитика")
-    analyst: Optional[str] = Field("Ахметов Д.К. (Аналитик МИО)", description="ФИО специалиста МИО")
-
-
-class PublicationCreateRequest(BaseModel):
-    complexId: Optional[str] = Field(None, description="ID жилого комплекса (может быть пустым до привязки)")
-    platform: str = Field("Krisha.kz", description="Платформа публикации")
-    account: str = Field("Отдел продаж", description="Аккаунт автора")
-    phone: str = Field("", description="Контактный телефон")
-    date: Optional[str] = Field(None, description="Дата публикации (устаревшее имя поля, см. pubDate)")
-    pubDate: Optional[str] = Field(None, description="Дата публикации, ДД.ММ.ГГГГ")
-    capturedAt: Optional[str] = Field(None, description="Время фиксации; по умолчанию — текущее время сервера")
-    url: str = Field("", description="URL адрес объявления")
-    rawText: Optional[str] = Field(None, description="Текст публикации")
-    text: Optional[str] = Field(None, description="Текст публикации (альтернативное имя поля)")
-    screenshotUrl: Optional[str] = Field(None, description="Ссылка на скриншот")
-    status: Optional[str] = Field("AI_HYPOTHESIS", description="Статус верификации")
-
-
-class SignalDecisionRequest(BaseModel):
-    decision: str = Field(..., description="Резолюция: CONFIRMED, REJECTED, RETURNED")
-    comment: Optional[str] = Field(None, description="Комментарий аналитика")
-    author: Optional[str] = Field("Ахметов Д.К.", description="ФИО уполномоченного лица")
-
-
-class ComplexCreateRequest(BaseModel):
-    name: str = Field(..., description="Название жилого комплекса")
-    developer: str = Field(..., description="Наименование застройщика")
-    bin: str = Field(..., description="БИН организации")
-    district: Optional[str] = Field("г. Усть-Каменогорск", description="Адрес или район")
-    coords: Optional[List[float]] = Field([49.95, 82.61], description="Широта и долгота")
-    stage: Optional[str] = Field("Строительно-монтажные работы", description="Стадия")
-    legalBasisType: Optional[str] = Field("UNVERIFIED", description="Правовое основание")
-
-
-# --------------------------------------------------------------------------
 # Эндпоинты API
 # --------------------------------------------------------------------------
-@app.get("/api/v1/health", summary="Статус сервера и проверка демонстрационного режима")
+@router.get("/health", summary="Статус сервера и проверка демонстрационного режима")
 def get_health(db: Session = Depends(get_db)):
     return {
         "status": "healthy",
@@ -160,25 +129,32 @@ def get_health(db: Session = Depends(get_db)):
     }
 
 
-@app.get("/api/v1/complexes", summary="Список всех демонстрационных ЖК с автоматическим расчётом скоринга")
-def get_complexes(db: Session = Depends(get_db)):
-    return [complex_to_api_with_risk(c) for c in _all_complexes(db)]
+@router.get("/complexes", summary="Список всех демонстрационных ЖК с автоматическим расчётом скоринга")
+def get_complexes(
+    zone: Optional[ZoneFilter] = Query(None, description="Фильтр по зоне: red, yellow, green или all (любой регистр)"),
+    db: Session = Depends(get_db),
+):
+    items = [complex_to_api_with_risk(c) for c in _all_complexes(db)]
+    if zone and zone != "all":
+        items = [c for c in items if c["riskProfile"]["zone"].lower() == zone]
+    return items
 
 
-@app.get("/api/v1/complexes/{complex_id}", summary="Получение конкретного ЖК по ID")
+@router.get("/complexes/{complex_id}", summary="Полная карточка ЖК: расшифровка R1–R6, публикации и текущая сигнальная карточка")
 def get_complex_by_id(complex_id: str, db: Session = Depends(get_db)):
-    return complex_to_api_with_risk(_get_complex_or_404(db, complex_id))
+    c = _get_complex_or_404(db, complex_id)
+    data = complex_to_api_with_risk(c)
+    data["publications"] = [publication_to_api(p) for p in _sorted_publications(c.publications)]
+    data["signal"] = signal_to_api(c.current_signal)
+    return data
 
 
-@app.get("/api/v1/publications", summary="Список рекламных объявлений")
+@router.get("/publications", summary="Список рекламных объявлений")
 def get_publications(db: Session = Depends(get_db)):
-    items = db.scalars(select(Publication)).all()
-    # Ручные публикации сверху (новые первыми), затем сид в исходном порядке AD-101…AD-112
-    items = sorted(items, key=lambda p: (p.is_demo, _id_number(p.id) if p.is_demo else -_id_number(p.id)))
-    return [publication_to_api(p) for p in items]
+    return [publication_to_api(p) for p in _sorted_publications(db.scalars(select(Publication)).all())]
 
 
-@app.post("/api/v1/publications", summary="Добавление нового рекламного объявления вручную")
+@router.post("/publications", summary="Добавление нового рекламного объявления вручную")
 def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_db)):
     text = (pub.rawText or pub.text or "").strip()
     if not text:
@@ -215,8 +191,11 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
             "explanation": analysis.get("explanation"),
         },
         status=publication_status_to_db(pub.status),
-        has_direct_payment_offer=factor == "R2",
-        is_active_pre_commissioning_ad=not (target and target.is_commissioned),
+        has_direct_payment_offer=pub.hasDirectPaymentOffer if pub.hasDirectPaymentOffer is not None else factor == "R2",
+        is_active_pre_commissioning_ad=(
+            (pub.isActivePreCommissioningAd if pub.isActivePreCommissioningAd is not None else bool(SALE_AD_RE.search(text)))
+            and not (target and target.is_commissioned)
+        ),
         is_demo=False,
     )
     if target:
@@ -238,7 +217,45 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
     }
 
 
-@app.post("/api/v1/analyze", summary="ИИ-анализатор объявлений с извлечением триггеров и гипотезой фактора")
+@router.post("/publications/{publication_id}/verify", summary="Решение аналитика по гипотезе ИИ: принять или отклонить публикацию")
+def verify_publication(publication_id: str, req: PublicationVerifyRequest, db: Session = Depends(get_db)):
+    pub = db.get(Publication, publication_id)
+    if not pub:
+        raise HTTPException(status_code=404, detail=f"Публикация {publication_id} не найдена")
+
+    target = pub.complex
+    before = risk_profile(target) if target else None
+    previous_status = pub.status
+    pub.status = "confirmed" if req.decision == "accept" else "rejected"
+    analyst = req.analyst or "Ахметов Д.К. (Аналитик МИО)"
+
+    # Решение по публикации меняет R2/R3/R5 — пересчитываем скоринг и текущую сигнальную карточку
+    after = None
+    if target:
+        refresh_signal(target.current_signal, target)
+        after = risk_profile(target)
+    _audit(db, analyst, "publication_verify", "publication", pub.id, {
+        "decision": req.decision,
+        "from": previous_status,
+        "to": pub.status,
+        "comment": req.comment,
+        "complexId": pub.complex_id,
+        "scoreBefore": before["score"] if before else None,
+        "scoreAfter": after["score"] if after else None,
+        "zoneAfter": after["zone"] if after else None,
+    })
+    db.commit()
+
+    return {
+        "status": "success",
+        "publication": publication_to_api(pub),
+        "complex_id": pub.complex_id,
+        "risk_profile": after,
+        "complex": complex_to_api(target) if target else None,
+    }
+
+
+@router.post("/analyze", summary="ИИ-анализатор объявлений с извлечением триггеров и гипотезой фактора")
 def analyze_advertisement(req: AnalyzeRequest, db: Session = Depends(get_db)):
     return _run_analysis(db, req)
 
@@ -357,17 +374,12 @@ def _run_analysis(db: Session, req: AnalyzeRequest) -> Dict[str, Any]:
     }
 
 
-@app.post("/api/v1/complexes/{complex_id}/confirm-factor", summary="Подтверждение или отклонение фактора аналитиком (Human-in-the-Loop)")
+@router.post("/complexes/{complex_id}/confirm-factor", summary="Подтверждение или отклонение фактора аналитиком (Human-in-the-Loop)")
 def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Depends(get_db)):
     target = _get_complex_or_404(db, complex_id)
 
-    factor_code = req.factor.upper()
-    if factor_code not in WEIGHTS:
-        raise HTTPException(status_code=400, detail=f"Недопустимый код фактора {factor_code}. Допустимы: R1-R6")
-    status = req.status.upper()
-    if status not in OVERRIDE_STATUSES | {"AUTO"}:
-        allowed = ", ".join(sorted(OVERRIDE_STATUSES | {"AUTO"}))
-        raise HTTPException(status_code=400, detail=f"Недопустимый статус {req.status}. Допустимы: {allowed}")
+    factor_code = req.factor
+    status = req.status
 
     analyst = req.analyst or "Ахметов Д.К. (Аналитик МИО)"
     evidence_text = req.evidence or f"Решение аналитика МИО ({analyst}) в рамках мониторинга."
@@ -427,7 +439,7 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
     }
 
 
-@app.post("/api/v1/complexes", summary="Добавление нового проверяемого ЖК в реестр")
+@router.post("/complexes", summary="Добавление нового проверяемого ЖК в реестр")
 def create_complex(req: ComplexCreateRequest, db: Session = Depends(get_db)):
     legal_type, commissioned = legal_basis_to_db(req.legalBasisType)
     coords = req.coords if req.coords and len(req.coords) >= 2 else [49.95, 82.61]
@@ -460,13 +472,10 @@ def create_complex(req: ComplexCreateRequest, db: Session = Depends(get_db)):
     return {"status": "success", "complex": complex_to_api(new_item)}
 
 
-@app.post("/api/v1/complexes/{complex_id}/signal-decision", summary="Утверждение или возврат Сигнальной карточки")
+@router.post("/complexes/{complex_id}/signal-decision", summary="Утверждение или возврат Сигнальной карточки")
 def signal_decision(complex_id: str, req: SignalDecisionRequest, db: Session = Depends(get_db)):
     target = _get_complex_or_404(db, complex_id)
-
-    status = SIGNAL_STATUS_TO_DB.get(req.decision.upper())
-    if not status:
-        raise HTTPException(status_code=400, detail=f"Недопустимое решение {req.decision}. Допустимы: CONFIRMED, RETURNED")
+    status = SIGNAL_STATUS_TO_DB[req.decision]
 
     previous = target.current_signal
     author = req.author or "Ахметов Д.К."
@@ -481,7 +490,7 @@ def signal_decision(complex_id: str, req: SignalDecisionRequest, db: Session = D
     )
     db.add(signal)
     _audit(db, author, "signal_decision", "complex", complex_id, {
-        "decision": req.decision.upper(),
+        "decision": req.decision,
         "comment": req.comment,
         "score": signal.total_score,
         "zone": signal.risk_zone,
@@ -493,11 +502,22 @@ def signal_decision(complex_id: str, req: SignalDecisionRequest, db: Session = D
         "complex_id": complex_id,
         "signalStatus": SIGNAL_STATUS_TO_API[status],
         "signalAuthor": author,
+        "signal": signal_to_api(signal),
         "complex": complex_to_api(target),
     }
 
 
-@app.get("/api/v1/audit-log", summary="Журнал аудита действий аналитиков (новые записи сверху)")
+@router.post("/signals/{complex_id}/decision", summary="Решение по сигнальной карточке (путь по ТЗ1, алиас signal-decision)")
+def signal_decision_alias(complex_id: str, req: SignalDecisionRequest, db: Session = Depends(get_db)):
+    return signal_decision(complex_id, req, db)
+
+
+@router.get("/audit-log", summary="Журнал аудита действий аналитиков (новые записи сверху)")
 def get_audit_log(limit: int = 100, db: Session = Depends(get_db)):
     rows = db.scalars(select(AuditLog).order_by(AuditLog.id.desc()).limit(max(1, min(limit, 1000)))).all()
     return [audit_to_api(a) for a in rows]
+
+
+app.include_router(router, prefix="/api/v1")
+# Алиасы путей по ТЗ1 (/api/complexes, /api/publications/{id}/verify, ...); в Swagger не дублируются
+app.include_router(router, prefix="/api", include_in_schema=False)

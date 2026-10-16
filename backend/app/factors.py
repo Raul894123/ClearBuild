@@ -17,7 +17,6 @@ from app.scoring import FACTOR_NAMES, WEIGHTS, calculate_risk
 
 FACTOR_CODES = ["R1", "R2", "R3", "R4", "R5", "R6"]
 READINESS_GAP_THRESHOLD = 20
-OVERRIDE_STATUSES = {"CONFIRMED", "REJECTED", "NONE", "UNVERIFIED", "AI_HYPOTHESIS"}
 
 NEEDS_CHECK_LABEL = "Нужна проверка"
 

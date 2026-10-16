@@ -1,18 +1,11 @@
 """API-тесты на хранилище SQLite: сид, сохранение изменений и журнал аудита."""
 
-import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.main import app
 from app.models import AuditLog, Complex, Publication, Signal
 
-
-@pytest.fixture(scope="module")
-def client():
-    with TestClient(app) as c:
-        yield c
+# Фикстура client — в conftest.py: свежая БД из сида на каждый модуль
 
 
 def _complex(client, complex_id):
@@ -139,7 +132,7 @@ def test_confirm_factor_cannot_bypass_spec_rules(client):
     assert res.status_code == 400
     # jk-8 введён в эксплуатацию — R3 подтвердить нельзя
     assert client.post("/api/v1/complexes/jk-8/confirm-factor", json={"factor": "R3", "status": "CONFIRMED"}).status_code == 400
-    assert client.post("/api/v1/complexes/jk-1/confirm-factor", json={"factor": "R1", "status": "MAYBE"}).status_code == 400
+    assert client.post("/api/v1/complexes/jk-1/confirm-factor", json={"factor": "R1", "status": "MAYBE"}).status_code == 422
     assert _complex(client, "jk-2")["riskProfile"]["score"] == 35
 
 
@@ -160,7 +153,7 @@ def test_rejecting_data_factor_removes_points(client):
 
 
 def test_confirm_factor_rejects_unknown_code(client):
-    assert client.post("/api/v1/complexes/jk-1/confirm-factor", json={"factor": "R9"}).status_code == 400
+    assert client.post("/api/v1/complexes/jk-1/confirm-factor", json={"factor": "R9"}).status_code == 422
     assert client.post("/api/v1/complexes/jk-404/confirm-factor", json={"factor": "R1"}).status_code == 404
 
 
@@ -178,7 +171,7 @@ def test_signal_decision_creates_history_row_with_real_time(client):
         assert signals[-1].reviewed_by == "Тестов Т.Т."
         assert signals[-1].reviewed_at is not None
 
-    assert client.post("/api/v1/complexes/jk-1/signal-decision", json={"decision": "MAYBE"}).status_code == 400
+    assert client.post("/api/v1/complexes/jk-1/signal-decision", json={"decision": "MAYBE"}).status_code == 422
 
 
 def test_create_publication_is_stored(client):

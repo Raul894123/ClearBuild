@@ -516,7 +516,9 @@
       "triggerSpan": "внести платный депозит 500 000 тг по договору бронирования до старта официальных продаж! Первоначальный взнос 20% в кассу застройщика",
       "proposedFactor": "R2",
       "confidence": 96,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-102",
@@ -531,7 +533,9 @@
       "triggerSpan": "Готовность объекта уже 65%! ... при оплате первоначального взноса наличными сегодня",
       "proposedFactor": "R5",
       "confidence": 92,
-      "status": "AI_HYPOTHESIS"
+      "status": "AI_HYPOTHESIS",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-103",
@@ -546,7 +550,9 @@
       "triggerSpan": "платная бронь квартиры за 300 000 тг с жёсткой фиксацией цены за квадрат",
       "proposedFactor": "R2",
       "confidence": 95,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-104",
@@ -561,7 +567,9 @@
       "triggerSpan": "в строящемся ЖК «Сатпаев Сити Парк» ... Сдача во II квартале 2028 года",
       "proposedFactor": "R3",
       "confidence": 98,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-105",
@@ -576,7 +584,9 @@
       "triggerSpan": "Строительство защищено гарантией АО «КЖК» №ГД-2026/049. Заключение официальных ДДУ",
       "proposedFactor": "R3",
       "confidence": 99,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-106",
@@ -591,7 +601,9 @@
       "triggerSpan": "Первоначальный взнос 30% по предварительному договору инвестирования",
       "proposedFactor": "R2",
       "confidence": 97,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-107",
@@ -606,7 +618,9 @@
       "triggerSpan": "Внесите 1 000 000 тг сегодня для резерва квартиры ... без участия банков",
       "proposedFactor": "R2",
       "confidence": 94,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-108",
@@ -621,7 +635,9 @@
       "triggerSpan": "Внесите депозит 400 000 тг по договору резервирования сегодня",
       "proposedFactor": "R2",
       "confidence": 95,
-      "status": "AI_HYPOTHESIS"
+      "status": "AI_HYPOTHESIS",
+      "hasDirectPaymentOffer": true,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-109",
@@ -636,7 +652,9 @@
       "triggerSpan": "готовность уже 75%! Открыта продажа 2-комнатных квартир на стадии строительства",
       "proposedFactor": "R5",
       "confidence": 91,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-110",
@@ -651,7 +669,9 @@
       "triggerSpan": "Дом почти готов — готовность 90% (по отчёту БВУ 65%)",
       "proposedFactor": "R5",
       "confidence": 89,
-      "status": "AI_HYPOTHESIS"
+      "status": "AI_HYPOTHESIS",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-111",
@@ -666,7 +686,9 @@
       "triggerSpan": "Продажа квартир исключительно по ДДУ через уполномоченный банк",
       "proposedFactor": "R3",
       "confidence": 97,
-      "status": "CONFIRMED"
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     },
     {
       "id": "AD-112",
@@ -681,7 +703,9 @@
       "triggerSpan": "торг за наличный расчёт (ИИ пометил слово «наличный», но дом уже введён в эксплуатацию — ложноположительное срабатывание отклонено)",
       "proposedFactor": "R2",
       "confidence": 62,
-      "status": "REJECTED"
+      "status": "REJECTED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": false
     }
   ]
 }
