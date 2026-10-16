@@ -191,6 +191,23 @@ def publication_to_api(p: Publication) -> Dict[str, Any]:
     }
 
 
+def signal_to_api(sig: Optional[Signal]) -> Optional[Dict[str, Any]]:
+    if sig is None:
+        return None
+    return {
+        "id": sig.id,
+        "complexId": sig.complex_id,
+        "status": SIGNAL_STATUS_TO_API.get(sig.status, "PENDING_HUMAN"),
+        "totalScore": sig.total_score,
+        "riskZone": sig.risk_zone.upper(),
+        "activeFactors": sig.active_factors or [],
+        "comment": sig.comment,
+        "reviewedBy": sig.reviewed_by,
+        "reviewedAt": fmt_datetime(sig.reviewed_at),
+        "createdAt": fmt_datetime(sig.created_at),
+    }
+
+
 def audit_to_api(a: AuditLog) -> Dict[str, Any]:
     return {
         "id": a.id,
