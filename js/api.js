@@ -5,7 +5,7 @@
 (function(global) {
   'use strict';
 
-  const DEFAULT_API_URL = 'http://localhost:8000/api/v1';
+  const DEFAULT_API_URL = 'https://clearbuild-sooq.onrender.com/api/v1';
 
   const apiClient = {
     baseUrl: (typeof localStorage !== 'undefined' && localStorage.getItem('clearbuild_api_url')) || DEFAULT_API_URL,
