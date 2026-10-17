@@ -1252,3 +1252,142 @@ table.civic-table tr.active-row td {
   border-color: #dc2626;
   color: #ffffff;
 }
+
+/* ==========================================================================
+   ACCESSIBILITY: LARGE FONT SCALE (A+) & INSPECTOR UX ENHANCEMENTS
+   ========================================================================== */
+html[data-font-scale="large"] {
+  font-size: 18px;
+}
+
+/* Control Test Cases Bar (TZ Section 5) */
+.cases-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--brand-primary);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+.case-chip-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.case-chip-btn:hover {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-light);
+  color: var(--brand-primary);
+  transform: translateY(-1px);
+}
+
+/* Step-by-Step Inspector Route Footer Banner */
+.step-guide-footer {
+  margin-top: 1.35rem;
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.09) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+  border-left: 5px solid var(--brand-primary);
+  border-radius: 12px;
+  padding: 0.95rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.step-guide-footer .step-next-btn {
+  background: var(--brand-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.15rem;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.25);
+  transition: all 0.15s ease;
+}
+.step-guide-footer .step-next-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+/* 1-Click AI Demo Presets & OCR Box in #add-ad-modal */
+.presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+.preset-demo-btn {
+  text-align: left;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.preset-demo-btn:hover {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-light);
+  transform: translateY(-1px);
+}
+.ocr-dropzone {
+  background: var(--bg-surface-hover);
+  border: 1px dashed var(--brand-primary);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Help Modal Step Cards & Interactive Spotlight Tour */
+.help-step-card {
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+}
+.tour-highlight-target {
+  outline: 3px solid #0284c7 !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 0 6px rgba(2, 132, 199, 0.22) !important;
+  border-radius: 10px;
+  transition: outline 0.2s ease, box-shadow 0.2s ease;
+}
+#guided-tour-popover {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 94vw);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 2px solid var(--brand-primary);
+  border-radius: 14px;
+  padding: 1.1rem 1.35rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  z-index: 99990;
+  display: none;
+}
+

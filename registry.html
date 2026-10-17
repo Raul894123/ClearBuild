@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=20261016b" />
 </head>
 <body>
   <!-- Top Civic Header -->
@@ -133,10 +133,10 @@
         <input type="text" id="reg-search-input" class="search-input" placeholder="Поиск по названию ЖК, застройщику, БИН или адресу..." oninput="handleRegSearch(this.value)" />
       </div>
       <div class="filter-chips">
-        <button class="chip-btn active" id="chip-all" onclick="setRegFilter('ALL')">Все (8)</button>
-        <button class="chip-btn chip-green" id="chip-green" onclick="setRegFilter('GREEN')">🟢 Безопасно (3)</button>
-        <button class="chip-btn chip-yellow" id="chip-yellow" onclick="setRegFilter('YELLOW')">🟡 Внимание (3)</button>
-        <button class="chip-btn chip-red" id="chip-red" onclick="setRegFilter('RED')">🔴 Опасно (2)</button>
+        <button class="chip-btn active" id="chip-all" onclick="setRegFilter('ALL')">Все (<span id="reg-cnt-all">8</span>)</button>
+        <button class="chip-btn chip-green" id="chip-green" onclick="setRegFilter('GREEN')">🟢 Безопасно (<span id="reg-cnt-green">4</span>)</button>
+        <button class="chip-btn chip-yellow" id="chip-yellow" onclick="setRegFilter('YELLOW')">🟡 Внимание (<span id="reg-cnt-yellow">2</span>)</button>
+        <button class="chip-btn chip-red" id="chip-red" onclick="setRegFilter('RED')">🔴 Опасно (<span id="reg-cnt-red">2</span>)</button>
       </div>
     </div>
 
@@ -150,7 +150,7 @@
             <th>Адрес / Район</th>
             <th>Правовое основание</th>
             <th>Стадия / Готовность</th>
-            <th>Факторы риска</th>
+            <th>Связанные публикации и факторы</th>
             <th>Зона риска</th>
             <th>Действия</th>
           </tr>
@@ -167,7 +167,7 @@
         <strong>SAQ QURYLYS</strong> · ClearBuild © 2026. Мониторинг законности долевого строительства г. Усть-Каменогорск.
       </div>
       <div style="font-size: 0.75rem;">
-        Данные обновлены: <span id="footer-update-time">15.10.2026</span>
+        Данные обновлены: <span id="footer-update-time">16.10.2026</span> · База данных: <code>SQLite + clearbuild_state_v4</code>
       </div>
     </div>
   </footer>
@@ -190,10 +190,27 @@
     </div>
   </div>
 
+  <!-- Archival Screenshot / Web Capture Viewer Modal -->
+  <div class="modal-overlay" id="screenshot-modal">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--brand-primary); text-transform: uppercase; font-weight: 700;">Архивная копия доказательства (Разделы 3 и 6 ТЗ)</div>
+          <h3 style="font-size: 1.1rem; font-weight: 800;" id="screenshot-modal-title">🖼️ Архивный снимок фиксации объявления</h3>
+        </div>
+        <button onclick="closeAdScreenshotModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body" id="screenshot-modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeAdScreenshotModal()">Закрыть снимок</button>
+      </div>
+    </div>
+  </div>
 
-  <script src="js/data.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/shared.js"></script>
+
+  <script src="js/data.js?v=20261016b"></script>
+  <script src="js/api.js?v=20261016b"></script>
+  <script src="js/shared.js?v=20261016b"></script>
   <script>
     let REG_SEARCH = '';
     let REG_ZONE = 'ALL';
@@ -216,6 +233,22 @@
       const tbody = document.getElementById('registry-table-body');
       if (!tbody) return;
 
+      let gCnt = 0, yCnt = 0, rCnt = 0;
+      complexes.forEach(c => {
+        const z = calculateComplexRisk(c).zone;
+        if (z === 'GREEN') gCnt++;
+        else if (z === 'YELLOW') yCnt++;
+        else if (z === 'RED') rCnt++;
+      });
+      const elAll = document.getElementById('reg-cnt-all');
+      const elG = document.getElementById('reg-cnt-green');
+      const elY = document.getElementById('reg-cnt-yellow');
+      const elR = document.getElementById('reg-cnt-red');
+      if (elAll) elAll.textContent = complexes.length;
+      if (elG) elG.textContent = gCnt;
+      if (elY) elY.textContent = yCnt;
+      if (elR) elR.textContent = rCnt;
+
       const filtered = complexes.filter(c => {
         const r = calculateComplexRisk(c);
         if (REG_ZONE !== 'ALL' && r.zone !== REG_ZONE) return false;
@@ -228,6 +261,7 @@
 
       tbody.innerHTML = filtered.map(c => {
         const risk = calculateComplexRisk(c);
+        const cPubs = (adsList || []).filter(a => a.complexId === c.id);
         return `
           <tr>
             <td>
@@ -251,7 +285,8 @@
               <div style="font-size: 0.72rem; color: var(--text-muted);">Факт: <strong>${c.readinessFact}%</strong> / Заявлено: <strong>${c.readinessDeclared}%</strong></div>
             </td>
             <td>
-              <span style="font-weight: 700; color: var(--text-secondary);">${risk.activeCodes.join(', ') || 'нет'}</span>
+              <div style="font-weight: 700; color: var(--text-secondary);">Факторы: ${risk.activeCodes.join(', ') || 'нет'}</div>
+              <div style="font-size: 0.72rem; color: var(--brand-primary); margin-top: 2px;">📢 Объявлений: ${cPubs.length}</div>
             </td>
             <td>
               <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} (${risk.score} б.)</span>
