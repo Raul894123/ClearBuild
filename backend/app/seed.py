@@ -18,6 +18,7 @@ from app.mappers import (
     verification_status_for,
 )
 from app.models import Complex, Publication, Signal, now
+from app.registries import seed_gov_checks
 
 SEED_FILE = BACKEND_DIR / "seed.json"
 
@@ -109,6 +110,7 @@ def seed_database(db: Session) -> None:
             delay_source=_confirmed_evidence(factors, "R6"),
             contact_phone=item.get("contactPhone"),
             sales_account=item.get("salesAccount"),
+            gov_checks=seed_gov_checks(item.get("govChecks")),
             is_demo=True,
             created_at=seeded_at,
             updated_at=seeded_at,

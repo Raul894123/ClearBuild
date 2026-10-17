@@ -11,8 +11,9 @@ import re
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
+from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,7 @@ from app.mappers import (
     audit_to_api,
     complex_to_api,
     complex_to_api_with_risk,
+    legal_basis_to_api,
     legal_basis_to_db,
     parse_date,
     parse_datetime,
@@ -36,12 +38,26 @@ from app.mappers import (
     verification_status_for,
 )
 from app.models import AuditLog, Complex, Publication, Signal, now
+from app.registries import (
+    ImportFormatError,
+    checked_entry,
+    describe_row,
+    gov_checks,
+    is_revoked,
+    legal_basis_check_status,
+    legal_basis_from_row,
+    match_complex,
+    normalize_bin,
+    normalize_row,
+    parse_export,
+)
 from app.schemas import (
     AnalyzeRequest,
     ComplexCreateRequest,
     ConfirmFactorRequest,
     PublicationCreateRequest,
     PublicationVerifyRequest,
+    ImportFormat,
     SignalDecisionRequest,
     ZoneFilter,
 )
@@ -131,7 +147,11 @@ def get_complexes(
     zone: Optional[ZoneFilter] = Query(None, description="Фильтр по зоне: red, yellow, green или all (любой регистр)"),
     db: Session = Depends(get_db),
 ):
-    items = [complex_to_api_with_risk(c) for c in _all_complexes(db)]
+    items = []
+    for c in _all_complexes(db):
+        item = complex_to_api_with_risk(c)
+        item["govChecks"] = gov_checks(c)
+        items.append(item)
     if zone and zone != "all":
         items = [c for c in items if c["riskProfile"]["zone"].lower() == zone]
     return items
@@ -143,6 +163,7 @@ def get_complex_by_id(complex_id: str, db: Session = Depends(get_db)):
     data = complex_to_api_with_risk(c)
     data["publications"] = [publication_to_api(p) for p in _sorted_publications(c.publications)]
     data["signal"] = signal_to_api(c.current_signal)
+    data["govChecks"] = gov_checks(c)
     return data
 
 
@@ -365,6 +386,160 @@ def create_complex(req: ComplexCreateRequest, db: Session = Depends(get_db)):
     return {"status": "success", "complex": complex_to_api(new_item)}
 
 
+LEGAL_BASIS_TEXT = {
+    "absent": "Отсутствует правовое основание привлечения средств (Ashyq Data)",
+    "unknown": "Не проверено · Нужна проверка",
+    "operator_guarantee": "Гарантия Единого оператора жилищного строительства (АО «КЖК»)",
+    "mio_permit": "Разрешение МИО на привлечение денег дольщиков (Ashyq Data)",
+}
+
+
+@router.post("/registries/import", summary="Импорт выгрузки разрешений МИО Ashyq Data (CSV или JSON): обновление R1 и новые ЖК")
+async def import_registry(
+    request: Request,
+    file: Optional[UploadFile] = File(None, description="Файл выгрузки .csv или .json (multipart/form-data)"),
+    fmt: Optional[ImportFormat] = Query(None, alias="format", description="csv или json; по умолчанию — по имени файла или содержимому"),
+    db: Session = Depends(get_db),
+):
+    """Файл передаётся полем file (multipart) или телом запроса (text/csv, application/json).
+
+    Строка сопоставляется с ЖК по БИН, затем по названию. Найденному ЖК обновляется legal_basis_type,
+    для ненайденного создаётся карточка с legal_basis_type = unknown («Нужна проверка», R1 = 0 б.).
+    """
+    if file is not None:
+        content, filename = await file.read(), file.filename or ""
+        content_type = file.content_type or ""
+    else:
+        content, filename = await request.body(), ""
+        content_type = request.headers.get("content-type") or ""
+    if fmt is None:
+        if filename.lower().endswith(".csv") or "csv" in content_type:
+            fmt = "csv"
+        elif filename.lower().endswith(".json") or "json" in content_type:
+            fmt = "json"
+    try:
+        records = parse_export(content, fmt)
+    except ImportFormatError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return _import_records(db, records, filename or "тело запроса")
+
+
+def _import_records(db: Session, records: List[Dict[str, Any]], source_name: str) -> Dict[str, Any]:
+    at = now()
+    complexes = _all_complexes(db)
+    created_ids: set = set()
+    counts = {"updated": 0, "created": 0, "unchanged": 0, "skipped": 0}
+    rows: List[Dict[str, Any]] = []
+
+    def report(n: int, action: str, c: Optional[Complex] = None, matched_by: Optional[str] = None,
+               reason: Optional[str] = None, **extra):
+        counts[action] += 1
+        rows.append({
+            "row": n,
+            "action": action,
+            "complexId": c.id if c else None,
+            "name": c.name if c else None,
+            "matchedBy": matched_by,
+            "legalBasisType": legal_basis_to_api(c) if c else None,
+            "reason": reason,
+            **extra,
+        })
+
+    for n, raw in enumerate(records, start=1):
+        row = normalize_row(raw)
+        if not row.get("bin") and not row.get("name"):
+            report(n, "skipped", reason="Нет БИН и названия ЖК")
+            continue
+        target, matched_by, conflict = match_complex(row, complexes)
+        if conflict:
+            report(n, "skipped", reason=conflict)
+            continue
+        source = describe_row(row)
+
+        if target is None:
+            if not row.get("name"):
+                report(n, "skipped", reason="ЖК не найден по БИН, а для новой карточки нужно название")
+                continue
+            target = _create_imported_complex(db, row, source, at)
+            complexes.append(target)
+            created_ids.add(target.id)
+            report(n, "created", target, reason="ЖК не найден: создана карточка, правовое основание — «Нужна проверка»")
+            continue
+
+        if target.id in created_ids:
+            report(n, "skipped", target, matched_by, reason="Повтор ЖК, созданного этим импортом")
+            continue
+        legal, commissioned = legal_basis_from_row(row)
+        if legal is None:
+            report(n, "skipped", target, matched_by, reason="Не удалось определить правовое основание (тип документа, статус)")
+            continue
+        if legal == "unknown" and target.legal_basis_type == "absent":
+            # Отсутствие основания уже подтверждено (сид или аналитик) — импорт его не откатывает
+            legal, commissioned = "absent", False
+
+        previous = legal_basis_to_api(target)
+        changed = (target.legal_basis_type, bool(target.is_commissioned)) != (legal, commissioned)
+        if changed:
+            target.legal_basis_type = legal
+            target.is_commissioned = commissioned
+            target.verification_status = verification_status_for(legal)
+            target.verification_source = source
+            if commissioned:
+                target.legal_basis_text = "Объект введён в эксплуатацию (Ashyq Data)"
+            elif is_revoked(row):
+                target.legal_basis_text = "Разрешение отозвано по данным Ashyq Data — нужна проверка, R1 подтверждает аналитик"
+            else:
+                target.legal_basis_text = LEGAL_BASIS_TEXT[legal]
+            refresh_signal(target.current_signal, target)
+        checks = dict(target.gov_checks or {})
+        checks["ashyq_data"] = checked_entry(legal_basis_check_status("ashyq_data", legal), at, source)
+        target.gov_checks = checks
+        report(n, "updated" if changed else "unchanged", target, matched_by, previousLegalBasisType=previous)
+
+    _audit(db, "Аналитик МИО (веб-интерфейс)", "registry_import", "registry", "ashyq_data", {
+        "source": source_name,
+        "total": len(records),
+        **counts,
+        "changes": [
+            {k: r[k] for k in ("row", "action", "complexId", "previousLegalBasisType", "legalBasisType") if k in r}
+            for r in rows if r["action"] in ("updated", "created")
+        ],
+    })
+    db.commit()
+    return {"status": "success", "source": source_name, "total": len(records), **counts, "rows": rows}
+
+
+def _create_imported_complex(db: Session, row: Dict[str, str], source: str, at) -> Complex:
+    def coord(key: str, default: float) -> float:
+        try:
+            return float((row.get(key) or "").replace(",", "."))
+        except ValueError:
+            return default
+
+    c = Complex(
+        id=_next_id(db, Complex, "jk-"),
+        name=row["name"],
+        address=row.get("address") or "г. Усть-Каменогорск",
+        lat=coord("lat", 49.95),
+        lng=coord("lng", 82.61),
+        developer_name=row.get("developer") or "Не указан",
+        developer_bin=normalize_bin(row.get("bin")) or row.get("bin") or "",
+        legal_basis_type="unknown",
+        legal_basis_text=LEGAL_BASIS_TEXT["unknown"],
+        verification_status=verification_status_for("unknown"),
+        verification_source=f"{source}. Карточка создана импортом, правовое основание требует проверки аналитиком.",
+        gov_checks={"ashyq_data": checked_entry(legal_basis_check_status("ashyq_data", "unknown"), at, source)},
+        factor_overrides={},
+        is_demo=False,
+        created_at=at,
+        updated_at=at,
+    )
+    db.add(c)
+    db.add(Signal(complex=c, status="draft", reviewed_by="Ахметов Д.К.", reviewed_at=at, **signal_snapshot(c)))
+    db.flush()
+    return c
+
+
 @router.post("/complexes/{complex_id}/signal-decision", summary="Утверждение или возврат Сигнальной карточки")
 def signal_decision(complex_id: str, req: SignalDecisionRequest, db: Session = Depends(get_db)):
     target = _get_complex_or_404(db, complex_id)
@@ -409,6 +584,13 @@ def signal_decision_alias(complex_id: str, req: SignalDecisionRequest, db: Sessi
 def get_audit_log(limit: int = 100, db: Session = Depends(get_db)):
     rows = db.scalars(select(AuditLog).order_by(AuditLog.id.desc()).limit(max(1, min(limit, 1000)))).all()
     return [audit_to_api(a) for a in rows]
+
+
+@app.get("/", include_in_schema=False)
+@app.get("/api", include_in_schema=False)
+@app.get("/api/v1", include_in_schema=False)
+def redirect_to_docs():
+    return RedirectResponse(url="/docs")
 
 
 app.include_router(router, prefix="/api/v1")

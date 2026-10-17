@@ -40,6 +40,7 @@ def test_list_complexes_with_zone_filter(client, prefix, zone, expected):
     res = client.get(f"{prefix}/complexes", params=params)
     assert res.status_code == 200
     assert [c["id"] for c in res.json()] == expected
+    assert all(len(c["govChecks"]) == 11 for c in res.json())
 
 
 def test_list_complexes_rejects_unknown_zone(client):
