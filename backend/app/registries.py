@@ -215,15 +215,26 @@ def name_variants(name: Optional[str]) -> set:
     return {v for v in (_norm_name(p) for p in parts) if v}
 
 
+def is_revoked(row: Dict[str, str]) -> bool:
+    """Разрешение отозвано, аннулировано или прекращено (по статусу записи)."""
+    return bool(re.search(r"отозван|аннулир|отменен|прекращ|revoked|cancel", (row.get("status") or "").lower()))
+
+
 def legal_basis_from_row(row: Dict[str, str]) -> Tuple[Optional[str], bool]:
-    """(legal_basis_type, is_commissioned) по строке выгрузки или (None, False), если не определить."""
+    """(legal_basis_type, is_commissioned) по строке выгрузки или (None, False), если не определить.
+
+    Импорт никогда не ставит absent: отозванное разрешение или явное absent в выгрузке дают
+    unknown («Нужна проверка»), а R1 подтверждает только аналитик через confirm-factor.
+    """
     explicit = (row.get("legal_basis_type") or "").strip().lower()
     if explicit in _LEGAL_BASIS_VALUES:
+        if explicit == "absent":
+            return "unknown", False
         return ("mio_permit", True) if explicit == "commissioned" else (explicit, False)
 
+    if is_revoked(row):
+        return "unknown", False
     status = (row.get("status") or "").lower()
-    if re.search(r"отозван|аннулир|отменен|прекращ|revoked|cancel", status):
-        return "absent", False
     if re.search(r"приостанов|на рассмотрении|suspend|pending", status):
         return "unknown", False
 
