@@ -43,6 +43,7 @@ from app.registries import (
     checked_entry,
     describe_row,
     gov_checks,
+    is_revoked,
     legal_basis_check_status,
     legal_basis_from_row,
     match_complex,
@@ -146,7 +147,11 @@ def get_complexes(
     zone: Optional[ZoneFilter] = Query(None, description="Фильтр по зоне: red, yellow, green или all (любой регистр)"),
     db: Session = Depends(get_db),
 ):
-    items = [complex_to_api_with_risk(c) for c in _all_complexes(db)]
+    items = []
+    for c in _all_complexes(db):
+        item = complex_to_api_with_risk(c)
+        item["govChecks"] = gov_checks(c)
+        items.append(item)
     if zone and zone != "all":
         items = [c for c in items if c["riskProfile"]["zone"].lower() == zone]
     return items
@@ -468,6 +473,9 @@ def _import_records(db: Session, records: List[Dict[str, Any]], source_name: str
         if legal is None:
             report(n, "skipped", target, matched_by, reason="Не удалось определить правовое основание (тип документа, статус)")
             continue
+        if legal == "unknown" and target.legal_basis_type == "absent":
+            # Отсутствие основания уже подтверждено (сид или аналитик) — импорт его не откатывает
+            legal, commissioned = "absent", False
 
         previous = legal_basis_to_api(target)
         changed = (target.legal_basis_type, bool(target.is_commissioned)) != (legal, commissioned)
@@ -476,7 +484,12 @@ def _import_records(db: Session, records: List[Dict[str, Any]], source_name: str
             target.is_commissioned = commissioned
             target.verification_status = verification_status_for(legal)
             target.verification_source = source
-            target.legal_basis_text = "Объект введён в эксплуатацию (Ashyq Data)" if commissioned else LEGAL_BASIS_TEXT[legal]
+            if commissioned:
+                target.legal_basis_text = "Объект введён в эксплуатацию (Ashyq Data)"
+            elif is_revoked(row):
+                target.legal_basis_text = "Разрешение отозвано по данным Ashyq Data — нужна проверка, R1 подтверждает аналитик"
+            else:
+                target.legal_basis_text = LEGAL_BASIS_TEXT[legal]
             refresh_signal(target.current_signal, target)
         checks = dict(target.gov_checks or {})
         checks["ashyq_data"] = checked_entry(legal_basis_check_status("ashyq_data", legal), at, source)

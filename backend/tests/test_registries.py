@@ -83,8 +83,12 @@ def test_gov_checks_not_checked_has_no_date(client):
     assert checks["homeportal"]["status"] == "warning"  # unknown -> «Нужна проверка»
 
 
-def test_complex_list_unchanged_without_gov_checks(client):
-    assert "govChecks" not in client.get("/api/v1/complexes").json()[0]
+def test_complex_list_includes_gov_checks(client):
+    items = client.get("/api/v1/complexes").json()
+    for item in items:
+        assert [g["code"] for g in item["govChecks"]] == REGISTRY_CODES
+    jk1 = next(c for c in items if c["id"] == "jk-1")
+    assert jk1["govChecks"] == _complex(client, "jk-1")["govChecks"]
 
 
 def test_confirm_r1_moves_legal_registries_to_not_found(client):
@@ -136,12 +140,12 @@ def test_parse_export_errors(content, fmt):
 
 @pytest.mark.parametrize("row, expected", [
     ({"document_type": "Разрешение на привлечение денег дольщиков", "status": "Действует"}, ("mio_permit", False)),
-    ({"document_type": "Разрешение", "status": "Отозвано"}, ("absent", False)),
+    ({"document_type": "Разрешение", "status": "Отозвано"}, ("unknown", False)),
     ({"document_type": "Разрешение", "status": "Приостановлено"}, ("unknown", False)),
     ({"document_type": "Гарантия Единого оператора КЖК"}, ("operator_guarantee", False)),
     ({"document_type": "Акт ввода в эксплуатацию"}, ("mio_permit", True)),
     ({"permit_number": "МИО-1"}, ("mio_permit", False)),
-    ({"legal_basis_type": "Absent", "document_type": "Разрешение"}, ("absent", False)),
+    ({"legal_basis_type": "Absent", "document_type": "Разрешение"}, ("unknown", False)),
     ({"status": "Действует"}, (None, False)),
 ])
 def test_legal_basis_from_row(row, expected):
@@ -231,7 +235,7 @@ def test_import_json_sample_raw_body_is_idempotent_for_matched(client):
     assert (berek["action"], berek["matchedBy"], berek["legalBasisType"]) == ("updated", "bin", "MIO_PERMIT")
 
 
-def test_import_revoked_permit_sets_absent_and_rescores(client):
+def test_import_revoked_permit_needs_check_not_r1(client):
     before = _complex(client, "jk-6")["riskProfile"]["score"]
     assert before == 5
     csv = "БИН;Наименование объекта;Тип документа;Номер разрешения;Статус\n" \
@@ -241,13 +245,21 @@ def test_import_revoked_permit_sets_absent_and_rescores(client):
     assert res.status_code == 200
     assert res.json()["updated"] == 1
     jk6 = _complex(client, "jk-6")
-    assert jk6["legalBasisType"] == "ABSENT"
+    # Импорт не подтверждает R1: отозванное разрешение — «Нужна проверка», баллы не меняются
+    assert jk6["legalBasisType"] == "UNVERIFIED"
+    assert "отозвано" in jk6["legalBasisText"].lower()
     r1 = next(f for f in jk6["riskProfile"]["factors"] if f["code"] == "R1")
-    assert r1["status"] == "CONFIRMED"
-    # 5 + R1 35 = 40, жёлтая зона; текущая сигнальная карточка пересчитана
+    assert (r1["status"], r1["points"]) == ("UNVERIFIED", 0)
+    assert (jk6["riskProfile"]["score"], jk6["riskProfile"]["zone"]) == (5, "GREEN")
+    assert jk6["signal"]["totalScore"] == 5
+    assert {g["code"]: g for g in jk6["govChecks"]}["homeportal"]["status"] == "warning"
+
+    # R1 подтверждает аналитик: после confirm-factor 5 + 35 = 40, жёлтая зона
+    res = client.post("/api/v1/complexes/jk-6/confirm-factor", json={"factor": "R1", "status": "CONFIRMED"})
+    assert res.status_code == 200
+    jk6 = _complex(client, "jk-6")
+    assert jk6["legalBasisType"] == "ABSENT"
     assert (jk6["riskProfile"]["score"], jk6["riskProfile"]["zone"]) == (40, "YELLOW")
-    assert jk6["signal"]["totalScore"] == 40
-    assert {g["code"]: g for g in jk6["govChecks"]}["homeportal"]["status"] == "not_found"
 
 
 def test_import_conflicting_row_is_skipped(client):
