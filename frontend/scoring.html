@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=20261016b" />
 </head>
 <body>
   <!-- Top Civic Header -->
@@ -210,9 +210,9 @@
   </div>
 
 
-  <script src="js/data.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/shared.js"></script>
+  <script src="js/data.js?v=20261016b"></script>
+  <script src="js/api.js?v=20261016b"></script>
+  <script src="js/shared.js?v=20261016b"></script>
   <script>
     function populateComplexSelect() {
       const sel = document.getElementById('scoring-select-complex');
@@ -247,6 +247,7 @@
                 <option value="AI_HYPOTHESIS" ${st === 'AI_HYPOTHESIS' ? 'selected' : ''}>🤖 Подозрение ИИ (0 б. до проверки)</option>
                 <option value="UNVERIFIED" ${st === 'UNVERIFIED' ? 'selected' : ''}>⚠️ Нужна проверка (0 б.)</option>
                 <option value="NONE" ${st === 'NONE' ? 'selected' : ''}>⚪ Не выявлено (0 б.)</option>
+                <option value="REJECTED" ${st === 'REJECTED' ? 'selected' : ''}>✕ Отклонён аналитиком (0 б.)</option>
               </select>
             </td>
             <td style="max-width: 320px;">
@@ -259,35 +260,7 @@
       renderAuditLog();
     }
 
-    function changeFactorStatus(complexId, factorCode, newStatus) {
-      const c = complexes.find(item => item.id === complexId);
-      if (!c) return;
-
-      const prevStatus = c.factors[factorCode].status;
-      c.factors[factorCode].status = newStatus;
-
-      const timeNow = new Date().toLocaleTimeString();
-      const entry = `[${timeNow}] Фактор ${factorCode} для «${getLocalized(c.names)}»: изменен с ${prevStatus} на ${newStatus}`;
-      auditLogEntries.unshift(entry);
-
-      saveState();
-
-      // Background sync with FastAPI if local server is running
-      fetch(`/api/v1/complexes/${complexId}/confirm-factor`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          factor: factorCode,
-          status: newStatus,
-          evidence: `Решение аналитика МИО: ${newStatus}`,
-          analyst: "Ахметов Д.К. (Аналитик МИО)"
-        })
-      }).catch(() => {
-        // Autonomous mode
-      });
-
-      renderScoringTable(complexId);
-    }
+    window.renderScoringView = renderScoringTable;
 
     function renderAuditLog() {
       const container = document.getElementById('scoring-audit-log');
