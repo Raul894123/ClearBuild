@@ -32,6 +32,7 @@ LegalBasis = Annotated[
 VerifyDecision = Annotated[Literal["accept", "reject"], Lower]
 # ALL — значение фильтра «Все» на фронтенде
 ZoneFilter = Annotated[Literal["red", "yellow", "green", "all"], Lower]
+ImportFormat = Annotated[Literal["csv", "json"], Lower]
 
 
 class AnalyzeRequest(BaseModel):

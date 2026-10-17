@@ -91,6 +91,9 @@ class Complex(Base):
     # {"R2": {"status": "CONFIRMED", "evidence": "...", "analyst": "...", "at": "2026-10-16T17:48:00+05:00"}}
     factor_overrides: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
+    # Сверка с 11 госреестрами (app/registries.py): {"elicense": {"status": "ok", "checkedAt": "...", "note": "..."}}
+    gov_checks: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
+
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
     updated_at: Mapped[datetime] = mapped_column(TZDateTime, default=now, onupdate=now)
