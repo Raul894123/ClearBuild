@@ -1,10 +1,12 @@
-// ClearBuild (SAQ QURYLYS) — Unified API Client
-// Codemasters Hackathon 8.0 (г. Усть-Каменогорск)
-// Поддерживает подключение к FastAPI + SQLite бэкенду и автономный режим (Seed / localStorage)
+// ClearBuild (SAQ QURYLYS) — Единый клиент для общения с бэкендом
+// Хакатон Codemasters 8.0 (г. Усть-Каменогорск)
+// Короче, тут логика простая: если живой сервер на FastAPI + SQLite отвечает — работаем через него,
+// а если инет отвалился или сервер спит — тихо и бесшовно падаем на локальный стейт в браузере.
 
 (function(global) {
   'use strict';
 
+  // По дефолту смотрим на наш задеплоенный облачный бэкенд на Render
   const DEFAULT_API_URL = 'https://clearbuild-sooq.onrender.com/api/v1';
 
   const apiClient = {
@@ -26,10 +28,11 @@
       return this.baseUrl;
     },
 
+    // Пингуем /health (ставим таймаут 4.5 сек, потому что бесплатный Render иногда просыпается не сразу)
     async ping() {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
         const res = await fetch(`${this.baseUrl}/health`, { signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -45,7 +48,7 @@
           return { ok: true, data };
         }
       } catch (e) {
-        // Server unreachable or CORS blocked
+        // Ну, не достучались до сервера (или CORS/таймаут) — ничего страшного, едем на локальной базе
       }
       this.isConnected = false;
       this.backendInfo = null;
@@ -53,6 +56,7 @@
       return { ok: false };
     },
 
+    // Обновляем зелёную/жёлтую точку в шапке и текст в модалке БД
     updateUIStatus() {
       const dotEl = document.getElementById('api-status-dot');
       const badgeEl = document.getElementById('api-modal-status-badge');
@@ -173,7 +177,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              decision: decision, // "accept" | "reject"
+              decision: decision, // "accept" либо "reject"
               comment: comment || undefined,
               analyst: analyst || 'Ахметов Д.К. (Аналитик МИО)'
             })
@@ -290,22 +294,22 @@
           console.warn('[apiClient] Fetch audit-log failed, fallback to memory', e);
         }
       }
-      return (typeof auditLog !== 'undefined' && auditLog) ? auditLog : [];
+      return (typeof auditLogEntries !== 'undefined' && auditLogEntries) ? auditLogEntries : [];
     }
   };
 
   global.apiClient = apiClient;
 
-  // Should we auto-probe the backend on page load?
-  // - local dev (localhost / 127.0.0.1 / file://) → yes, FastAPI usually runs on :8000
-  // - public site (GitHub Pages) → only if a backend URL was set explicitly
-  //   (via ?api=https://host/api/v1 or the "API" modal), otherwise the browser
-  //   may show a "local network access" prompt for http://localhost:8000.
+  // Проверяем, стоит ли автоматически пинговать бэкенд при открытии страницы:
+  // - если локальная разработка или адрес начинается с https:// (облачный Render) — пингуем смело!
+  // - а вот если сайт открыт по https, а в baseUrl почему-то записан http://localhost:8000,
+  //   то без явной настройки не трогаем, чтобы Chrome не пугал табличкой доступа к локальной сети.
   function shouldAutoProbe() {
     if (typeof location === 'undefined') return false;
     const host = location.hostname || '';
     const isLocal = location.protocol === 'file:' || host === '' || host === 'localhost' || host === '127.0.0.1';
     if (isLocal) return true;
+    if (apiClient.baseUrl && apiClient.baseUrl.startsWith('https://')) return true;
     try {
       return !!localStorage.getItem('clearbuild_api_url');
     } catch (e) {
@@ -313,13 +317,13 @@
     }
   }
 
-  // ?api=<url> query override (e.g. ?api=https://my-backend.example.com/api/v1)
+  // Если передали кастомный адрес бэкенда прямо в URL (?api=https://...) — подхватываем его
   try {
     const qsApi = new URLSearchParams(global.location ? global.location.search : '').get('api');
     if (qsApi) apiClient.setBaseUrl(qsApi);
   } catch (e) {}
 
-  // Background ping on load
+  // При загрузке страницы тихонько пингуем сервер в фоне
   if (typeof window !== 'undefined') {
     window.addEventListener('DOMContentLoaded', () => {
       if (shouldAutoProbe()) {

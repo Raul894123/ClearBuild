@@ -1,15 +1,14 @@
-"""11 государственных реестров РК (ТЗ2, Раздел 1): статусы сверки govChecks и импорт выгрузки Ashyq Data.
+"""Короче, тут у нас работа с 11 государственными реестрами РК: статусы сверки govChecks и импорт выгрузки Ashyq Data.
 
-Статусы сверки:
-  ok           — проверка пройдена (запись есть и не противоречит данным; для «негативных» реестров — РНУ,
-                 налоговая задолженность — запись не найдена);
-  warning      — найден индикатор риска или данные надо перепроверить;
-  not_found    — обязательная запись в реестре не найдена;
-  not_checked  — сверка не проводилась.
+По сути, статусы сверки такие:
+  ok           — проверка пройдена (запись есть и всё сходится; а для «негативных» реестров типа РНУ или налогового долга — запись не найдена);
+  warning      — нашли какой-то индикатор риска или данные надо перепроверить руками;
+  not_found    — обязательная запись в госреестре тупо не найдена;
+  not_checked  — сверка ещё не проводилась.
 
-Статусы реестров правового основания (Homeportal, Qazreestr, Ashyq Data) всегда выводятся
-из Complex.legal_basis_type, чтобы карточка не противоречила фактору R1. Остальные берутся
-из Complex.gov_checks (демо-значения из seed.json, обновления при импорте).
+Прикол в том, что статусы реестров правового основания (Homeportal, Qazreestr, Ashyq Data) мы всегда выводим
+напрямую из Complex.legal_basis_type, чтобы карточка никогда не спорила с фактором R1. А остальные 8 реестров
+тянем из Complex.gov_checks (стартовые демо-значения лежат в seed.json и обновляются при импорте).
 """
 
 import csv
@@ -26,7 +25,7 @@ GOV_CHECK_STATUSES = ("ok", "warning", "not_found", "not_checked")
 
 ASHYQ_DATASET_URL = "https://ashyq.data.gov.kz/dataset/magda-ds-b80110e9-218a-42ba-b8c8-01fa5e4c82c8"
 
-# Порядок и состав — как в ТЗ2 (Раздел 1)
+# Список и порядок всех 11 государственных реестров РК
 REGISTRIES: List[Dict[str, Any]] = [
     {"code": "homeportal", "name": "Жилищный портал КЖК (гарантии КЖК и разрешения МИО)",
      "url": "https://homeportal.kz", "factors": ["R1"]},
@@ -53,23 +52,23 @@ REGISTRIES: List[Dict[str, Any]] = [
 ]
 REGISTRY_CODES = [r["code"] for r in REGISTRIES]
 
-# Статус реестров правового основания по legal_basis_type
+# Маппинг статуса для трёх реестров правового основания в зависимости от текущего legal_basis_type
 LEGAL_BASIS_CHECKS: Dict[str, Dict[str, str]] = {
     "homeportal": {"operator_guarantee": "ok", "mio_permit": "ok", "unknown": "warning", "absent": "not_found"},
     "qazreestr": {"operator_guarantee": "ok", "mio_permit": "ok", "unknown": "warning", "absent": "not_found"},
-    # При гарантии КЖК разрешение МИО не требуется — в наборе разрешений его и не ищем
+    # Тут нюанс: при гарантии КЖК отдельное разрешение МИО по закону не нужно — поэтому в Ashyq Data мы его даже не ищем
     "ashyq_data": {"operator_guarantee": "not_checked", "mio_permit": "ok", "unknown": "warning", "absent": "not_found"},
 }
 
 
 def legal_basis_check_status(code: str, legal_basis_type: str) -> Optional[str]:
-    """Статус реестра правового основания для legal_basis_type или None для прочих реестров."""
+    """Отдаёт статус реестра правового основания под конкретный legal_basis_type (или None для остальных реестров)."""
     table = LEGAL_BASIS_CHECKS.get(code)
     return table.get(legal_basis_type, "warning") if table else None
 
 
 def gov_checks(c: Complex) -> List[Dict[str, Any]]:
-    """Блок govChecks карточки ЖК: по строке на каждый из 11 реестров."""
+    """Собирает блок govChecks для карточки ЖК: ровно по одной строчке на каждый из 11 госреестров."""
     stored = c.gov_checks or {}
     result = []
     for reg in REGISTRIES:
@@ -78,7 +77,7 @@ def gov_checks(c: Complex) -> List[Dict[str, Any]]:
         if not checked_at:
             status = "not_checked"
         elif reg["code"] in LEGAL_BASIS_CHECKS:
-            # Реестр правового основания показывает текущий legal_basis_type (в т.ч. после confirm-factor R1)
+            # Реестр правового основания всегда смотрит на актуальный legal_basis_type (даже после ручного confirm-factor R1)
             status = legal_basis_check_status(reg["code"], c.legal_basis_type)
         else:
             status = entry.get("status") if entry.get("status") in GOV_CHECK_STATUSES else "not_checked"
@@ -95,7 +94,7 @@ def gov_checks(c: Complex) -> List[Dict[str, Any]]:
 
 
 def seed_gov_checks(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """govChecks из seed.json -> Complex.gov_checks (только известные реестры)."""
+    """Перегоняет govChecks из seed.json в поле Complex.gov_checks (берём только знакомые коды реестров)."""
     out = {}
     for code, entry in (raw or {}).items():
         if code in REGISTRY_CODES and isinstance(entry, dict):
@@ -109,9 +108,9 @@ def seed_gov_checks(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 # --------------------------------------------------------------------------
-# Импорт выгрузки Ashyq Data (CSV или JSON)
+# Импорт выгрузки Ashyq Data (поддерживаем и CSV, и JSON)
 # --------------------------------------------------------------------------
-# Колонки выгрузки и их синонимы (регистр и пробелы не важны)
+# Все возможные названия колонок в выгрузках и их синонимы (регистр и лишние пробелы нам по барабану)
 COLUMN_ALIASES: Dict[str, Tuple[str, ...]] = {
     "bin": ("бин", "бин застройщика", "бин заказчика", "bin", "developer_bin", "customer_bin"),
     "name": ("наименование объекта", "название жк", "объект", "жк", "name", "object_name", "complex_name"),
@@ -132,7 +131,7 @@ _LEGAL_BASIS_VALUES = {"absent", "unknown", "operator_guarantee", "mio_permit", 
 
 
 class ImportFormatError(ValueError):
-    """Файл не разобран как CSV или JSON выгрузки."""
+    """Выбрасываем, когда присланный файл вообще не удалось распарсить как нормальный CSV или JSON."""
 
 
 def _norm_key(key: Any) -> str:
@@ -140,7 +139,7 @@ def _norm_key(key: Any) -> str:
 
 
 def normalize_row(raw: Dict[str, Any]) -> Dict[str, str]:
-    """Строка выгрузки -> {поле: значение} по COLUMN_ALIASES; лишние колонки отбрасываются."""
+    """Приводит сырую строчку выгрузки к чистым ключам по COLUMN_ALIASES; всякий мусор из лишних колонок отбрасываем."""
     row: Dict[str, str] = {}
     for key, value in raw.items():
         field = _ALIAS_TO_FIELD.get(_norm_key(key))
@@ -159,7 +158,7 @@ def _decode(content: bytes) -> str:
 
 
 def _json_records(data: Any) -> List[Dict[str, Any]]:
-    """Список записей: массив, {"records": [...]}, {"data": [...]} или {"result": {"records": [...]}} (CKAN/Magda)."""
+    """Вытаскивает список записей: понимаем и голый массив, и обёртки типа {"records": [...]}, {"data": [...]} или CKAN/Magda."""
     if isinstance(data, dict):
         for key in ("records", "data", "items", "result"):
             if key in data:
@@ -180,7 +179,7 @@ def _csv_records(text: str) -> List[Dict[str, Any]]:
 
 
 def parse_export(content: bytes, fmt: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Разбирает выгрузку. fmt: csv | json | None (определить по содержимому)."""
+    """Парсит файл выгрузки. fmt может быть csv | json | None (тогда сами угадываем по первому символу)."""
     text = _decode(content)
     if not text.strip():
         raise ImportFormatError("Пустой файл")
@@ -195,7 +194,7 @@ def parse_export(content: bytes, fmt: Optional[str] = None) -> List[Dict[str, An
 
 
 def normalize_bin(value: Optional[str]) -> Optional[str]:
-    """БИН — 12 цифр; «240540099102 (Демо)» -> «240540099102»."""
+    """Вытаскивает 12 цифр БИН: например, из «240540099102 (Демо)» аккуратно достанет «240540099102»."""
     m = re.search(r"\d{12}", re.sub(r"[\s-]", "", value or ""))
     return m.group(0) if m else None
 
@@ -207,7 +206,7 @@ def _norm_name(value: str) -> str:
 
 
 def name_variants(name: Optional[str]) -> set:
-    """Варианты названия ЖК: целиком, в кавычках «...» и в скобках (латиница)."""
+    """Генерит варианты названия ЖК для сопоставления: целиком, внутри кавычек «...» и внутри скобок."""
     if not name:
         return set()
     parts = [name] + re.findall(r"[«\"“]([^»\"”]+)[»\"”]", name) + re.findall(r"\(([^)]+)\)", name)
@@ -216,15 +215,15 @@ def name_variants(name: Optional[str]) -> set:
 
 
 def is_revoked(row: Dict[str, str]) -> bool:
-    """Разрешение отозвано, аннулировано или прекращено (по статусу записи)."""
+    """Проверяет по тексту статуса, не отозвано ли часом разрешение (аннулировано / прекращено)."""
     return bool(re.search(r"отозван|аннулир|отменен|прекращ|revoked|cancel", (row.get("status") or "").lower()))
 
 
 def legal_basis_from_row(row: Dict[str, str]) -> Tuple[Optional[str], bool]:
-    """(legal_basis_type, is_commissioned) по строке выгрузки или (None, False), если не определить.
+    """Определяет (legal_basis_type, is_commissioned) по строке выгрузки или отдаёт (None, False), если непонятно.
 
-    Импорт никогда не ставит absent: отозванное разрешение или явное absent в выгрузке дают
-    unknown («Нужна проверка»), а R1 подтверждает только аналитик через confirm-factor.
+    Важная штука по ТЗ: автоматический импорт никогда сам не ставит absent! Даже если разрешение отозвано или в файле
+    написано absent, мы ставим unknown («Нужна проверка»), а уже R1 подтверждает только живой аналитик через confirm-factor.
     """
     explicit = (row.get("legal_basis_type") or "").strip().lower()
     if explicit in _LEGAL_BASIS_VALUES:
@@ -249,7 +248,7 @@ def legal_basis_from_row(row: Dict[str, str]) -> Tuple[Optional[str], bool]:
 
 
 def describe_row(row: Dict[str, str]) -> str:
-    """Источник для verification_source: «Ashyq Data: Разрешение МИО № ... от ... (Действует)»."""
+    """Формирует красивую строку источника для verification_source, типа «Ashyq Data: Разрешение МИО № ... от ...»."""
     parts = [row.get("document_type") or "Запись"]
     if row.get("permit_number"):
         parts.append(f"№ {row['permit_number']}")
@@ -264,9 +263,9 @@ def describe_row(row: Dict[str, str]) -> str:
 
 
 def match_complex(row: Dict[str, str], complexes: Iterable[Complex]) -> Tuple[Optional[Complex], str, Optional[str]]:
-    """Сопоставление строки с ЖК: сначала по БИН, затем по названию.
+    """Ищет подходящий ЖК в базе: сначала бьём по БИН, потом по названию.
 
-    Возвращает (ЖК, способ: bin | bin+name | name | none, причина пропуска при неоднозначности).
+    Возвращает кортеж (ЖК, способ: bin | bin+name | name | none, причина пропуска если возник конфликт).
     """
     complexes = list(complexes)
     row_bin = normalize_bin(row.get("bin"))

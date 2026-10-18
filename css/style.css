@@ -1,5 +1,6 @@
 /* ==========================================================================
-   SAQ QURYLYS / ClearBuild — Multi-Page Design System
+   SAQ QURYLYS / ClearBuild — Основные стили нашего портала
+   Короче, тут собраны переменные для светлой и темной темы, сетки и карточки
    ========================================================================== */
 :root, [data-theme="light"] {
   --bg-page: #f8fafc;
@@ -47,6 +48,7 @@
   --leaflet-popup-border: #e2e8f0;
 }
 
+/* Ночная тема: карту специально не трогаем фильтрами (--map-tile-filter: none), чтобы OSM оставалась читаемой */
 [data-theme="dark"] {
   --bg-page: #0b0f19;
   --bg-surface: #111827;
@@ -87,7 +89,7 @@
   --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55);
   --shadow-modal: 0 25px 60px rgba(0, 0, 0, 0.7);
 
-  --map-tile-filter: brightness(0.85) invert(1) contrast(3) hue-rotate(200deg) saturate(0.28);
+  --map-tile-filter: none;
   --leaflet-popup-bg: #111827;
   --leaflet-popup-text: #f9fafb;
   --leaflet-popup-border: #232f46;
@@ -112,7 +114,7 @@ body {
   padding: 0 1.25rem;
 }
 
-/* Header & Nav */
+/* Шапка и верхняя навигация */
 .civic-header {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-color);
@@ -159,7 +161,7 @@ body {
 .brand-title span.accent { color: var(--brand-primary); }
 .brand-subtitle { font-size: 0.72rem; color: var(--text-muted); margin-top: -2px; }
 
-/* Navigation links in Header */
+/* Ссылки навигации в шапке */
 .main-nav {
   display: flex;
   align-items: center;
@@ -190,7 +192,7 @@ body {
   font-weight: 700;
 }
 
-/* Switchers & Badges */
+/* Переключалки темы, языка и бейджи в правой части шапки */
 .header-tools { display: flex; align-items: center; gap: 0.65rem; }
 .pill-group {
   display: inline-flex;
@@ -235,7 +237,7 @@ body {
   text-decoration: none;
 }
 
-/* Sub-nav mobile bar */
+/* Полоска навигации для мобильных экранов */
 .mobile-nav-bar {
   display: none;
   background: var(--bg-surface);
@@ -248,7 +250,7 @@ body {
   .mobile-nav-bar { display: flex; }
 }
 
-/* Citizen Ribbon */
+/* Информационная ленточка под шапкой */
 .civic-ribbon {
   background: var(--bg-subtle);
   border-bottom: 1px solid var(--border-color);
@@ -264,7 +266,7 @@ body {
 }
 .ribbon-tag { font-weight: 700; color: var(--brand-primary); display: inline-flex; align-items: center; gap: 0.35rem; }
 
-/* KPI Section */
+/* Верхний блок с 4 карточками KPI */
 .kpi-section { padding: 1rem 0; }
 .kpi-grid {
   display: grid;
@@ -313,7 +315,7 @@ body {
   background: var(--bg-surface-hover);
 }
 
-/* Filter Toolbar */
+/* Поля поиска и кнопки фильтрации */
 .filter-toolbar {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -386,7 +388,7 @@ body {
 .chip-btn.chip-yellow.active { background: #d97706; border-color: #d97706; }
 .chip-btn.chip-red.active { background: #dc2626; border-color: #dc2626; }
 
-/* Layout Grid for Map page */
+/* Сетка под экран с картой */
 .map-explorer-grid {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
@@ -396,7 +398,7 @@ body {
 }
 @media (max-width: 1080px) { .map-explorer-grid { grid-template-columns: 1fr; } }
 
-/* Map Frame */
+/* Рамка самой карты и настройка попапов Leaflet (скрываем стандартный копирайт через display: none) */
 .map-frame {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -451,8 +453,9 @@ body {
 }
 .leaflet-popup-tip { background: var(--leaflet-popup-bg) !important; }
 .leaflet-popup-content { margin: 14px 16px !important; line-height: 1.45 !important; }
+.leaflet-control-attribution { display: none !important; }
 
-/* Custom Pins with Building Icons */
+/* Кастомные пины домов на карте с кружками баллов */
 .civic-pin-marker { background: transparent; border: none; }
 .civic-pin {
   display: flex;
@@ -497,7 +500,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-/* Cards Column */
+/* Колонка с карточками ЖК слева от карты */
 .cards-column {
   display: flex;
   flex-direction: column;
@@ -538,7 +541,7 @@ body {
 .card-district { font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.4rem; }
 .card-developer { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.65rem; }
 
-/* Status Badges */
+/* Цветные бейджи статусов и зон риска */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -554,7 +557,7 @@ body {
 .badge-yellow { background: var(--zone-yellow-bg); border-color: var(--zone-yellow-border); color: var(--zone-yellow-text); }
 .badge-red { background: var(--zone-red-bg); border-color: var(--zone-red-border); color: var(--zone-red-text); }
 
-/* Citizen Verdict Banners */
+/* Плашки вердиктов для покупателей жилья */
 .verdict-box {
   border-radius: 10px;
   padding: 0.85rem 1rem;
@@ -571,7 +574,7 @@ body {
 .verdict-green { background: var(--zone-green-bg); border-color: var(--zone-green-border); color: var(--zone-green-text); }
 .verdict-icon { font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
 
-/* Legal Callout Box */
+/* Вырезка с правовым основанием (Закон РК о ДЖС) */
 .legal-callout {
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
@@ -584,7 +587,7 @@ body {
 .legal-callout.legal-yellow { background: var(--zone-yellow-bg); border-color: var(--zone-yellow-border); color: var(--zone-yellow-text); }
 .legal-callout.legal-red { background: var(--zone-red-bg); border-color: var(--zone-red-border); color: var(--zone-red-text); }
 
-/* Score meter */
+/* Полоска прогресс-бара с баллами риска (от 0 до 100) */
 .score-meter-wrap { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
 .score-bar-bg {
   flex: 1;
@@ -597,7 +600,7 @@ body {
 .score-bar-fill { height: 100%; border-radius: 9999px; transition: width 0.3s ease; }
 .score-num-text { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
 
-/* Buttons */
+/* Кнопки по всему интерфейсу */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -622,7 +625,7 @@ body {
 .btn-secondary:hover { background: var(--border-color); color: var(--text-main); }
 .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.72rem; }
 
-/* Highlight triggers in Ads */
+/* Красная подсветка опасных фраз-триггеров прямо внутри текста рекламного объявления */
 .highlight-risk {
   background: rgba(239, 68, 68, 0.18);
   color: #dc2626;
@@ -632,7 +635,7 @@ body {
   font-weight: 700;
 }
 
-/* Tables */
+/* Таблицы реестра, рекламы и скоринга */
 .civic-table-container {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -661,7 +664,7 @@ table.civic-table td {
 table.civic-table tr:last-child td { border-bottom: none; }
 table.civic-table tr:hover td { background: var(--bg-surface-hover); }
 
-/* Interactive Status Select in Scoring */
+/* Выпадающий список переключения статуса фактора в матрице скоринга */
 .factor-select {
   padding: 0.35rem 0.55rem;
   border-radius: 6px;
@@ -675,7 +678,7 @@ table.civic-table tr:hover td { background: var(--bg-surface-hover); }
 }
 .factor-select:focus { border-color: var(--brand-primary); }
 
-/* Modal Dossier */
+/* Оверлей и карточка модальных окон (досье, добавление рекламы, скриншот, БД) */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -730,7 +733,7 @@ table.civic-table tr:hover td { background: var(--bg-surface-hover); }
   gap: 0.75rem;
 }
 
-/* Print Signal Sheet */
+/* Печатный лист Сигнального акта (всегда белый, как бумага А4, даже если включена темная тема) */
 .signal-print-sheet {
   background: #ffffff;
   color: #0f172a;
@@ -779,13 +782,13 @@ table.civic-table tr:hover td { background: var(--bg-surface-hover); }
   background: rgba(254, 243, 199, 0.6);
 }
 
-/* Active row highlight */
+/* Подсветка выбранной строки в таблице реестра */
 table.civic-table tr.active-row td {
   background: var(--bg-surface-hover) !important;
   border-left: 3px solid var(--brand-primary);
 }
 
-/* Footer */
+/* Подвал сайта */
 .civic-footer {
   margin-top: auto;
   background: var(--bg-surface);
@@ -808,11 +811,11 @@ table.civic-table tr.active-row td {
   }
 }
 
-/* Tab display mechanics */
+/* Механика переключения вкладок (показываем только ту, где висит .active) */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* Quick Evidence Editing in Scoring Matrix */
+/* Поле быстрого редактирования обоснования прямо в таблице скоринга */
 .evidence-input {
   width: 100%;
   border: 1px solid var(--border-color);
@@ -831,7 +834,7 @@ table.civic-table tr.active-row td {
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
 }
 
-/* Reset Demo Button */
+/* Кнопка сброса демо-данных в шапке */
 .reset-btn {
   background: #fee2e2;
   border: 1px solid #fca5a5;
@@ -851,7 +854,7 @@ table.civic-table tr.active-row td {
   color: #991b1b;
 }
 
-/* 11 State Registries Cards & Settings */
+/* Карточки и сетка для 11 официальных госреестров РК */
 .registries-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -883,7 +886,7 @@ table.civic-table tr.active-row td {
   font-weight: 700;
 }
 
-/* API Client Button & Status Dots */
+/* Кнопка статуса связи с БД и цветной индикатор (зеленый / желтый кружок) */
 .api-btn {
   display: inline-flex;
   align-items: center;
@@ -917,7 +920,7 @@ table.civic-table tr.active-row td {
   box-shadow: 0 0 6px #f59e0b;
 }
 
-/* Citizen Summary Banners for Home Buyers */
+/* Понятные баннеры-подсказки для покупателей квартир (в карточке реестра и досье) */
 .citizen-card-banner {
   padding: 0.85rem 1rem;
   border-radius: 10px;
@@ -945,7 +948,7 @@ table.civic-table tr.active-row td {
   color: #166534;
 }
 
-/* 11 Official State Registries Verification Box */
+/* Блок быстрой сверки по 11 госреестрам РК (копирует БИН в буфер и открывает госпортал) */
 .registries-verify-box {
   background: var(--bg-surface-hover);
   border: 1px solid var(--border-color);
@@ -984,7 +987,7 @@ table.civic-table tr.active-row td {
   color: var(--text-muted);
 }
 
-/* Copy Toast */
+/* Всплывающий тост в правом нижнем углу (когда скопировали БИН или сохранили данные) */
 .copy-toast {
   position: fixed;
   bottom: 2rem;
@@ -1010,7 +1013,7 @@ table.civic-table tr.active-row td {
   transform: translateY(0);
 }
 
-/* Network Collisions Graph & Badges */
+/* Контейнер графа телефонных связей и бейдж зонтичных коллизий */
 .network-graph-container {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -1035,7 +1038,7 @@ table.civic-table tr.active-row td {
 
 
 /* ==========================================================================
-   TWO-TIER HEADER (.header-top & .header-nav)
+   ДВУХЪЯРУСНАЯ ШАПКА ПОРТАЛА (.header-top и .header-nav)
    ========================================================================== */
 .civic-header {
   background: var(--bg-surface);
@@ -1108,7 +1111,7 @@ table.civic-table tr.active-row td {
 }
 
 /* ==========================================================================
-   MODULE 01: TWO-COLUMN SPLIT-VIEW MAP & LIST
+   МОДУЛЬ 01: СПЛИТ-ЭКРАН КАРТЫ И СПИСКА ЖК В ДВЕ КОЛОНКИ
    ========================================================================== */
 .map-split-layout {
   display: grid;
@@ -1206,7 +1209,7 @@ table.civic-table tr.active-row td {
 }
 
 /* ==========================================================================
-   FILTER PILLS (.filter-pills-row, .filter-pill)
+   ТАБЛЕТКИ ФИЛЬТРАЦИИ ПО ЗОНАМ РИСКА (.filter-pills-row, .filter-pill)
    ========================================================================== */
 .filter-pills-row {
   display: flex;
@@ -1254,13 +1257,13 @@ table.civic-table tr.active-row td {
 }
 
 /* ==========================================================================
-   ACCESSIBILITY: LARGE FONT SCALE (A+) & INSPECTOR UX ENHANCEMENTS
+   ДОСТУПНОСТЬ: КРУПНЫЙ ШРИФТ (А+) И ПОДСКАЗКИ МАРШРУТА ИНСПЕКТОРА
    ========================================================================== */
 html[data-font-scale="large"] {
   font-size: 18px;
 }
 
-/* Control Test Cases Bar (TZ Section 5) */
+/* Полоска с эталонными кейсами из Раздела 5 ТЗ (для быстрой демонстрации) */
 .cases-bar {
   display: flex;
   align-items: center;
@@ -1295,7 +1298,7 @@ html[data-font-scale="large"] {
   transform: translateY(-1px);
 }
 
-/* Step-by-Step Inspector Route Footer Banner */
+/* Нижний баннер пошагового маршрута (ведет инспектора с Шага 1 до Шага 5) */
 .step-guide-footer {
   margin-top: 1.35rem;
   background: linear-gradient(90deg, rgba(2, 132, 199, 0.09) 0%, rgba(16, 185, 129, 0.08) 100%);
@@ -1327,7 +1330,7 @@ html[data-font-scale="large"] {
   filter: brightness(1.06);
 }
 
-/* 1-Click AI Demo Presets & OCR Box in #add-ad-modal */
+/* Сетка быстрых ИИ-пресетов и рамка загрузки скриншота (OCR) в модалке #add-ad-modal */
 .presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -1360,7 +1363,7 @@ html[data-font-scale="large"] {
   gap: 0.75rem;
 }
 
-/* Help Modal Step Cards & Interactive Spotlight Tour */
+/* Карточки шагов в модалке помощи и подсветка элементов при интерактивном туре */
 .help-step-card {
   background: var(--bg-surface-hover);
   border: 1px solid var(--border-color);

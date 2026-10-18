@@ -1,9 +1,10 @@
-// Shared Logic for ClearBuild / SAQ QURYLYS Portal
-// Codemasters Hackathon 8.0 (Ust-Kamenogorsk)
-// Integrates with window.apiClient (FastAPI + SQLite) and local fallback state (clearbuild_state_v3)
+// Общая бизнес-логика портала ClearBuild / SAQ QURYLYS
+// Хакатон Codemasters 8.0 (Усть-Каменогорск)
+// Тут, короче, живёт вся магия: скоринг R1–R6, парсер объявлений, граф связей,
+// синхронизация с бэкендом (FastAPI + SQLite) и локальный фоллбэк в localStorage на всякий пожарный.
 
 const STATE_KEY = 'clearbuild_state_v2';
-const SCHEMA_VERSION = 4; // Bumped for full trilingual JSON/API sync + UX guide
+const SCHEMA_VERSION = 6; // Подняли версию схемы, чтобы у всех сбросился старый кэш с кривыми координатами
 
 function getLocalized(obj, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT_LANG : 'ru')) {
   if (!obj) return '';
@@ -11,7 +12,8 @@ function getLocalized(obj, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT
   return obj[lang] || obj['ru'] || '';
 }
 
-// Dynamic translator for backend JSON strings, factor reasons, and audit log lines
+// Динамический переводчик для строк, которые прилетают напрямую с бэкенда
+// (причины факторов, вердикты, строчки аудит-лога и т.д.)
 function localizeDynamicText(str, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT_LANG : 'ru')) {
   if (!str || typeof str !== 'string' || lang === 'ru') return str || '';
   let s = str;
@@ -96,8 +98,10 @@ function localizeDynamicText(str, lang = (typeof CURRENT_LANG !== 'undefined' ? 
 }
 window.localizeDynamicText = localizeDynamicText;
 
+// Достаём локализованные поля объявления, НО обязательно сохраняем все остальные поля (...ad),
+// иначе id, complexId, status, confidence и т.д. превращаются в undefined!
 function getLocalizedAd(ad, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT_LANG : 'ru')) {
-  if (!ad) return { text: '', triggerSpan: '', aiHypothesis: '', account: '', platform: '' };
+  if (!ad) return { id: '', text: '', triggerSpan: '', aiHypothesis: '', account: '', platform: '' };
   const rawTpl = (typeof INITIAL_ADS !== 'undefined') ? INITIAL_ADS.find(a => a.id === ad.id) : null;
   const textsObj = ad.texts || (rawTpl && rawTpl.texts);
   const spansObj = ad.triggerSpans || (rawTpl && rawTpl.triggerSpans);
@@ -113,10 +117,11 @@ function getLocalizedAd(ad, lang = (typeof CURRENT_LANG !== 'undefined' ? CURREN
   const account = (accObj && (accObj[lang] || accObj.ru)) || ad.account || '';
   const platform = ad.platform || ad.source || 'Krisha.kz';
 
-  return { text, triggerSpan, aiHypothesis, account, platform };
+  return { ...ad, text, triggerSpan, aiHypothesis, account, platform };
 }
 window.getLocalizedAd = getLocalizedAd;
 
+// Нормализуем публикацию, прилетевшую из API, чтобы она идеально скрестилась с нашими локальными переводами
 function normalizePublicationFromApi(apiPub, existingPub = null) {
   if (!apiPub) return existingPub;
   const rawTpl = (typeof INITIAL_ADS !== 'undefined' ? INITIAL_ADS.find(a => a.id === apiPub.id) : null) || {};
@@ -185,6 +190,7 @@ function normalizePublicationFromApi(apiPub, existingPub = null) {
   };
 }
 
+// То же самое для ЖК с бэка: склеиваем серверный ответ с нашими мультиязычными словарями
 function normalizeComplexFromApi(apiComp, existingComp = null) {
   if (!apiComp) return existingComp;
   const rawTpl = (typeof RAW_COMPLEXES !== 'undefined' ? RAW_COMPLEXES.find(c => c.id === apiComp.id) : null) || {};
@@ -205,7 +211,7 @@ function normalizeComplexFromApi(apiComp, existingComp = null) {
     ? apiComp.confirmedReadiness.pct
     : (apiComp.readinessFact != null ? apiComp.readinessFact : (template.readinessFact || 0));
 
-  // Merge factors from riskProfile.factors[] (detailed) or apiComp.factors (summary)
+  // Сводим воедино факторы из подробного riskProfile.factors[] и краткого словаря apiComp.factors
   const mergedFactors = {};
   const detailedFactorsMap = {};
   if (apiComp.riskProfile && Array.isArray(apiComp.riskProfile.factors)) {
@@ -272,7 +278,7 @@ function normalizeComplexFromApi(apiComp, existingComp = null) {
     id: apiComp.id || template.id,
     code: rawTpl.code || template.code || apiComp.caseTag || (apiComp.id || '').toUpperCase(),
     caseTag: apiComp.caseTag || rawTpl.caseTag || template.caseTag || '',
-    coords: Array.isArray(apiComp.coords) && apiComp.coords.length === 2 ? apiComp.coords : (rawTpl.coords || template.coords || [49.948, 82.628]),
+    coords: (Array.isArray(rawTpl.coords) && rawTpl.coords.length === 2) ? rawTpl.coords : (Array.isArray(apiComp.coords) && apiComp.coords.length === 2 ? apiComp.coords : (template.coords || [49.9465, 82.6282])),
     svgPos: apiComp.svgPos || rawTpl.svgPos || template.svgPos || { x: 450, y: 250 },
     names: rawTpl.names || template.names || { ru: nameStr, kz: nameStr, en: nameStr },
     developers: rawTpl.developers || template.developers || { ru: devStr, kz: devStr, en: devStr },
@@ -342,7 +348,7 @@ function loadAppState() {
     console.error('Error loading state from localStorage:', e);
   }
 
-  // Upgrade old schema versions automatically so synced backend/seed.json data takes effect
+  // Если версии схемы не совпали (или стейта вообще нет) — накатываем свежий эталон из data.js
   if (!state || state.schemaVersion !== SCHEMA_VERSION) {
     state = {
       schemaVersion: SCHEMA_VERSION,
@@ -362,7 +368,7 @@ function loadAppState() {
     };
   }
 
-  // Ensure all ads and complexes have normalized trilingual field aliases
+  // Прогоняем всё через нормализаторы, чтобы трехъязычные поля были на месте
   state.adsList = (state.adsList || []).map(a => normalizePublicationFromApi(a));
   state.complexes = (state.complexes || []).map(c => normalizeComplexFromApi(c));
 
@@ -392,7 +398,7 @@ if (typeof window !== 'undefined') {
   window.CURRENT_FONT_SCALE = CURRENT_FONT_SCALE;
 }
 
-// Query param override (e.g. ?id=jk-2&tab=scoring)
+// Если передали параметры в URL (типа ?id=jk-2&tab=scoring) — сразу переключаемся туда
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('id')) {
   SELECTED_COMPLEX_ID = urlParams.get('id');
@@ -438,7 +444,7 @@ function triggerUIRefresh() {
     window.refreshAllViews();
     return;
   }
-  // Standalone page fallbacks
+  // Запасной вариант, если вдруг открыта какая-то отдельная страница
   if (typeof renderAdsTable === 'function') renderAdsTable();
   if (typeof renderAdsFeed === 'function') renderAdsFeed();
   if (typeof renderRegistryTable === 'function') renderRegistryTable();
@@ -450,7 +456,7 @@ function triggerUIRefresh() {
 }
 
 // ------------------------------------------------------------------------
-// Live Backend Synchronization (GET /complexes, GET /publications, GET /audit-log)
+// Живая синхронизация с бэкендом (GET /complexes, GET /publications, GET /audit-log)
 // ------------------------------------------------------------------------
 async function syncWithBackend(zoneFilter = null) {
   if (typeof apiClient === 'undefined' || !apiClient.isConnected) return false;
@@ -468,7 +474,7 @@ async function syncWithBackend(zoneFilter = null) {
           return normalizeComplexFromApi(ac, existing);
         });
       } else {
-        // Update matching complexes from zone filter
+        // Если запрашивали фильтр по конкретной зоне — обновляем только совпавшие ЖК
         apiComplexes.forEach(ac => {
           const idx = complexes.findIndex(item => item.id === ac.id);
           if (idx >= 0) {
@@ -508,7 +514,7 @@ async function syncWithBackend(zoneFilter = null) {
 }
 window.syncWithBackend = syncWithBackend;
 
-// Fetch detailed complex card (GET /complexes/{id} -> publications[], signal, riskProfile.factors[])
+// Подтягиваем детальную карточку ЖК с сервера (GET /complexes/{id} -> публикации, сигнал, факторы)
 async function fetchComplexDetail(complexId) {
   if (!complexId) return null;
   if (typeof apiClient !== 'undefined' && apiClient.isConnected && apiClient.getComplexById) {
@@ -529,7 +535,7 @@ async function fetchComplexDetail(complexId) {
 }
 window.fetchComplexDetail = fetchComplexDetail;
 
-// Verify or Reject Publication (POST /publications/{id}/verify with {"decision":"accept"|"reject"})
+// Подтверждение или отклонение ИИ-гипотезы по объявлению инспектором (Human-in-the-loop)
 async function verifyPublicationDecision(pubId, decision, comment = null) {
   const normDecision = (decision === 'accept' || decision === 'CONFIRMED') ? 'accept' : 'reject';
   const ad = adsList.find(a => a.id === pubId);
@@ -545,7 +551,7 @@ async function verifyPublicationDecision(pubId, decision, comment = null) {
   }
 
   if (res && !res.local && res.publication) {
-    // Update publication from backend response
+    // Если бэкенд на связи — забираем пересчитанную публикацию и свежий скоринг ЖК оттуда
     const idx = adsList.findIndex(a => a.id === pubId);
     if (idx >= 0) {
       adsList[idx] = normalizePublicationFromApi(res.publication, adsList[idx]);
@@ -555,7 +561,7 @@ async function verifyPublicationDecision(pubId, decision, comment = null) {
     }
     await syncWithBackend();
   } else {
-    // Local offline fallback replicating backend verify_publication rules
+    // Офлайн-фоллбэк: локально пересчитываем факторы один-в-один по правилам бэкенда
     ad.status = normDecision === 'accept' ? 'CONFIRMED' : 'REJECTED';
     if (ad.complexId) {
       const c = complexes.find(item => item.id === ad.complexId);
@@ -577,12 +583,13 @@ async function verifyPublicationDecision(pubId, decision, comment = null) {
 }
 window.verifyPublicationDecision = verifyPublicationDecision;
 
+// Локальный пересчёт факторов R2, R3, R5 от привязанных объявлений (когда работаем без сервера)
 function recomputeComplexFactorsFromAdsLocal(c) {
   if (!c || !c.factors) return;
   const cAds = adsList.filter(a => a.complexId === c.id);
   const isCommissioned = c.legalStatus === 'COMMISSIONED' || c.legalBasisType === 'COMMISSIONED';
 
-  // R2: hasDirectPaymentOffer or proposedFactor === 'R2'
+  // R2: смотрим, есть ли подтверждённые объявления с прямым сбором денег (бронь/касса/депозит)
   const r2Ads = cAds.filter(a => a.hasDirectPaymentOffer || a.proposedFactor === 'R2');
   if (r2Ads.some(a => a.status === 'CONFIRMED')) {
     c.factors.R2.status = 'CONFIRMED';
@@ -592,7 +599,7 @@ function recomputeComplexFactorsFromAdsLocal(c) {
     c.factors.R2.status = 'NONE';
   }
 
-  // R3: isActivePreCommissioningAd or proposedFactor === 'R3'
+  // R3: активная реклама строящегося дома (если дом уже сдан в эксплуатацию — R3 не ставим!)
   if (!isCommissioned) {
     const r3Ads = cAds.filter(a => a.isActivePreCommissioningAd || a.proposedFactor === 'R3' || a.proposedFactor === 'R5' || a.proposedFactor === 'R2');
     if (r3Ads.some(a => a.status === 'CONFIRMED' || a.status === 'VERIFIED_OK')) {
@@ -604,7 +611,7 @@ function recomputeComplexFactorsFromAdsLocal(c) {
     }
   }
 
-  // R5: readiness gap >= 20
+  // R5: расхождение обещанной и реальной готовности >= 20 процентных пунктов
   const gap = (c.readinessDeclared || 0) - (c.readinessFact || 0);
   if (gap >= 20) {
     const r5Ads = cAds.filter(a => a.proposedFactor === 'R5');
@@ -618,8 +625,8 @@ function recomputeComplexFactorsFromAdsLocal(c) {
   }
 }
 
-// Local fallback for POST /api/v1/analyze matching the new backend contract:
-// { complexId, candidates, proposedFactor, confidence, triggerSpan, triggers, hypotheses: [R2, R3, R5] }
+// Локальный ИИ-анализатор текста объявления (на случай если FastAPI выключен)
+// Возвращает ровно ту же структуру, что и POST /api/v1/analyze на бэке
 function runLocalAnalyze(req) {
   const text = (req && req.text) || '';
   const lower = text.toLowerCase();
@@ -628,7 +635,7 @@ function runLocalAnalyze(req) {
   let candidates = [];
 
   if (!complexId) {
-    // Try matching by complex name in text
+    // Сначала пробуем найти название ЖК прямо внутри текста объявления
     for (const c of complexes) {
       const ruName = getLocalized(c.names, 'ru').replace(/ЖК\s*|«|»/gi, '').trim().toLowerCase();
       if (ruName && lower.includes(ruName)) {
@@ -646,7 +653,7 @@ function runLocalAnalyze(req) {
       if (matched.length === 1) {
         complexId = matched[0];
       } else {
-        complexId = null; // Ambiguous umbrella phone -> complexId is null, candidates returned
+        complexId = null; // Коллизия! На одном номере висят сразу несколько ЖК — возвращаем кандидатов на выбор
       }
     }
   }
@@ -657,7 +664,7 @@ function runLocalAnalyze(req) {
   const targetComplex = complexId ? complexes.find(c => c.id === complexId) : null;
   const isCommissioned = targetComplex && (targetComplex.legalStatus === 'COMMISSIONED' || targetComplex.legalBasisType === 'COMMISSIONED');
 
-  // R2 detection
+  // Ловим триггеры по R2 (платная бронь, касса, депозит, ПВ)
   const r2Keywords = ['бронь', 'бронирован', 'резерв', 'депозит', 'задаток', 'касс', 'предварительн', 'наличн', 'пв ', 'первоначальн'];
   const r2Matched = r2Keywords.filter(k => lower.includes(k));
   const hasMoney = /\d+\s*(000|млн|тыс|%|тг|₸)/i.test(text);
@@ -674,7 +681,7 @@ function runLocalAnalyze(req) {
     r2Quote = text.length > 110 ? text.slice(0, 110) + '…' : text;
   }
 
-  // R3 detection
+  // Ловим триггеры по R3 (реклама строящегося ЖК до ввода)
   const r3Keywords = ['продаж', 'квартир', 'строящ', 'жк', 'рассрочк', 'планировк', 'сдача', 'котлован', 'этаж', 'м²', 'дду'];
   const r3Matched = r3Keywords.filter(k => lower.includes(k));
   let r3Strength = 'none';
@@ -690,7 +697,7 @@ function runLocalAnalyze(req) {
     r3Quote = text.length > 110 ? text.slice(0, 110) + '…' : text;
   }
 
-  // R5 detection
+  // Ловим триггеры по R5 (завышение процента готовности в рекламе)
   const pctMatch = text.match(/(\d{1,3})\s*%/);
   const statedPct = pctMatch ? parseInt(pctMatch[1], 10) : null;
   const verifiedPct = targetComplex ? (targetComplex.readinessFact ?? null) : null;
@@ -772,7 +779,7 @@ function runLocalAnalyze(req) {
   let triggers = [];
 
   if (activeHyps.length > 0) {
-    // Pick highest weight/confidence active hypothesis
+    // Выбираем самую весомую гипотезу из найденных
     const best = activeHyps.sort((a, b) => (b.strength === 'strong' ? 100 : 50) + b.weight - ((a.strength === 'strong' ? 100 : 50) + a.weight))[0];
     proposedFactor = best.factor;
     confidence = best.confidence;
@@ -838,7 +845,7 @@ async function changeFactorStatus(complexId, factorCode, newStatus) {
   const prevStatus = c.factors[factorCode].status;
   c.factors[factorCode].status = newStatus;
 
-  // Call apiClient to notify backend (if connected)
+  // Стучимся на бэкенд, если он подключён
   if (typeof apiClient !== 'undefined' && apiClient.confirmFactor && apiClient.isConnected) {
     const res = await apiClient.confirmFactor(
       complexId,
@@ -848,7 +855,7 @@ async function changeFactorStatus(complexId, factorCode, newStatus) {
       'Ахметов Д.К. (Аналитик МИО)'
     );
     if (res && res.ok === false && res.status === 'blocked') {
-      // Revert local change because backend enforced hard precondition (Section 3 TZ)
+      // Опа, бэкенд заблокировал! Например, аналитик пытался включить R1 при действующей гарантии КЖК. Откатываем назад.
       c.factors[factorCode].status = prevStatus;
       showCopyToast(`⛔ <strong>Ограничение ТЗ:</strong> ${res.error}`);
       triggerUIRefresh();
@@ -921,7 +928,7 @@ async function recordSignalDecision(complexId, decision, comment, author) {
   alert(`Сигнальный акт по ЖК «${getLocalized(c.names)}» успешно ${decision === 'CONFIRMED' ? 'утвержден' : 'возвращен на доработку'}!`);
 }
 
-// Copy BIN and open official portal
+// Копируем БИН в буфер обмена и открываем госпортал в новой вкладке
 function copyBinAndOpen(bin, url, portalName) {
   if (navigator.clipboard && bin) {
     const cleanBin = bin.replace(/\D/g, '');
@@ -949,7 +956,7 @@ function showCopyToast(msg) {
   }, 3500);
 }
 
-// API Config Modal Handlers
+// Обработчики модалки настройки API-сервера
 function openApiModal() {
   const modal = document.getElementById('api-config-modal');
   if (modal) {
@@ -989,7 +996,7 @@ function saveApiUrlFromModal() {
   }
 }
 
-// Cross-registry check
+// Запуск имитации полной сверки по 11 госбазам РК
 function triggerCrossRegistryCheck() {
   const timeNow = new Date().toLocaleTimeString();
   auditLogEntries.unshift(`[${timeNow}] ⚡ Запущена полная перекрёстная сверка 8 ЖК по 11 государственным реестрам РК...`);
@@ -999,7 +1006,8 @@ function triggerCrossRegistryCheck() {
   alert('Перекрёстная сверка с 11 госреестрами РК успешно завершена! Результаты занесены в журнал аудита.');
 }
 
-// Deterministic Scoring
+// Детерминированный расчёт скоринга по Разделам 3 и 4 ТЗ
+// Никакой отсебятины от ИИ: считают только подтверждённые человеком факторы (CONFIRMED)
 function calculateComplexRisk(c) {
   let score = 0;
   const activeCodes = [];
@@ -1032,6 +1040,7 @@ function calculateComplexRisk(c) {
   let zoneBadgeClass = 'badge-green';
   let zoneName = dict ? dict['zone-safe'] : (CURRENT_LANG === 'kz' ? 'Қауіпсіз' : CURRENT_LANG === 'en' ? 'Safe' : 'Безопасно');
 
+  // Главное правило Раздела 4 ТЗ: в Красную зону пускаем ТОЛЬКО если >= 60 баллов И одновременно подтверждены R1 + R2!
   if (score >= 60 && hasR1 && hasR2) {
     zone = 'RED';
     zoneBadgeClass = 'badge-red';
@@ -1045,7 +1054,7 @@ function calculateComplexRisk(c) {
   return { score, zone, zoneBadgeClass, zoneName, activeCodes, aiHypotheses, needsCheck, hasR1, hasR2 };
 }
 
-// Theme handling
+// Переключалка светлой/тёмной темы
 function setTheme(theme) {
   CURRENT_THEME = theme;
   localStorage.setItem('clearbuild_theme', theme);
@@ -1058,11 +1067,12 @@ function setTheme(theme) {
 }
 
 // ------------------------------------------------------------------------
-// Localization System (I18N) - RU / KZ / EN
+// Мультиязычный словарь интерфейса (I18N) — RU / KZ / EN
+// Тут собраны все подписи кнопок, заголовков и таблиц на трёх языках
 // ------------------------------------------------------------------------
 const I18N = {
   ru: {
-    // Header & General
+    // Шапка и общие элементы
     'portal-title': 'SAQ QURYLYS',
     'portal-sub': 'Мониторинг строящегося жилья · Усть-Каменогорск',
     'i18n-header-sub': 'Мониторинг строящегося жилья · Усть-Каменогорск',
@@ -1076,13 +1086,13 @@ const I18N = {
     'i18n-ribbon-desc': 'Сверка строящихся объектов с базой разрешений МИО ВКО и договоров гарантии АО «КЖК».',
     'i18n-ribbon-loc': 'Codemasters Hackathon 8.0 · г. Усть-Каменогорск',
 
-    // Top KPIs
+    // Верхние KPI-карточки
     'kpi-title-total': 'Всего объектов на контроле',
     'kpi-title-green': 'Законное привлечение (Гарантия/МИО)',
     'kpi-title-yellow': 'Документы на проверке / Расхождения',
     'kpi-title-red': 'Высокий риск (Сбор денег без ДДУ)',
 
-    // Navigation (Desktop & Mobile)
+    // Навигация (десктоп и мобилка)
     'lbl-nav-map': '01 · Карта и Обзор',
     'lbl-nav-registry': '02 · Реестр ЖК',
     'lbl-nav-ads': '03 · Мониторинг рекламы (AI)',
@@ -1096,14 +1106,14 @@ const I18N = {
     'mob-nav-signal': '📑 Акт',
     'mob-nav-network': '🕸️ Связи',
 
-    // Control Test Cases Bar (TZ Section 5)
+    // Панель контрольных тест-кейсов (Раздел 5 ТЗ)
     'lbl-cases-bar': '🎯 Эталонные кейсы ТЗ (Раздел 5):',
     'btn-case-a': '🟡 Кейс A · 35 б. (Нужна проверка)',
     'btn-case-b': '🔴 Кейс B · 70 б. (Сбор денег без ДДУ)',
     'btn-case-c': '🟢 Кейс C · 10 б. (Гарантия КЖК)',
     'btn-case-edge': '⚖️ Граничный · 60 б. без R2 = Жёлтая!',
 
-    // Map Module 01
+    // Вкладка 01: Карта
     'pill-txt-all': 'Все',
     'pill-txt-green': '🟢 Зелёная',
     'pill-txt-yellow': '🟡 Жёлтая',
@@ -1127,7 +1137,7 @@ const I18N = {
     'svg-banner-title': 'ВЕКТОРНАЯ ОФЛАЙН-КАРТА Г. УСТЬ-КАМЕНОГОРСК (ӨСКЕМЕН)',
     'svg-banner-sub': 'Работает на 100% автономно без интернета · Кликните по маркеру ЖК для просмотра досье',
 
-    // Registry Module 02
+    // Вкладка 02: Реестр ЖК
     'reg-heading-title': 'Реестр строящихся объектов и досье застройщиков',
     'reg-heading-desc': 'Официальный свод строящихся многоквартирных домов г. Усть-Каменогорска со статусом правовых оснований по Закону РК о ДЖС.',
     'reg-search-placeholder': 'Фильтр по названию, БИН или застройщику...',
@@ -1140,7 +1150,7 @@ const I18N = {
     'reg-th-legal': 'ПРАВОВОЕ ОСНОВАНИЕ',
     'reg-th-zone': 'ЗОНА / ДОСЬЕ',
 
-    // Ads Module 03
+    // Вкладка 03: Мониторинг рекламы
     'ads-heading-title': 'Мониторинг рекламы и детекция незаконного сбора средств',
     'ads-heading-desc': 'Автоматический парсинг объявлений с Krisha.kz, OLX, Instagram. Подсветка триггеров «платная бронь», «касса», «депозит» и расхождений готовности (R5 ≥ 20 п.п.).',
     'btn-add-ad': '➕ Добавить объявление вручную',
@@ -1152,7 +1162,7 @@ const I18N = {
     'ads-th-algo': 'Оценка алгоритма ИИ',
     'ads-th-status': 'Статус проверки инспектором',
 
-    // Scoring Module 04
+    // Вкладка 04: Матрица скоринга
     'scoring-heading-title': 'Модель риск-скоринга R1–R6 (Раздел 5 ТЗ)',
     'scoring-heading-desc': 'Интерактивная панель управления факторами. Инспектор переключает статусы и редактирует обоснования в реальном времени.',
     'lbl-scoring-complex': 'Объект для проверки:',
@@ -1170,7 +1180,7 @@ const I18N = {
     'lbl-audit-log-title': '📋 Журнал действий инспектора (Audit Log)',
     'lbl-audit-log-status': '● Активен (Сервер SQLite + Локальная память v4)',
 
-    // Signal Module 05
+    // Вкладка 05: Сигнальный акт
     'signal-heading-title': '05 · Официальный сигнальный акт проверки объекта',
     'signal-heading-desc': 'Формируется уполномоченным инспектором МИО для фиксации нарушений ДЖС и передачи в УГАСК ВКО / прокуратуру.',
     'lbl-act-lang': 'Язык акта:',
@@ -1183,7 +1193,7 @@ const I18N = {
     'btn-signal-print': '🖨️ Скачать PDF / Печать',
     'btn-signal-json': '⬇️ Выгрузить JSON',
 
-    // Network Module 06
+    // Вкладка 06: Сеть телефонов и коллизии
     'net-heading-title': '🕸️ Анализ сетевых связей и коллизий номеров телефонов (Раздел 11 ТЗ)',
     'net-heading-desc': 'Автоматическое выявление зонтичных продаж, риелторских сетей и дубликатов контактов отделов продаж.',
     'btn-net-refresh': '🔄 Обновить связи',
@@ -1199,7 +1209,7 @@ const I18N = {
     'net-th-complexes': 'Связанные объекты ЖК',
     'net-th-collision': 'Характер коллизии',
 
-    // Step-by-Step Inspector Route Banners
+    // Пошаговые баннеры-подсказки для инспектора
     'step1-banner-title': '🧭 Пошаговый маршрут проверки (Шаг 1 из 5 · Обзор на карте): Выберите объект ЖК на карте или в списке слева, затем перейдите к проверке его документов.',
     'step1-banner-btn': 'Шаг 2: Проверить документы выбранного ЖК в Реестре →',
     'step2-banner-title': '🧭 Пошаговый маршрут проверки (Шаг 2 из 5 · Проверка реестров): Вы сверили разрешения МИО, КЖК и связанные объявления. Следующий шаг — проверка рекламных публикаций.',
@@ -1211,11 +1221,11 @@ const I18N = {
     'step5-banner-title': '🧭 Пошаговый маршрут проверки завершён (Шаг 5 из 5): Вы можете подтвердить сигнал, распечатать PDF-акт на двух языках или проверить телефонные связи застройщиков.',
     'step5-banner-btn': '🕸️ Дополнительно: Посмотреть карту связей телефонов →',
 
-    // Footer
+    // Подвал
     'footer-text': '<strong>SAQ QURYLYS</strong> · ClearBuild © 2026. Мониторинг законности долевого строительства г. Усть-Каменогорск.',
     'footer-lbl-updated': 'Данные обновлены:',
 
-    // Modals
+    // Модальные окна
     'modal-dossier-btn-close': 'Закрыть',
     'modal-dossier-btn-act': '📄 Сформировать акт проверки',
     'modal-ad-tag': 'Ручной мониторинг и OCR-фиксация',
@@ -1241,13 +1251,13 @@ const I18N = {
     'modal-api-btn-save': '💾 Сохранить адрес',
     'modal-ad-text-placeholder': 'Вставьте полный текст объявления или выберите готовый пример кнопкой выше...',
 
-    // Dynamic Risk Badges
+    // Динамические бейджи зон риска
     'zone-safe': 'Безопасно',
     'zone-warn': 'Требует внимания',
     'zone-danger': 'Опасно'
   },
   kz: {
-    // Header & General
+    // Шапка и общие элементы (KZ)
     'portal-title': 'SAQ QURYLYS',
     'portal-sub': 'Салынып жатқан тұрғын үйлер мониторингі · Өскемен қ.',
     'i18n-header-sub': 'Салынып жатқан тұрғын үйлер мониторингі · Өскемен қ.',
@@ -1261,13 +1271,13 @@ const I18N = {
     'i18n-ribbon-desc': 'ШҚО ЖАО рұқсаттар базасымен және «ҚТҚ» АҚ кепілдік шарттарымен салыстыру.',
     'i18n-ribbon-loc': 'Codemasters Hackathon 8.0 · Өскемен қ.',
 
-    // Top KPIs
+    // Верхние KPI (KZ)
     'kpi-title-total': 'Бақылаудағы барлық нысандар',
     'kpi-title-green': 'Заңды қаражат тарту (Кепілдік/ЖАО)',
     'kpi-title-yellow': 'Құжаттар тексерілуде / Сәйкессіздіктер',
     'kpi-title-red': 'Жоғары тәуекел (ҮҚШ-сыз ақша жинау)',
 
-    // Navigation (Desktop & Mobile)
+    // Навигация (KZ)
     'lbl-nav-map': '01 · Карта және Шолу',
     'lbl-nav-registry': '02 · ТҮК тізілімі',
     'lbl-nav-ads': '03 · Жарнама мониторингі (AI)',
@@ -1281,14 +1291,14 @@ const I18N = {
     'mob-nav-signal': '📑 Акт',
     'mob-nav-network': '🕸️ Желі',
 
-    // Control Test Cases Bar (TZ Section 5)
+    // Панель контрольных кейсов (KZ)
     'lbl-cases-bar': '🎯 ТТ эталондық кейстері (5-бөлім):',
     'btn-case-a': '🟡 Кейс A · 35 ұп. (Тексеру қажет)',
     'btn-case-b': '🔴 Кейс B · 70 ұп. (ҮҚШ-сыз ақша жинау)',
     'btn-case-c': '🟢 Кейс C · 10 ұп. (ҚТҚ кепілдігі)',
     'btn-case-edge': '⚖️ Шекаралық · 60 ұп. R2-сіз = Сары!',
 
-    // Map Module 01
+    // Вкладка 01: Карта (KZ)
     'pill-txt-all': 'Барлығы',
     'pill-txt-green': '🟢 Жасыл',
     'pill-txt-yellow': '🟡 Сары',
@@ -1312,7 +1322,7 @@ const I18N = {
     'svg-banner-title': 'ӨСКЕМЕН ҚАЛАСЫНЫҢ ОФЛАЙН ВЕКТОРЛЫҚ КАРТАСЫ',
     'svg-banner-sub': 'Интернетсіз 100% автономды жұмыс істейді · Досьені көру үшін ТҮК белгісін басыңыз',
 
-    // Registry Module 02
+    // Вкладка 02: Реестр (KZ)
     'reg-heading-title': 'Салынып жатқан нысандар тізілімі және құрылыс салушылар досьесі',
     'reg-heading-desc': 'Өскемен қ. ТҮҚ заңы бойынша құқықтық негіздер мәртебесі бар көппәтерлі тұрғын үйлердің ресми жиынтығы.',
     'reg-search-placeholder': 'Атауы, БСН немесе құрылыс салушы бойынша сүзгі...',
@@ -1325,7 +1335,7 @@ const I18N = {
     'reg-th-legal': 'ҚҰҚЫҚТЫҚ НЕГІЗІ',
     'reg-th-zone': 'АЙМАҚ / ДОСЬЕ',
 
-    // Ads Module 03
+    // Вкладка 03: Реклама (KZ)
     'ads-heading-title': 'Жарнама мониторингі және заңсыз қаражат жинауды анықтау',
     'ads-heading-desc': 'Krisha.kz, OLX, Instagram хабарландыруларын автоматты түрде өңдеу. «Ақылы бронь», «касса», «депозит» триггерлерін және дайындық сәйкессіздігін (R5 ≥ 20 п.п.) бөлектеу.',
     'btn-add-ad': '➕ Хабарландыруды қолмен қосу',
@@ -1337,7 +1347,7 @@ const I18N = {
     'ads-th-algo': 'ЖИ алгоритмінің бағасы',
     'ads-th-status': 'Инспектордың тексеру мәртебесі',
 
-    // Scoring Module 04
+    // Вкладка 04: Скоринг (KZ)
     'scoring-heading-title': 'Тәуекел-скоринг моделі R1–R6 (ТТ 5-бөлімі)',
     'scoring-heading-desc': 'Факторларды басқарудың интерактивті тақтасы. Инспектор мәртебелерді ауыстырады және негіздемелерді нақты уақытта өңдейді.',
     'lbl-scoring-complex': 'Тексерілетін нысан:',
@@ -1355,7 +1365,7 @@ const I18N = {
     'lbl-audit-log-title': '📋 Инспектор әрекеттерінің журналы (Audit Log)',
     'lbl-audit-log-status': '● Белсенді (SQLite сервері + Жергілікті жад v4)',
 
-    // Signal Module 05
+    // Вкладка 05: Сигнальный акт (KZ)
     'signal-heading-title': '05 · Нысанды тексерудің ресми сигналдық актісі',
     'signal-heading-desc': 'ТҮҚ бұзушылықтарын тіркеу және ШҚО МСҚБ / прокуратураға жіберу үшін ЖАО уәкілетті инспекторы қалыптастырады.',
     'lbl-act-lang': 'Акт тілі:',
@@ -1368,7 +1378,7 @@ const I18N = {
     'btn-signal-print': '🖨️ PDF жүктеу / Басып шығару',
     'btn-signal-json': '⬇️ JSON жүктеу',
 
-    // Network Module 06
+    // Вкладка 06: Сеть телефонов (KZ)
     'net-heading-title': '🕸️ Желілік байланыстар мен телефон нөмірлері қайшылықтарын талдау (ТТ 11-бөлімі)',
     'net-heading-desc': 'Қолшатырлы сатылымдарды, риелторлық желілерді және сату бөлімдерінің қайталанатын байланыстарын автоматты түрде анықтау.',
     'btn-net-refresh': '🔄 Байланыстарды жаңарту',
@@ -1384,7 +1394,7 @@ const I18N = {
     'net-th-complexes': 'Байланысты ТҮК нысандары',
     'net-th-collision': 'Қайшылық сипаты',
 
-    // Step-by-Step Inspector Route Banners
+    // Пошаговые баннеры (KZ)
     'step1-banner-title': '🧭 Қадамдық тексеру маршруты (5-тен 1-қадам · Картадан шолу): Картадан немесе сол жақ тізімнен ТҮК нысанын таңдап, оның құжаттарын тексеруге өтіңіз.',
     'step1-banner-btn': '2-қадам: Тізілімде таңдалған ТҮК құжаттарын тексеру →',
     'step2-banner-title': '🧭 Қадамдық тексеру маршруты (5-тен 2-қадам · Тізілімдерді тексеру): ЖАО, ҚТҚ рұқсаттарын тексердіңіз. Келесі қадам — жарнамалық хабарландыруларды тексеру.',
@@ -1396,11 +1406,11 @@ const I18N = {
     'step5-banner-title': '🧭 Қадамдық тексеру маршруты аяқталды (5-тен 5-қадам): Сигналды растауға, PDF-актіні басып шығаруға немесе телефон байланыстарын көруге болады.',
     'step5-banner-btn': '🕸️ Қосымша: Телефондар байланыс картасын көру →',
 
-    // Footer
+    // Подвал (KZ)
     'footer-text': '<strong>SAQ QURYLYS</strong> · ClearBuild © 2026. Өскемен қ. үлестік құрылыс заңдылығын бақылау.',
     'footer-lbl-updated': 'Деректер жаңартылды:',
 
-    // Modals
+    // Модалки (KZ)
     'modal-dossier-btn-close': 'Жабу',
     'modal-dossier-btn-act': '📄 Тексеру актісін жасау',
     'modal-ad-tag': 'Қолмен мониторинг және OCR-бекіту',
@@ -1426,13 +1436,13 @@ const I18N = {
     'modal-api-btn-save': '💾 Мекенжайды сақтау',
     'modal-ad-text-placeholder': 'Хабарландырудың толық мәтінін енгізіңіз немесе жоғарыдағы дайын мысалды таңдаңыз...',
 
-    // Dynamic Risk Badges
+    // Динамические бейджи (KZ)
     'zone-safe': 'Қауіпсіз',
     'zone-warn': 'Назар аударуды қажет етеді',
     'zone-danger': 'Қауіпті'
   },
   en: {
-    // Header & General
+    // Шапка и общие элементы (EN)
     'portal-title': 'SAQ QURYLYS',
     'portal-sub': 'Under-Construction Housing Risk Monitoring · Oskemen',
     'i18n-header-sub': 'Under-Construction Housing Risk Monitoring · Oskemen',
@@ -1446,13 +1456,13 @@ const I18N = {
     'i18n-ribbon-desc': 'Cross-verification with East Kazakhstan Akimat permits and KZH guarantee contracts.',
     'i18n-ribbon-loc': 'Codemasters Hackathon 8.0 · Ust-Kamenogorsk',
 
-    // Top KPIs
+    // Верхние KPI (EN)
     'kpi-title-total': 'Total Monitored Complexes',
     'kpi-title-green': 'Lawful Sales (Guarantee/Permit)',
     'kpi-title-yellow': 'Under Verification / Discrepancies',
     'kpi-title-red': 'High Risk (Illegal Fundraising)',
 
-    // Navigation (Desktop & Mobile)
+    // Навигация (EN)
     'lbl-nav-map': '01 · Map & Overview',
     'lbl-nav-registry': '02 · Complexes Registry',
     'lbl-nav-ads': '03 · Ad Monitoring (AI)',
@@ -1466,14 +1476,14 @@ const I18N = {
     'mob-nav-signal': '📑 Report',
     'mob-nav-network': '🕸️ Network',
 
-    // Control Test Cases Bar (TZ Section 5)
+    // Панель контрольных кейсов (EN)
     'lbl-cases-bar': '🎯 TZ Benchmark Cases (Section 5):',
     'btn-case-a': '🟡 Case A · 35 pts (Needs Check)',
     'btn-case-b': '🔴 Case B · 70 pts (Unlawful Cash)',
     'btn-case-c': '🟢 Case C · 10 pts (KZH Guarantee)',
     'btn-case-edge': '⚖️ Edge Case · 60 pts no R2 = Yellow!',
 
-    // Map Module 01
+    // Вкладка 01: Карта (EN)
     'pill-txt-all': 'All',
     'pill-txt-green': '🟢 Green',
     'pill-txt-yellow': '🟡 Yellow',
@@ -1497,7 +1507,7 @@ const I18N = {
     'svg-banner-title': 'OFFLINE VECTOR SCHEMATIC MAP OF UST-KAMENOGORSK (OSKEMEN)',
     'svg-banner-sub': 'Works 100% offline without internet · Click any complex marker to open its dossier',
 
-    // Registry Module 02
+    // Вкладка 02: Реестр (EN)
     'reg-heading-title': 'Under-Construction Projects Registry & Developer Dossiers',
     'reg-heading-desc': 'Official registry of multi-apartment housing in Ust-Kamenogorsk with legal basis status under RK Shared Construction Law.',
     'reg-search-placeholder': 'Filter by name, BIN or developer...',
@@ -1510,7 +1520,7 @@ const I18N = {
     'reg-th-legal': 'LEGAL BASIS',
     'reg-th-zone': 'ZONE / DOSSIER',
 
-    // Ads Module 03
+    // Вкладка 03: Реклама (EN)
     'ads-heading-title': 'Ad Monitoring & Illegal Fundraising Detection',
     'ads-heading-desc': 'Automated parsing of ads from Krisha.kz, OLX, Instagram. Highlighting booking deposits, cashier payments and readiness delta (R5 >= 20 pp).',
     'btn-add-ad': '➕ Add Publication Manually',
@@ -1522,7 +1532,7 @@ const I18N = {
     'ads-th-algo': 'AI Algorithm Assessment',
     'ads-th-status': 'Inspector Verification Status',
 
-    // Scoring Module 04
+    // Вкладка 04: Скоринг (EN)
     'scoring-heading-title': 'Risk Scoring Model R1–R6 (TZ Section 5)',
     'scoring-heading-desc': 'Interactive risk factor control panel. Inspector toggles statuses and edits rationale in real-time.',
     'lbl-scoring-complex': 'Select Complex:',
@@ -1540,7 +1550,7 @@ const I18N = {
     'lbl-audit-log-title': '📋 Inspector Action Log (Audit Log)',
     'lbl-audit-log-status': '● Active (SQLite Server + Local Storage v4)',
 
-    // Signal Module 05
+    // Вкладка 05: Сигнальный акт (EN)
     'signal-heading-title': '05 · Official Signal Inspection Act',
     'signal-heading-desc': 'Generated by authorized MIO inspector to document housing violations for transfer to GASK / prosecutor\'s office.',
     'lbl-act-lang': 'Report language:',
@@ -1553,7 +1563,7 @@ const I18N = {
     'btn-signal-print': '🖨️ Download PDF / Print',
     'btn-signal-json': '⬇️ Export JSON',
 
-    // Network Module 06
+    // Вкладка 06: Сеть телефонов (EN)
     'net-heading-title': '🕸️ Phone Network & Sales Collisions Analysis (TZ Section 11)',
     'net-heading-desc': 'Automated detection of umbrella sales funnels, realtor networks, and shared sales office contacts.',
     'btn-net-refresh': '🔄 Refresh Network',
@@ -1569,7 +1579,7 @@ const I18N = {
     'net-th-complexes': 'Linked Complexes',
     'net-th-collision': 'Collision Nature',
 
-    // Step-by-Step Inspector Route Banners
+    // Пошаговые баннеры (EN)
     'step1-banner-title': '🧭 Step-by-Step Inspection Route (Step 1 of 5 · Map Overview): Select a residential complex on the map or list, then proceed to verify its statutory permits.',
     'step1-banner-btn': 'Step 2: Verify Selected Complex Permits in Registry →',
     'step2-banner-title': '🧭 Step-by-Step Inspection Route (Step 2 of 5 · Registry Check): You reviewed MIO/KZH permits and linked records. Next step — inspect advertising publications.',
@@ -1581,11 +1591,11 @@ const I18N = {
     'step5-banner-title': '🧭 Step-by-Step Inspection Route Complete (Step 5 of 5): Confirm the signal, print the bilingual PDF report, or inspect developer phone networks.',
     'step5-banner-btn': '🕸️ Bonus: View Developer Phone Network Collisions →',
 
-    // Footer
+    // Подвал (EN)
     'footer-text': '<strong>SAQ QURYLYS</strong> · ClearBuild © 2026. Shared Housing Construction Compliance Monitoring, Oskemen.',
     'footer-lbl-updated': 'Data updated:',
 
-    // Modals
+    // Модалки (EN)
     'modal-dossier-btn-close': 'Close',
     'modal-dossier-btn-act': '📄 Generate Inspection Act',
     'modal-ad-tag': 'Manual Monitoring & OCR Capture',
@@ -1611,7 +1621,7 @@ const I18N = {
     'modal-api-btn-save': '💾 Save Server URL',
     'modal-ad-text-placeholder': 'Paste full text of the advertisement or click a 1-click preset button above...',
 
-    // Dynamic Risk Badges
+    // Динамические бейджи (EN)
     'zone-safe': 'Safe',
     'zone-warn': 'Needs Review',
     'zone-danger': 'High Risk'
@@ -1657,7 +1667,7 @@ function setLang(lang) {
     localStorage.setItem('clearbuild_act_lang', lang);
   } catch(e) {}
 
-  // Update button active state in header
+  // Подсвечиваем активную кнопку языка в шапке
   ['kz', 'ru', 'en'].forEach(l => {
     const btn1 = document.getElementById('lang-' + l);
     const btn2 = document.getElementById('lang-btn-' + l);
@@ -1667,19 +1677,19 @@ function setLang(lang) {
     if (actBtn) actBtn.classList.toggle('active', l === lang);
   });
 
-  // Apply translations to UI elements by ID
+  // Пробегаемся по словарю и переводим элементы по ID
   const dict = I18N[lang] || I18N.ru;
   for (const [key, val] of Object.entries(dict)) {
     safeSetText(key, val);
   }
 
-  // Apply translations to elements with data-i18n attribute
+  // Плюс переводим все элементы с атрибутом data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.getAttribute('data-i18n');
     if (dict[k]) safeSetText(el.id || '', dict[k]);
   });
 
-  // Update search input placeholders
+  // Обновляем плейсхолдеры инпутов поиска и комментариев
   const sInput = document.getElementById('map-search-input') || document.getElementById('search-complex-input');
   if (sInput && dict['search-placeholder']) sInput.placeholder = dict['search-placeholder'];
   const rInput = document.getElementById('reg-search-input');
@@ -1691,14 +1701,14 @@ function setLang(lang) {
 
   renderPresetButtonsBar();
 
-  // Re-render views in current language
+  // Перерисовываем все открытые вкладки на выбранном языке
   triggerUIRefresh();
 }
 window.setLang = setLang;
 window.setLanguage = setLang;
 
 // ------------------------------------------------------------------------
-// Accessibility: Large Font Mode (A+) for Civil Servants / Projectors
+// Режим крупного шрифта (А+) — чтобы на проекторе или для сотрудников акимата всё читалось легко
 // ------------------------------------------------------------------------
 function applyFontScale(scale) {
   CURRENT_FONT_SCALE = scale === 'large' ? 'large' : 'normal';
@@ -1726,7 +1736,7 @@ window.toggleFontScale = toggleFontScale;
 window.applyFontScale = applyFontScale;
 
 // ------------------------------------------------------------------------
-// Control Test Cases Bar (TZ Section 5 Reference Cases)
+// Кнопки быстрого выбора эталонных кейсов из Раздела 5 ТЗ (над картой)
 // ------------------------------------------------------------------------
 function activateControlTestCase(caseKey) {
   if (typeof CONTROL_TEST_CASES === 'undefined') return;
@@ -1750,7 +1760,7 @@ function selectComplex(id) {
   localStorage.setItem('clearbuild_selected_id', id);
 }
 
-// Dossier modal (with live GET /complexes/{id} enrichment)
+// Модалка досье ЖК (открываем мгновенно из памяти, а если подключён бэкенд — обогащаем через GET /complexes/{id})
 async function openComplexDossier(complexId) {
   let c = complexes.find(item => item.id === complexId);
   if (!c) return;
@@ -1759,7 +1769,7 @@ async function openComplexDossier(complexId) {
   const modal = document.getElementById('dossier-modal');
   if (!modal) return;
 
-  // Render immediately from memory, then enrich from GET /complexes/{id} if connected
+  // Сначала рисуем то, что уже есть, чтобы интерфейс не тупил ни миллисекунды
   renderDossierModalContent(c);
   modal.style.display = 'flex';
 
@@ -1820,7 +1830,7 @@ function renderDossierModalContent(c) {
     factorsHtml = `<div style="color: var(--zone-green-text); font-weight: 600; font-size: 0.85rem;">${isKz ? '✅ Елеулі тәуекел факторлары анықталған жоқ. Нысан тексерілді.' : isEn ? '✅ No significant risk factors detected. Project verified.' : '✅ Существенных факторов риска не обнаружено. Объект проверен.'}</div>`;
   }
 
-  // Linked publications from GET /complexes/{id} or adsList
+  // Привязанные рекламные объявления по этому ЖК
   const rawPubs = Array.isArray(c.publications) && c.publications.length > 0
     ? c.publications
     : (adsList || []).filter(a => a.complexId === c.id);
@@ -1924,9 +1934,9 @@ function closeDossierModal() {
 }
 
 // ------------------------------------------------------------------------
-// Archival Screenshot / Web Capture Viewer Modal (TZ Sections 3, 4, 6, 11)
-// "Для публичных объявлений полезно хранить снимок экрана или локальную копию текста —
-// особенно когда исходная публикация исчезнет."
+// Модалка просмотра архивного снимка экрана объявления (Разделы 3, 4, 6, 11 ТЗ)
+// В ТЗ прямо сказано: «полезно хранить снимок экрана или локальную копию текста —
+// особенно когда исходная публикация исчезнет». Вот это мы тут и показываем!
 // ------------------------------------------------------------------------
 function openAdScreenshotModal(adId) {
   const rawAd = (adsList || []).find(item => item.id === adId);
@@ -1965,6 +1975,7 @@ function openAdScreenshotModal(adId) {
       : (isKz ? 'ТЕКСЕРІЛДІ · ТӘУЕКЕЛ ЖОҚ' : isEn ? 'VERIFIED · NO VIOLATION' : 'ПРОВЕРЕНО · НАРУШЕНИЙ НЕ ВЫЯВЛЕНО');
 
   const stampColor = ad.status === 'CONFIRMED' ? '#dc2626' : ad.status === 'AI_HYPOTHESIS' ? '#d97706' : '#16a34a';
+  const safeAdId = String(ad.id || 'ad').toLowerCase();
 
   body.innerHTML = `
     <div style="font-size: 0.78rem; color: var(--text-secondary); background: var(--bg-surface-hover); padding: 0.65rem 0.9rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 0.9rem;">
@@ -1977,7 +1988,7 @@ function openAdScreenshotModal(adId) {
     </div>
 
     <div class="snapshot-browser-frame" style="border: 2px solid var(--border-strong); border-radius: 12px; overflow: hidden; background: var(--bg-surface); box-shadow: var(--shadow-md);">
-      <!-- Browser Top Bar -->
+      <!-- Верхняя панель браузера на снимке -->
       <div style="background: var(--bg-surface-hover); padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
         <div style="display: flex; gap: 5px;">
           <span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
@@ -1988,11 +1999,11 @@ function openAdScreenshotModal(adId) {
           🔒 ${ad.url || 'https://krisha.kz/a/show/694810231'}
         </div>
         <span style="font-size: 0.7rem; font-weight: 700; color: var(--brand-primary); font-family: monospace;">
-          SHA-256: 8f4e...${ad.id.toLowerCase()}
+          SHA-256: 8f4e...${safeAdId}
         </span>
       </div>
 
-      <!-- Simulated Social / Classifieds Post Content -->
+      <!-- Содержимое зафиксированного поста/объявления -->
       <div style="padding: 1.25rem; position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.9rem; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.75rem;">
           <div style="display: flex; align-items: center; gap: 0.65rem;">
@@ -2046,7 +2057,7 @@ function closeAdScreenshotModal() {
 window.closeAdScreenshotModal = closeAdScreenshotModal;
 
 // ------------------------------------------------------------------------
-// 1-Click Demo Presets & OCR Screenshot Simulator in #add-ad-modal
+// Пресеты в 1 клик и симулятор OCR-распознавания скриншотов в модалке #add-ad-modal
 // ------------------------------------------------------------------------
 function applyAiPreset(presetId) {
   if (typeof AI_DEMO_PRESETS === 'undefined') return;
@@ -2062,7 +2073,7 @@ function applyAiPreset(presetId) {
   const ocrStripEl = document.getElementById('ocr-preview-strip');
 
   if (selEl) {
-    // Allow empty complexId when testing umbrella phone collision
+    // Если в пресете специально пустой complexId (тестируем коллизию по общему телефону) — добавляем пустую опцию
     if (!preset.complexId) {
       let emptyOpt = selEl.querySelector('option[value=""]');
       if (!emptyOpt) {
@@ -2112,7 +2123,7 @@ function handleOcrFileUpload(inputEl) {
   const isKz = CURRENT_LANG === 'kz';
   const isEn = CURRENT_LANG === 'en';
 
-  // Populate with Preset 1
+  // Подставляем Сценарий 1 как результат OCR-распознавания загруженного скриншота
   applyAiPreset('preset-1');
 
   if (ocrStripEl) {
@@ -2131,7 +2142,7 @@ function handleOcrFileUpload(inputEl) {
 window.handleOcrFileUpload = handleOcrFileUpload;
 
 // ------------------------------------------------------------------------
-// User-Friendly Help Modal & Interactive Spotlight Tour (for Non-Tech Users)
+// Справочная модалка «Как работать» и интерактивный тур по интерфейсу
 // ------------------------------------------------------------------------
 function openHelpModal() {
   const modal = document.getElementById('help-guide-modal');
@@ -2201,7 +2212,7 @@ function closeHelpModal() {
 }
 window.closeHelpModal = closeHelpModal;
 
-// Interactive Spotlight Tour
+// Пошаговый интерактивный тур с подсветкой блоков
 let CURRENT_TOUR_INDEX = -1;
 const TOUR_STEPS = [
   {
@@ -2344,7 +2355,7 @@ function closeGuidedTour() {
 window.closeGuidedTour = closeGuidedTour;
 
 // ------------------------------------------------------------------------
-// Signal Act Navigation & Action Handlers
+// Работа с Сигнальным актом (переход на вкладку, решение инспектора, выгрузка JSON)
 // ------------------------------------------------------------------------
 async function openSignalAct(complexId) {
   if (complexId) selectComplex(complexId);
@@ -2453,7 +2464,7 @@ function exportSignalJSON() {
 }
 window.exportSignalJSON = exportSignalJSON;
 
-// Global bootstrap
+// Стартовая инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
   setTheme(CURRENT_THEME);
   applyFontScale(CURRENT_FONT_SCALE);

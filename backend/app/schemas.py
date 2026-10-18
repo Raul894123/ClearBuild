@@ -1,6 +1,6 @@
-"""Pydantic-модели запросов API. Перечисления валидируются через Literal (ошибка — 422).
+"""Короче, тут у нас Pydantic-модели для входящих запросов к API. Все перечисления валидируем через Literal (если прислали дичь — отдаём 422).
 
-Строковые перечисления принимаются в любом регистре: значение приводится к регистру Literal до проверки.
+Прикол в том, что строковые перечисления принимаются в любом регистре: мы их заранее приводим к верхнему/нижнему регистру через BeforeValidator.
 """
 
 from typing import Annotated, List, Literal, Optional
@@ -20,9 +20,9 @@ Upper = BeforeValidator(_upper)
 Lower = BeforeValidator(_lower)
 
 FactorCode = Annotated[Literal["R1", "R2", "R3", "R4", "R5", "R6"], Upper]
-# AUTO снимает решение аналитика и возвращает расчёт по данным
+# AUTO — типа сбрасывает ручное решение аналитика и возвращает честный авто-расчёт по данным
 FactorDecision = Annotated[Literal["CONFIRMED", "REJECTED", "NONE", "UNVERIFIED", "AI_HYPOTHESIS", "AUTO"], Upper]
-# REJECTED — устаревший синоним RETURNED; draft (PENDING_HUMAN) решением аналитика не является
+# REJECTED оставили как старый синоним для RETURNED; а вот draft (PENDING_HUMAN) — это ещё не решение аналитика
 SignalDecision = Annotated[Literal["CONFIRMED", "RETURNED", "REJECTED"], Upper]
 PublicationStatus = Annotated[Literal["AI_HYPOTHESIS", "PENDING_REVIEW", "CONFIRMED", "REJECTED"], Upper]
 LegalBasis = Annotated[
@@ -30,13 +30,13 @@ LegalBasis = Annotated[
     Upper,
 ]
 VerifyDecision = Annotated[Literal["accept", "reject"], Lower]
-# ALL — значение фильтра «Все» на фронтенде
+# ALL — это когда на фронте выбрали фильтр «Все зоны»
 ZoneFilter = Annotated[Literal["red", "yellow", "green", "all"], Lower]
 ImportFormat = Annotated[Literal["csv", "json"], Lower]
 
 
 class AnalyzeRequest(BaseModel):
-    """Нужен хотя бы один из text / ocr_text."""
+    """Для анализа нужен хотя бы один из параметров: text или ocr_text."""
 
     text: Optional[str] = Field(None, description="Текст рекламного объявления")
     ocr_text: Optional[str] = Field(
@@ -63,7 +63,7 @@ class ConfirmFactorRequest(BaseModel):
 
 
 class PublicationCreateRequest(BaseModel):
-    """Поля как у публикаций в seed.json. rawText и date — устаревшие имена text и pubDate (их шлёт фронтенд)."""
+    """Поля один-в-один как у публикаций в seed.json. На всякий пожарный поддерживаем старые имена rawText и date с фронта."""
 
     complexId: Optional[str] = Field(None, description="ID жилого комплекса (может быть пустым до привязки)")
     platform: str = Field("Krisha.kz", description="Платформа публикации")

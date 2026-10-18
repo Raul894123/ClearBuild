@@ -1,4 +1,4 @@
-"""Создание таблиц и заполнение БД из backend/seed.json при первом старте."""
+"""Короче, тут у нас создание табличек и заливка стартовых данных из backend/seed.json при первом запуске."""
 
 import json
 import re
@@ -24,7 +24,7 @@ SEED_FILE = BACKEND_DIR / "seed.json"
 
 
 def _check_schema() -> None:
-    """create_all не добавляет колонки в существующие таблицы — старую БД надо пересоздать."""
+    """Короче, create_all сам по себе новые колонки в старые таблицы не пихает — если схема поменялась, проще грохнуть старый файл БД."""
     insp = inspect(engine)
     for table in Base.metadata.sorted_tables:
         if not insp.has_table(table.name):
@@ -38,13 +38,38 @@ def _check_schema() -> None:
             )
 
 
+def _sync_seed_locations(db: Session) -> None:
+    """На всякий пожарный: если база уже была создана раньше, подтягиваем актуальные адреса и координаты демо-ЖК из seed.json."""
+    if not SEED_FILE.exists():
+        return
+    with open(SEED_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    changed = False
+    for item in data.get("complexes", []):
+        c = db.get(Complex, item["id"])
+        if not c or not c.is_demo:
+            continue
+        coords = item.get("coords") or [c.lat, c.lng]
+        new_addr = item.get("district") or c.address
+        if c.address != new_addr or c.lat != coords[0] or c.lng != coords[1]:
+            c.address = new_addr
+            c.lat = coords[0]
+            c.lng = coords[1]
+            c.svg_pos = item.get("svgPos") or c.svg_pos
+            changed = True
+    if changed:
+        db.commit()
+
+
 def init_db() -> None:
-    """Создаёт таблицы и заливает сид, если таблица ЖК пуста."""
+    """По сути, создаёт таблицы и заливает сид, если база ещё пустая (или обновляет координаты демо-объектов)."""
     _check_schema()
     Base.metadata.create_all(engine)
     with Session(engine) as db:
         if db.scalar(select(func.count()).select_from(Complex)) == 0:
             seed_database(db)
+        else:
+            _sync_seed_locations(db)
 
 
 def _factor_confirmed(factors: Dict[str, Any], code: str) -> bool:
@@ -56,7 +81,7 @@ def _confirmed_evidence(factors: Dict[str, Any], code: str) -> Optional[str]:
 
 
 def _readiness_publication_id(item: Dict[str, Any], publications: list) -> Optional[str]:
-    """Публикация-источник заявленной готовности: «AD-110» в источнике или объявление этого ЖК с гипотезой R5."""
+    """Ищем публикацию, откуда взяли заявленную готовность — типа 'AD-110' в строке источника или объявление с гипотезой R5."""
     own = [p for p in publications if p.get("complexId") == item["id"]]
     m = re.search(r"AD-\d+", (item.get("declaredReadiness") or {}).get("source") or "")
     if m and any(p["id"] == m.group(0) for p in own):
@@ -73,8 +98,8 @@ def seed_database(db: Session) -> None:
     seeded_at = now()
     publications = data.get("publications", [])
 
-    # Статусы факторов из seed.json не переносятся: факторы считаются из данных (app/factors.py).
-    # Из них берутся только флаги R4/R6 и тексты-основания к ним.
+    # Короче, статусы факторов напрямую из seed.json мы не копируем в тупую — они у нас честно считаются на лету в app/factors.py.
+    # Отсюда забираем чисто флажки R4/R6 и тексты доказательств к ним.
     for item in data.get("complexes", []):
         legal_type, commissioned = legal_basis_to_db(item.get("legalBasisType"))
         factors = item.get("factors", {})
@@ -140,7 +165,7 @@ def seed_database(db: Session) -> None:
                 "confidence": item.get("confidence"),
             },
             status=publication_status_to_db(item.get("status")),
-            # Флаги R2/R3 заданы в seed.json явно по тексту объявления; без них — по гипотезе ИИ
+            # Короче, флаги R2/R3 в seed.json прописаны явно по тексту объявления, а если их нет — смотрим на гипотезу ИИ
             has_direct_payment_offer=item.get("hasDirectPaymentOffer", factor == "R2"),
             is_active_pre_commissioning_ad=(
                 item.get("isActivePreCommissioningAd", True) and item.get("complexId") not in commissioned_ids

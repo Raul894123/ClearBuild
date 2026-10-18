@@ -1,13 +1,13 @@
-"""Вывод факторов риска R1–R6 из данных БД (Раздел 3 ТЗ бэкенда).
+"""Короче, тут у нас логика вывода факторов риска R1–R6 напрямую из данных БД.
 
-Порядок для каждого фактора:
-1. Факт из данных ЖК и его публикаций.
-2. Решение аналитика (confirm-factor, Complex.factor_overrides) поверх факта.
-   Подтверждение не может обойти жёсткие условия ТЗ: R1 — только при absent,
-   R3 — только до ввода в эксплуатацию, R5 — только при разнице ≥20 п.п. с датами и источниками.
+По сути, для каждого фактора схема такая:
+1. Сначала выводим базовый факт из самой карточки ЖК и привязанных к ней публикаций.
+2. Потом сверху накатываем ручное решение аналитика (confirm-factor, Complex.factor_overrides), если оно есть.
+   Но тут важный момент: даже аналитик не может обойти жёсткие предохранители ТЗ (например, R1 ставится только при absent,
+   R3 — только пока дом не сдан, а R5 — только когда разница готовности реально ≥20 п.п. и есть обе даты/источника).
 
-Статусы фактора: CONFIRMED (баллы начислены), AI_HYPOTHESIS (гипотеза ИИ, 0 баллов),
-UNVERIFIED («Нужна проверка», 0 баллов), REJECTED (отклонено аналитиком), NONE (не выявлено).
+Статусы фактора: CONFIRMED (баллы пошли в зачёт), AI_HYPOTHESIS (просто гипотеза ИИ, 0 баллов),
+UNVERIFIED («Нужна проверка», тоже 0 баллов), REJECTED (отклонено аналитиком), NONE (чисто, не выявлено).
 """
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -51,7 +51,7 @@ def _ids(pubs: List[Publication]) -> str:
 
 
 # --------------------------------------------------------------------------
-# Факты из данных
+# Вытаскиваем базовые факты из данных БД
 # --------------------------------------------------------------------------
 def _r1(c: Complex) -> Dict[str, Any]:
     evidence = _note_ref(c.verification_source)
@@ -90,7 +90,7 @@ def _r3(c: Complex) -> Dict[str, Any]:
 
 
 def readiness_gap(c: Complex) -> Tuple[Optional[int], Optional[str]]:
-    """Разница stated − verified (направленно) или (None, причина), если не хватает данных."""
+    """Считает направленную разницу (stated − verified) или отдаёт (None, причина), если каких-то полей не хватает."""
     if c.stated_readiness is None or c.verified_readiness is None:
         return None, "Нет заявленной или подтверждённой готовности."
     if not (c.stated_readiness_date and c.readiness_date):
@@ -152,10 +152,10 @@ _DERIVERS = {"R1": _r1, "R2": _r2, "R3": _r3, "R4": _r4, "R5": _r5, "R6": _r6}
 
 
 # --------------------------------------------------------------------------
-# Решение аналитика поверх данных
+# Накатываем ручное решение аналитика поверх базовых данных
 # --------------------------------------------------------------------------
 def hard_precondition_error(c: Complex, code: str) -> Optional[str]:
-    """Почему фактор нельзя подтвердить по данным ЖК, или None, если можно."""
+    """Проверяем жёсткие стоп-условия ТЗ: почему фактор нельзя подтвердить по текущим данным ЖК (или None, если всё ок)."""
     if code == "R1" and c.legal_basis_type != "absent":
         return "R1 начисляется только при установленном отсутствии правового основания (absent)."
     if code == "R3" and c.is_commissioned:
@@ -199,7 +199,7 @@ def evaluate_factors(c: Complex) -> List[Dict[str, Any]]:
 
 
 def risk_profile(c: Complex) -> Dict[str, Any]:
-    """riskProfile для API: балл, зона и построчная расшифровка R1–R6."""
+    """Собирает полный riskProfile для ответа API: итоговый балл, зона и подробная раскладка по каждому R1–R6."""
     factors = evaluate_factors(c)
     profile = calculate_risk(
         [f["code"] for f in factors if f["active"]],
@@ -211,5 +211,5 @@ def risk_profile(c: Complex) -> Dict[str, Any]:
 
 
 def factors_summary(factors: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """Прежний формат поля complex.factors: {"R1": {"status": ..., "evidence": ...}}."""
+    """Короткий словарь complex.factors для совместимости с фронтом: {"R1": {"status": ..., "evidence": ...}}."""
     return {f["code"]: {"status": f["status"], "evidence": f["reason"]} for f in factors}

@@ -1,4 +1,4 @@
-"""Перевод между значениями БД (ТЗ, snake_case) и форматом API, который ждёт фронтенд (camelCase)."""
+"""Короче, тут живут мапперы между внутренними значениями БД (snake_case) и форматом API, который ждёт наш фронтенд (camelCase)."""
 
 import re
 from datetime import date, datetime
@@ -9,7 +9,7 @@ from app.models import TZ, AuditLog, Complex, Publication, Signal, to_tz
 from app.scoring import WEIGHTS, calculate_risk
 
 # --------------------------------------------------------------------------
-# Перечисления: API -> БД
+# Перевод перечислений туда-сюда: API <-> БД
 # --------------------------------------------------------------------------
 LEGAL_BASIS_TO_DB: Dict[str, str] = {
     "ABSENT": "absent",
@@ -19,7 +19,7 @@ LEGAL_BASIS_TO_DB: Dict[str, str] = {
     "GUARANTEE": "operator_guarantee",
     "MIO_PERMIT": "mio_permit",
     "PERMIT": "mio_permit",
-    # Введённый в эксплуатацию объект: is_commissioned = True
+    # Если дом уже введён в эксплуатацию, ставим mio_permit + флажок is_commissioned = True
     "COMMISSIONED": "mio_permit",
 }
 LEGAL_BASIS_TO_API: Dict[str, str] = {
@@ -56,7 +56,7 @@ SIGNAL_STATUS_TO_API: Dict[str, str] = {
 
 
 def legal_basis_to_db(value: Optional[str]) -> Tuple[str, bool]:
-    """Возвращает (legal_basis_type, is_commissioned)."""
+    """Разбирает строку из API и возвращает пару (legal_basis_type, is_commissioned)."""
     key = (value or "UNVERIFIED").upper()
     return LEGAL_BASIS_TO_DB.get(key, "unknown"), key == "COMMISSIONED"
 
@@ -80,10 +80,10 @@ def publication_status_to_db(value: Optional[str]) -> str:
 
 
 # --------------------------------------------------------------------------
-# Даты и время.
-# Время в API — ISO 8601 с поясом +05:00 («2026-10-14T09:15:00+05:00»).
-# Даты без времени — «ДД.ММ.ГГГГ», как в seed.json и на фронтенде.
-# На входе принимается ISO и старый формат «ДД.ММ.ГГГГ, ЧЧ:ММ (пометка)» (считается +05:00).
+# Работа с датами и временем.
+# В общем, в API отдаём время в ISO 8601 с поясом +05:00 («2026-10-14T09:15:00+05:00»),
+# а простые даты без времени — как «ДД.ММ.ГГГГ», чтобы фронту было привычно.
+# На вход понимаем и нормальный ISO, и старый человеческий формат «ДД.ММ.ГГГГ, ЧЧ:ММ (пометка)».
 # --------------------------------------------------------------------------
 _DT_RE = re.compile(
     r"^\s*(\d{1,2})\.(\d{1,2})\.(\d{4})(?:,?\s*(\d{1,2}):(\d{2})(?::\d{2})?)?\s*(?:\((.*)\))?\s*$"
@@ -96,7 +96,7 @@ def parse_date(value: Optional[str]) -> Optional[date]:
 
 
 def parse_datetime(value: Optional[str]) -> Tuple[Optional[datetime], Optional[str]]:
-    """Разбирает «14.10.2026, 09:15 (Snapshot #101)» или ISO-строку. Возвращает (datetime, пометка)."""
+    """Парсит строку типа «14.10.2026, 09:15 (Snapshot #101)» или обычный ISO. Отдаёт (datetime, пометка)."""
     if not value:
         return None, None
     m = _DT_RE.match(value)
@@ -122,7 +122,7 @@ def fmt_datetime(value: Optional[datetime]) -> Optional[str]:
 
 
 # --------------------------------------------------------------------------
-# Сериализация в формат API
+# Сериализация моделей БД в JSON-словари для API
 # --------------------------------------------------------------------------
 def complex_to_api(c: Complex) -> Dict[str, Any]:
     signal = c.current_signal
@@ -221,7 +221,7 @@ def audit_to_api(a: AuditLog) -> Dict[str, Any]:
 
 
 def signal_snapshot(c: Complex) -> Dict[str, Any]:
-    """Балл, зона и сработавшие факторы для строки Signal по данным ЖК."""
+    """Снимает слепок текущего балла, зоны и активных факторов для записи в табличку Signal."""
     factors = evaluate_factors(c)
     active = [f for f in factors if f["active"]]
     risk = calculate_risk([f["code"] for f in active])

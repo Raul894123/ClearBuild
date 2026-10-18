@@ -1,12 +1,12 @@
-"""ORM-модели ClearBuild · SAQ QURYLYS.
+"""Короче, тут у нас ORM-модели базы данных ClearBuild · SAQ QURYLYS.
 
-Имена колонок и значения перечислений — по ТЗ бэкенда (Раздел 2, snake_case):
+Имена колонок и значения перечислений внутри БД держим строго в snake_case (по ТЗ бэкенда):
   Complex.legal_basis_type:     mio_permit | operator_guarantee | absent | unknown
   Complex.verification_status:  verified | needs_check | violation_confirmed
   Publication.status:           pending_review | confirmed | rejected
   Signal.status:                draft | confirmed | returned
   Signal.risk_zone:             green | yellow | red
-Перевод в значения, которые ждёт фронтенд (camelCase / UPPER_CASE), — в app/mappers.py.
+А уже конвертация в camelCase / UPPER_CASE, которые ждёт фронтенд, живёт в app/mappers.py.
 """
 
 from datetime import date, datetime, timedelta, timezone
@@ -18,22 +18,22 @@ from sqlalchemy.types import TypeDecorator
 
 from app.db import Base
 
-# Время Усть-Каменогорска (ВКО), UTC+05:00
+# Часовой пояс Усть-Каменогорска (ВКО), UTC+05:00
 TZ = timezone(timedelta(hours=5), "+05:00")
 
 
 def now() -> datetime:
-    """Текущее время в поясе +05:00 без микросекунд."""
+    """Возвращает текущее время в поясе +05:00, обрезаем микросекунды, чтобы строки были чистыми."""
     return datetime.now(TZ).replace(microsecond=0)
 
 
 def to_tz(value: datetime) -> datetime:
-    """Наивное время считается временем +05:00, aware-время переводится в +05:00."""
+    """Если время без пояса (naive) — считаем что это уже +05:00, а если с поясом — переводим в +05:00."""
     return value.replace(tzinfo=TZ) if value.tzinfo is None else value.astimezone(TZ)
 
 
 class TZDateTime(TypeDecorator):
-    """Хранит время ISO-строкой с поясом («2026-10-14T09:15:00+05:00»): SQLite сам пояс не сохраняет."""
+    """По сути, хранит время ISO-строкой с поясом («2026-10-14T09:15:00+05:00»), потому что SQLite сам таймзону тупо теряет."""
 
     impl = String(32)
     cache_ok = True
@@ -59,7 +59,7 @@ class Complex(Base):
     developer_bin: Mapped[str] = mapped_column(String(64))
     stage: Mapped[Optional[str]] = mapped_column(String(255))
 
-    # Готовность: заявленная (реклама) и подтверждённая (МИО / УГАСК), фактор R5
+    # Короче, готовность: заявленная в рекламе и подтверждённая по актам МИО / УГАСК (для расчёта фактора R5)
     stated_readiness: Mapped[Optional[int]]
     stated_readiness_source: Mapped[Optional[str]] = mapped_column(String(255))
     stated_readiness_date: Mapped[Optional[date]] = mapped_column(Date)
@@ -67,31 +67,31 @@ class Complex(Base):
     verified_readiness_source: Mapped[Optional[str]] = mapped_column(String(255))
     readiness_date: Mapped[Optional[date]] = mapped_column(Date)
 
-    # Правовое основание, фактор R1
+    # Правовое основание строительства / привлечения средств (это у нас фактор R1)
     legal_basis_type: Mapped[str] = mapped_column(String(32), default="unknown")
     legal_basis_text: Mapped[Optional[str]] = mapped_column(Text)
     verification_status: Mapped[str] = mapped_column(String(32), default="needs_check")
     verification_source: Mapped[Optional[str]] = mapped_column(Text)
-    # Объект введён в эксплуатацию: legal_basis_type = mio_permit, в API — legalBasisType = COMMISSIONED
+    # Если дом уже сдан в эксплуатацию: в базе legal_basis_type = mio_permit, а наружу в API отдаём COMMISSIONED
     is_commissioned: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Публикация, из которой взята заявленная готовность. Пока она не подтверждена, R5 — гипотеза ИИ.
-    # Без внешнего ключа: complexes и publications ссылаются друг на друга.
+    # Тут храним ID публикации, откуда вытащили заявленную готовность. Пока саму публикацию аналитик не подтвердит, R5 висит как гипотеза ИИ.
+    # Внешний ключ специально не вешаем, чтобы не ловить циклических ссылок между complexes и publications.
     stated_readiness_publication_id: Mapped[Optional[str]] = mapped_column(String(32))
 
-    has_collective_complaint: Mapped[bool] = mapped_column(Boolean, default=False)  # R4
+    has_collective_complaint: Mapped[bool] = mapped_column(Boolean, default=False)  # Фактор R4 (коллективная жалоба)
     collective_complaint_source: Mapped[Optional[str]] = mapped_column(Text)
-    has_significant_delay: Mapped[bool] = mapped_column(Boolean, default=False)  # R6
+    has_significant_delay: Mapped[bool] = mapped_column(Boolean, default=False)  # Фактор R6 (задержка / простой)
     delay_source: Mapped[Optional[str]] = mapped_column(Text)
 
     contact_phone: Mapped[Optional[str]] = mapped_column(String(64))
     sales_account: Mapped[Optional[str]] = mapped_column(String(255))
 
-    # Решения аналитика через confirm-factor поверх данных:
-    # {"R2": {"status": "CONFIRMED", "evidence": "...", "analyst": "...", "at": "2026-10-16T17:48:00+05:00"}}
+    # Ручные решения аналитика через confirm-factor поверх сырых данных:
+    # типа {"R2": {"status": "CONFIRMED", "evidence": "...", "analyst": "...", "at": "2026-10-16T17:48:00+05:00"}}
     factor_overrides: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
-    # Сверка с 11 госреестрами (app/registries.py): {"elicense": {"status": "ok", "checkedAt": "...", "note": "..."}}
+    # Результаты сверки с 11 госреестрами (см. app/registries.py): {"elicense": {"status": "ok", "checkedAt": "...", "note": "..."}}
     gov_checks: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -117,15 +117,15 @@ class Publication(Base):
     url: Mapped[Optional[str]] = mapped_column(String(512))
     published_at: Mapped[Optional[date]] = mapped_column(Date)
     captured_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
-    # Пометка снимка, например «Snapshot #102 · OCR Stories»
+    # Пометка к снимку, типа «Snapshot #102 · OCR Stories»
     capture_note: Mapped[Optional[str]] = mapped_column(String(255))
     text_content: Mapped[str] = mapped_column(Text)
     screenshot_url: Mapped[Optional[str]] = mapped_column(String(512))
-    # {"proposedFactor": "R2", "quote": "...", "confidence": 94}
+    # Сюда кладём гипотезу ИИ: {"proposedFactor": "R2", "quote": "...", "confidence": 94}
     ai_hypothesis: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(32), default="pending_review")
-    has_direct_payment_offer: Mapped[bool] = mapped_column(Boolean, default=False)  # R2
-    is_active_pre_commissioning_ad: Mapped[bool] = mapped_column(Boolean, default=False)  # R3
+    has_direct_payment_offer: Mapped[bool] = mapped_column(Boolean, default=False)  # Флажок под R2
+    is_active_pre_commissioning_ad: Mapped[bool] = mapped_column(Boolean, default=False)  # Флажок под R3
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(TZDateTime, default=now)
 
@@ -133,7 +133,7 @@ class Publication(Base):
 
 
 class Signal(Base):
-    """Сигнальная карточка. Каждое решение аналитика — новая строка, текущая — последняя."""
+    """Сигнальная карточка объекта. Прикол в том, что каждое решение аналитика создаёт новую строку, а актуальная — всегда последняя."""
 
     __tablename__ = "signals"
 
@@ -141,7 +141,7 @@ class Signal(Base):
     complex_id: Mapped[str] = mapped_column(ForeignKey("complexes.id"))
     total_score: Mapped[int] = mapped_column(Integer, default=0)
     risk_zone: Mapped[str] = mapped_column(String(16), default="green")
-    # [{"code": "R1", "points": 35, "evidence": "..."}]
+    # Список сработавших факторов на момент снимка: [{"code": "R1", "points": 35, "evidence": "..."}]
     active_factors: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(16), default="draft")
     comment: Mapped[Optional[str]] = mapped_column(Text)

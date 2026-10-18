@@ -1,10 +1,10 @@
-"""FastAPI сервер ClearBuild · SAQ QURYLYS.
+"""Короче, это главный FastAPI-сервер ClearBuild · SAQ QURYLYS.
 
 Codemasters Hackathon 8.0 (г. Усть-Каменогорск).
-Предоставляет REST API для карточек объектов ЖК г. Усть-Каменогорска,
-рекламных публикаций, модуля объяснимого ИИ-анализа (Explainable AI),
-ручного добавления публикаций и подтверждения факторов риска аналитиком МИО (Human-in-the-Loop).
-Данные хранятся в SQLite (SQLAlchemy) и заполняются из backend/seed.json при первом старте.
+По сути, отдаёт весь REST API для карточек ЖК Усть-Каменогорска,
+рекламных публикаций, объяснимого ИИ-анализа (Explainable AI),
+ручного добавления объявлений и верификации факторов риска аналитиком МИО (Human-in-the-Loop).
+Все данные крутятся в SQLite через SQLAlchemy и при первом запуске подтягиваются из backend/seed.json.
 """
 
 import re
@@ -77,7 +77,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Разрешаем CORS для веб-интерфейса фронтенда
+# Открываем CORS настежь, чтобы веб-интерфейс спокойно стучался с любого домена/локалки
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -86,12 +86,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Все эндпоинты подключаются дважды: /api/v1/... (фронтенд, ТЗ2) и /api/... (алиасы по ТЗ1), см. конец файла
+# Прикол в том, что все роуты подключаем сразу по двум префиксам: /api/v1/... (основной) и /api/... (алиасы на всякий пожарный)
 router = APIRouter()
 
 
 # --------------------------------------------------------------------------
-# Вспомогательные функции
+# Вспомогательные утилитки для работы с БД
 # --------------------------------------------------------------------------
 def _id_number(entity_id: str) -> int:
     m = re.search(r"(\d+)$", entity_id or "")
@@ -99,7 +99,7 @@ def _id_number(entity_id: str) -> int:
 
 
 def _all_complexes(db: Session) -> List[Complex]:
-    """ЖК в порядке добавления (jk-2 раньше jk-10)."""
+    """Отдаёт список ЖК строго в порядке добавления (чтобы jk-2 всегда шёл раньше jk-10)."""
     items = db.scalars(select(Complex)).all()
     return sorted(items, key=lambda c: (c.created_at, _id_number(c.id)))
 
@@ -117,7 +117,7 @@ def _next_id(db: Session, model, prefix: str, floor: int = 0) -> str:
 
 
 def _sorted_publications(items) -> List[Publication]:
-    """Ручные публикации сверху (новые первыми), затем сид в исходном порядке AD-101…AD-112."""
+    """Сортируем так: добавленные руками объявления всегда висят сверху (свежие первыми), а дальше идёт демо-сид AD-101…AD-112."""
     return sorted(items, key=lambda p: (p.is_demo, _id_number(p.id) if p.is_demo else -_id_number(p.id)))
 
 
@@ -126,7 +126,7 @@ def _audit(db: Session, actor: str, action: str, entity_type: str, entity_id: st
 
 
 # --------------------------------------------------------------------------
-# Эндпоинты API
+# Основные эндпоинты REST API
 # --------------------------------------------------------------------------
 @router.get("/health", summary="Статус сервера и проверка демонстрационного режима")
 def get_health(db: Session = Depends(get_db)):
@@ -203,7 +203,7 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
             "confidence": analysis["confidence"],
             "explanation": analysis["explanation"],
             "hypotheses": [{"factor": h["factor"], "confidence": h["confidence"], "quote": h["quote"]} for h in hypotheses.values()],
-            # Без complexId публикация не привязывается автоматически: анализатор только предлагает ЖК
+            # Если complexId явно не передали, сами намертво не привязываем — просто сохраняем подсказку suggestedComplexId
             "suggestedComplexId": None if target else analysis["complexId"],
             "ocrText": ocr_text or None,
         },
@@ -219,7 +219,7 @@ def create_publication(pub: PublicationCreateRequest, db: Session = Depends(get_
         item.complex = target
     db.add(item)
     if target:
-        # Подтверждённая публикация сразу меняет R2/R3 — обновляем текущую сигнальную карточку
+        # Если публикация прилетела уже подтверждённой, она может сразу поменять R2/R3 — поэтому освежаем сигнальную карточку
         refresh_signal(target.current_signal, target)
     _audit(db, "Аналитик МИО (веб-интерфейс)", "publication_create", "publication", item.id, {
         "complexId": pub.complexId,
@@ -246,7 +246,7 @@ def verify_publication(publication_id: str, req: PublicationVerifyRequest, db: S
     pub.status = "confirmed" if req.decision == "accept" else "rejected"
     analyst = req.analyst or "Ахметов Д.К. (Аналитик МИО)"
 
-    # Решение по публикации меняет R2/R3/R5 — пересчитываем скоринг и текущую сигнальную карточку
+    # Решение аналитика по объявлению напрямую влияет на R2/R3/R5 — пересчитываем скоринг и сигнальную карточку
     after = None
     if target:
         refresh_signal(target.current_signal, target)
@@ -299,7 +299,7 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
     evidence_text = req.evidence or f"Решение аналитика МИО ({analyst}) в рамках мониторинга."
     previous = next(f for f in evaluate_factors(target) if f["code"] == factor_code)
 
-    # Подтверждение R1 = аналитик установил отсутствие правового основания: меняем данные ЖК
+    # Если аналитик вручную подтверждает R1 — значит он реально проверил реестры и установил отсутствие основания (absent)
     if factor_code == "R1" and status == "CONFIRMED" and target.legal_basis_type != "absent":
         target.legal_basis_type = "absent"
         target.verification_status = verification_status_for("absent")
@@ -310,7 +310,7 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
         if blocked:
             raise HTTPException(status_code=400, detail=blocked)
 
-    # R4 и R6 — флаги ЖК по ТЗ: решение аналитика пишем прямо в них
+    # R4 и R6 хранятся как прямые флажки в карточке ЖК, поэтому решение аналитика пишем сразу и туда
     if factor_code == "R4" and status != "AUTO":
         target.has_collective_complaint = status == "CONFIRMED"
         target.collective_complaint_source = evidence_text if status == "CONFIRMED" else None
@@ -318,7 +318,7 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
         target.has_significant_delay = status == "CONFIRMED"
         target.delay_source = evidence_text if status == "CONFIRMED" else None
 
-    # Новый словарь, чтобы SQLAlchemy зафиксировал изменение JSON-колонки
+    # Создаём свежий копипаст словаря, чтобы SQLAlchemy точно заметил мутацию JSON-поля
     overrides = dict(target.factor_overrides or {})
     if status == "AUTO":
         overrides.pop(factor_code, None)
@@ -331,7 +331,7 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
         }
     target.factor_overrides = overrides
 
-    # Пересчитываем балл по данным и обновляем текущую сигнальную карточку
+    # Пересчитываем итоговый балл по свежим данным и обновляем текущую сигнальную карточку
     refresh_signal(target.current_signal, target)
     current = next(f for f in evaluate_factors(target) if f["code"] == factor_code)
     _audit(db, analyst, "factor_status_change", "complex", complex_id, {
@@ -401,10 +401,10 @@ async def import_registry(
     fmt: Optional[ImportFormat] = Query(None, alias="format", description="csv или json; по умолчанию — по имени файла или содержимому"),
     db: Session = Depends(get_db),
 ):
-    """Файл передаётся полем file (multipart) или телом запроса (text/csv, application/json).
+    """Принимает файл выгрузки либо через поле file (multipart), либо прямо сырым телом запроса (text/csv, application/json).
 
-    Строка сопоставляется с ЖК по БИН, затем по названию. Найденному ЖК обновляется legal_basis_type,
-    для ненайденного создаётся карточка с legal_basis_type = unknown («Нужна проверка», R1 = 0 б.).
+    Каждую строчку матчим с ЖК по БИН, а если не вышло — по названию. Для найденных обновляем legal_basis_type,
+    а для новых создаём карточку со статусом unknown («Нужна проверка», R1 = 0 баллов).
     """
     if file is not None:
         content, filename = await file.read(), file.filename or ""
@@ -474,7 +474,7 @@ def _import_records(db: Session, records: List[Dict[str, Any]], source_name: str
             report(n, "skipped", target, matched_by, reason="Не удалось определить правовое основание (тип документа, статус)")
             continue
         if legal == "unknown" and target.legal_basis_type == "absent":
-            # Отсутствие основания уже подтверждено (сид или аналитик) — импорт его не откатывает
+            # Важный момент: если отсутствие основания уже было подтверждено аналитиком, импорт с unknown его не затирает
             legal, commissioned = "absent", False
 
         previous = legal_basis_to_api(target)
@@ -547,7 +547,7 @@ def signal_decision(complex_id: str, req: SignalDecisionRequest, db: Session = D
 
     previous = target.current_signal
     author = req.author or "Ахметов Д.К."
-    # Каждое решение — новая строка Signal: история решений сохраняется
+    # Каждое решение аналитика пишет новую строчку в Signal — так у нас сохраняется вся история решений
     signal = Signal(
         complex=target,
         status=status,
@@ -594,5 +594,5 @@ def redirect_to_docs():
 
 
 app.include_router(router, prefix="/api/v1")
-# Алиасы путей по ТЗ1 (/api/complexes, /api/publications/{id}/verify, ...); в Swagger не дублируются
+# Дублируем роуты без /v1 (/api/complexes, /api/publications/{id}/verify и т.д.), но в Swagger их прячем, чтобы не мусорить
 app.include_router(router, prefix="/api", include_in_schema=False)

@@ -1,7 +1,7 @@
-"""Подключение к БД ClearBuild · SAQ QURYLYS (SQLAlchemy + SQLite).
+"""Короче, тут у нас коннект к базе ClearBuild · SAQ QURYLYS (SQLAlchemy + SQLite).
 
-URL берётся из переменной окружения BACKEND_DB_URL (см. .env.example),
-по умолчанию — файл backend/clearbuild_demo.db.
+URL тянем из переменной окружения BACKEND_DB_URL (см. .env.example),
+а если её не задали — по дефолту юзаем локальный файлик backend/clearbuild_demo.db.
 """
 
 import os
@@ -27,7 +27,7 @@ class Base(DeclarativeBase):
 
 
 def get_db() -> Iterator[Session]:
-    """FastAPI-зависимость: одна сессия БД на запрос."""
+    """Стандартная зависимость для FastAPI — выдаём сессию БД на время запроса и потом аккуратно закрываем."""
     db = SessionLocal()
     try:
         yield db

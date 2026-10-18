@@ -1,13 +1,13 @@
-// Centralized Data for SAQ QURYLYS / ClearBuild
-// 100% Synchronized with backend/seed.json & SQLite evaluation (Section 5 & 7 TZ)
-// Enriched with 11 State Registries Requisites & Contact Phones (Section 11 TZ)
+// Короче, тут у нас лежат все базовые данные по ЖК и объявлениям для SAQ QURYLYS / ClearBuild.
+// Всё синхронизировано с backend/seed.json и SQLite-базой, так что если бэкенд вдруг спит — фронт спокойно работает отсюда.
+// Плюс сюда же закинули реквизиты по 11 госреестрам РК и телефоны отделов продаж (для графа связей из 11 раздела ТЗ).
 
 const RAW_COMPLEXES = [
   {
     id: "jk-1",
     code: "CASE-B",
     caseTag: "Кейс B (Эталон ТЗ)",
-    coords: [49.9440, 82.6302], // Verified parcel 17 on Permitin street / Strelka
+    coords: [49.9464, 82.5989], // Реальный дом на Стрелке (наб. Славского, 40) — проверили по OSM, стоит ровно где надо
     svgPos: { x: 350, y: 245 },
     names: { ru: "ЖК «Ертіс Рівер Тауэрс»", kz: "«Ертіс Рівер Тауэрс» ТК", en: "Ertis River Towers" },
     developers: { ru: "ТОО «ВостокСтройИнвест-Демо»", kz: "«ВостокСтройИнвест-Демо» ЖШС", en: "VostokStroyInvest-Demo LLP" },
@@ -17,7 +17,7 @@ const RAW_COMPLEXES = [
     cadastreNumber: "05:102:044:112",
     smrLicense: "ГСЛ №004921 от 14.03.2021 (II категория)",
     landPurpose: "Строительство многоэтажного жилого комплекса с паркингом",
-    districts: { ru: "Стрелка / ул. Пермитина, уч. 17 (Набережная Славского)", kz: "Пермитин к-сі, 17 (Славский жағалауы, Ертіс)", en: "17 Permitin St (Slavsky Embankment)" },
+    districts: { ru: "наб. Славского, 40 (мкр. Стрелка)", kz: "Славский жағалауы, 40 (Стрелка ш/а)", en: "40 Slavsky Embankment (Strelka District)" },
     stages: { ru: "Возведение каркаса 3-го этажа из 16", kz: "16 қабаттың 3-қабатының қаңқасы", en: "3rd floor framework assembly out of 16" },
     readinessFact: 30,
     readinessDeclared: 65,
@@ -50,7 +50,7 @@ const RAW_COMPLEXES = [
     id: "jk-2",
     code: "CASE-A",
     caseTag: "Кейс A (Эталон ТЗ)",
-    coords: [49.9295, 82.6176], // Verified building parcel 88/2 on Satpayev Ave
+    coords: [49.9051, 82.6195], // КШТ, пр. Сатпаева, 34 — нормальный жилой дом, а не крыша ЗАГСа как было раньше
     svgPos: { x: 585, y: 390 },
     names: { ru: "ЖК «Сатпаев Сити Парк»", kz: "«Сәтбаев Сити Парк» ТК", en: "Satpayev City Park" },
     developers: { ru: "ТОО «QazaqDomOskemen-Демо»", kz: "«QazaqDomOskemen-Демо» ЖШС", en: "QazaqDomOskemen-Demo LLP" },
@@ -60,7 +60,7 @@ const RAW_COMPLEXES = [
     cadastreNumber: "05:102:055:219",
     smrLicense: "ГСЛ №008122 от 20.09.2022 (II категория)",
     landPurpose: "Строительство жилого комплекса с объектами обслуживания населения",
-    districts: { ru: "пр. Каныша Сатпаева, уч. 88 (КШТ, р-н Дворца бракосочетаний)", kz: "Қаныш Сәтбаев даңғылы, 88-телім (КШТ)", en: "88 Satpayev Ave (KSHT District)" },
+    districts: { ru: "пр. Каныша Сатпаева, 34 (район КШТ)", kz: "Қаныш Сәтбаев даңғылы, 34 (КШТ ауданы)", en: "34 Kanysh Satpayev Ave (KShT District)" },
     stages: { ru: "Устройство фундамента / котлован", kz: "Қазаншұңқыр мен іргетас плитасын орнату", en: "Excavation and foundation slab laying" },
     readinessFact: 15,
     readinessDeclared: 20,
@@ -93,7 +93,7 @@ const RAW_COMPLEXES = [
     id: "jk-3",
     code: "CASE-C",
     caseTag: "Кейс C (Эталон ТЗ)",
-    coords: [49.9296, 82.6138], // Verified residential parcel on Zhibek Zholy 14
+    coords: [49.9296, 82.6160], // Левый берег, ул. Жибек Жолы, 3 — прямо на доме, а не на пустыре у развязки
     svgPos: { x: 460, y: 365 },
     names: { ru: "ЖК «Алтай Премиум Резиденс»", kz: "«Алтай Премиум Резиденс» ТК", en: "Altai Premium Residence" },
     developers: { ru: "ТОО «AltaiBuildGroup-Демо»", kz: "«AltaiBuildGroup-Демо» ЖШС", en: "AltaiBuildGroup-Demo LLP" },
@@ -103,7 +103,7 @@ const RAW_COMPLEXES = [
     cadastreNumber: "05:102:012:891",
     smrLicense: "ГСЛ №001045 от 11.01.2018 (I категория)",
     landPurpose: "Строительство многоквартирного жилого дома с подземным паркингом",
-    districts: { ru: "ул. Жибек Жолы, 14 (р-н Магнум, жилой сектор)", kz: "Жібек Жолы к-сі, 14", en: "14 Zhibek Zholy St" },
+    districts: { ru: "ул. Жибек Жолы, 3 (Левый берег)", kz: "Жібек Жолы к-сі, 3 (Сол жағалау)", en: "3 Zhibek Zholy St (Left Bank)" },
     stages: { ru: "Монтаж 8-го этажа из 12", kz: "8-қабатты тұрғызу, қасбет жұмыстары", en: "8th floor erection, exterior facade" },
     readinessFact: 58,
     readinessDeclared: 60,
@@ -136,17 +136,17 @@ const RAW_COMPLEXES = [
     id: "jk-4",
     code: "STAND-1",
     caseTag: "Красная · Макс. риск",
-    coords: [49.9537, 82.5995], // Verified building 32 on Astana street
+    coords: [49.9561, 82.6265], // Набережная Ульбы, ул. Протозанова, 37А — как раз там, где в тексте объявления написано
     svgPos: { x: 465, y: 215 },
     names: { ru: "ЖК «Ульба Гарденс»", kz: "«Үлбі Гарденс» ТК", en: "Ulba Gardens" },
     developers: { ru: "ТОО «УльбаИнвестГрупп-Демо»", kz: "«ҮлбіИнвестГрупп-Демо» ЖШС", en: "UlbaInvestGroup-Demo LLP" },
     bin: "220840077310 (демо)",
-    contactPhone: "+7 (705) 999-00-11", // Shared umbrella contact with jk-1 and jk-5
+    contactPhone: "+7 (705) 999-00-11", // Тут прикол: этот же телефон светится у jk-1 и jk-5 (зонтичная сеть продаж)
     salesAccount: "@oskemen_invest_flat",
     cadastreNumber: "05:102:078:123",
     smrLicense: "ГСЛ №007341 от 05.06.2023 (II категория)",
     landPurpose: "Строительство жилого дома переменной этажности",
-    districts: { ru: "ул. Астана, 32 (Набережная Ульбы, возле Дворца Спорта)", kz: "Астана к-сі, 32 (Үлбі жағалауы, Спорт сарайы)", en: "32 Astana St (Ulba Embankment, Sports Palace)" },
+    districts: { ru: "ул. Протозанова, 37А (Набережная р. Ульба)", kz: "Протозанов к-сі, 37А (Үлбі жағалауы)", en: "37A Protozanov St (Ulba Embankment)" },
     stages: { ru: "Каркас на уровне 4-го этажа (работы остановлены)", kz: "4-қабат деңгейіндегі қаңқа (жұмыстар тоқтатылған)", en: "4th floor framework (works halted)" },
     readinessFact: 35,
     readinessDeclared: 80,
@@ -179,17 +179,17 @@ const RAW_COMPLEXES = [
     id: "jk-5",
     code: "STAND-2",
     caseTag: "Граничный 60+ без R2",
-    coords: [49.9999, 82.5646], // Verified building parcel 102 on Bazhov street
+    coords: [49.9653, 82.5990], // Пр. Назарбаева, 42 (р-н пл. Ушанова) — перенесли из промзоны на нормальный адрес
     svgPos: { x: 245, y: 145 },
     names: { ru: "ЖК «Нурлы Жол Оскемен»", kz: "«Нұрлы Жол Өскемен» ТК", en: "Nurly Zhol Oskemen" },
     developers: { ru: "ТОО «ШыгысМонолит-Демо»", kz: "«ШығысМонолит-Демо» ЖШС", en: "ShygysMonolit-Demo LLP" },
     bin: "200940033418 (демо)",
-    contactPhone: "+7 (705) 999-00-11", // Shared umbrella contact with jk-1 and jk-4
+    contactPhone: "+7 (705) 999-00-11", // Опять тот же телефон колл-центра, что у jk-1 и jk-4!
     salesAccount: "@nurly_zhol_ukg",
     cadastreNumber: "05:102:033:991",
     smrLicense: "ГСЛ №003299 от 18.08.2020 (II категория)",
     landPurpose: "Строительство МЖД (производственная зона, требуется смена ПДП)",
-    districts: { ru: "ул. Бажова, 102", kz: "Бажов к-сі, 102", en: "102 Bazhov St" },
+    districts: { ru: "пр. Нурсултана Назарбаева, 42 (р-н пл. Ушанова)", kz: "Нұрсұлтан Назарбаев даңғылы, 42 (Ушанов алаңы)", en: "42 Nursultan Nazarbayev Ave (Ushanov Sq)" },
     stages: { ru: "Кладка стен 5-го этажа", kz: "5-қабат қабырғаларын қалау", en: "5th floor wall masonry" },
     readinessFact: 45,
     readinessDeclared: 75,
@@ -222,7 +222,7 @@ const RAW_COMPLEXES = [
     id: "jk-6",
     code: "STAND-3",
     caseTag: "ИИ-гипотеза AD-110 · 5 баллов",
-    coords: [49.8995, 82.6025], // Verified residential parcel in KShT
+    coords: [49.8954, 82.6148], // пр. Казыбек би, 5 (КШТ) — точка прямо на жилом массиве
     svgPos: { x: 675, y: 425 },
     names: { ru: "ЖК «КШТ Эко Квартал»", kz: "«КШТ Эко Орамы» ТК", en: "KShT Eco Quarter" },
     developers: { ru: "ТОО «EcoStroyVKO-Демо»", kz: "«EcoStroyVKO-Демо» ЖШС", en: "EcoStroyVKO-Demo LLP" },
@@ -232,7 +232,7 @@ const RAW_COMPLEXES = [
     cadastreNumber: "05:102:090:111",
     smrLicense: "ГСЛ №006154 от 02.04.2022 (II категория)",
     landPurpose: "Строительство жилого комплекса (КШТ)",
-    districts: { ru: "ул. Рыскулова / Казыбек би, 22 (КШТ)", kz: "Рысқұлов / Қазыбек би к-сі, 22 (КШТ)", en: "22 Ryskulov / Kazybek Bi St (KSHT)" },
+    districts: { ru: "пр. Казыбек би, 5 (район КШТ)", kz: "Қазыбек би даңғылы, 5 (КШТ ауданы)", en: "5 Kazybek Bi Ave (KShT District)" },
     stages: { ru: "Фасадные работы и остекление", kz: "Қасбет жұмыстары және әйнектеу", en: "Facade works and glazing" },
     readinessFact: 65,
     readinessDeclared: 90,
@@ -265,7 +265,7 @@ const RAW_COMPLEXES = [
     id: "jk-7",
     code: "STAND-4",
     caseTag: "Зелёная · Норма",
-    coords: [49.9507, 82.6318], // Verified building 72 on Kazakhstan street
+    coords: [49.9465, 82.6282], // ул. Казахстан, 68 (Центр города) — реальный дом по OSM
     svgPos: { x: 430, y: 250 },
     names: { ru: "ЖК «Иртыш Плаза»", kz: "«Ертіс Плаза» ТК", en: "Irtysh Plaza" },
     developers: { ru: "ТОО «OskemenDevelopment-Демо»", kz: "«OskemenDevelopment-Демо» ЖШС", en: "OskemenDevelopment-Demo LLP" },
@@ -275,7 +275,7 @@ const RAW_COMPLEXES = [
     cadastreNumber: "05:102:044:567",
     smrLicense: "ГСЛ №000871 от 19.11.2016 (I категория)",
     landPurpose: "Строительство многоквартирного жилого дома с офисными помещениями",
-    districts: { ru: "ул. Казахстан, 72 (Центр города)", kz: "Қазақстан к-сі, 72 (Қала орталығы)", en: "72 Kazakhstan St (City Center)" },
+    districts: { ru: "ул. Казахстан, 68 (Центр города)", kz: "Қазақстан к-сі, 68 (Қала орталығы)", en: "68 Kazakhstan St (City Center)" },
     stages: { ru: "Внутренняя отделка и благоустройство", kz: "Ішкі әрлеу, абаттандыру", en: "Interior finishing, landscaping" },
     readinessFact: 82,
     readinessDeclared: 85,
@@ -308,7 +308,7 @@ const RAW_COMPLEXES = [
     id: "jk-8",
     code: "STAND-5",
     caseTag: "Зелёная · 0 баллов",
-    coords: [50.0293, 82.7385], // Verified building 15 on Yegorov in Nova Sogra
+    coords: [49.9477, 82.6135], // пр. Ауэзова, 20 (Центр города) — сдан в эксплуатацию, стоит чётко на доме
     svgPos: { x: 690, y: 115 },
     names: { ru: "ЖК «Согра Парк»", kz: "«Согра Саябағы» ТК", en: "Sogra Park" },
     developers: { ru: "ТОО «СограДомСтрой-Демо»", kz: "«СограДомСтрой-Демо» ЖШС", en: "SograDomStroy-Demo LLP" },
@@ -318,7 +318,7 @@ const RAW_COMPLEXES = [
     cadastreNumber: "05:102:011:234",
     smrLicense: "ГСЛ №000512 от 12.05.2015 (I категория)",
     landPurpose: "Эксплуатация и обслуживание многоквартирного жилого дома",
-    districts: { ru: "пос. Новая Согра, ул. Егорова, 15 (р-н ТМК)", kz: "Жаңа Согра кенті, Егоров к-сі, 15", en: "Nova Sogra, 15 Yegorov St" },
+    districts: { ru: "пр. Ауэзова, 20 (Центр города)", kz: "Әуезов даңғылы, 20 (Қала орталығы)", en: "20 Auezov Ave (City Center)" },
     stages: { ru: "Введён в эксплуатацию (Готовый дом)", kz: "Пайдалануға берілді (Дайын үй)", en: "Commissioned (Ready building)" },
     readinessFact: 100,
     readinessDeclared: 100,
@@ -349,6 +349,8 @@ const RAW_COMPLEXES = [
   }
 ];
 
+// Лента собранных рекламных объявлений (Krisha, OLX, Instagram, Telegram)
+// По сути это слепки (snapshots), которые наш парсер/OCR нарыл в открытых источниках
 const INITIAL_ADS = [
   {
     id: "AD-101",
@@ -480,12 +482,12 @@ const INITIAL_ADS = [
     pubDate: "12.10.2026",
     capturedAt: "13.10.2026, 14:25 (Snapshot #104)",
     url: "https://instagram.com/p/C8demoSatpayev104",
-    rawText: "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 88). Сдача во II квартале 2028 года.",
-    text: "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 88). Сдача во II квартале 2028 года.",
+    rawText: "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 34). Сдача во II квартале 2028 года.",
+    text: "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 34). Сдача во II квартале 2028 года.",
     texts: {
-      ru: "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 88). Сдача во II квартале 2028 года.",
-      kz: "Салынып жатқан «Сәтбаев Сити Парк» ТК-де (Сәтбаев даңғ., 88) 1, 2 және 3 бөлмелі пәтерлердің жоспарларын таңдаңыз. Тапсыру мерзімі — 2028 ж. II тоқсаны.",
-      en: "Choose 1, 2, and 3-bedroom layouts in the under-construction Satpayev City Park RC (88 Satpayev Ave). Handover in Q2 2028."
+      ru: "Выбирайте планировки 1, 2 и 3-комнатных квартир в строящемся ЖК «Сатпаев Сити Парк» (пр. Сатпаева, 34). Сдача во II квартале 2028 года.",
+      kz: "Салынып жатқан «Сәтбаев Сити Парк» ТК-де (Сәтбаев даңғ., 34) 1, 2 және 3 бөлмелі пәтерлердің жоспарларын таңдаңыз. Тапсыру мерзімі — 2028 ж. II тоқсаны.",
+      en: "Choose 1, 2, and 3-bedroom layouts in the under-construction Satpayev City Park RC (34 Satpayev Ave). Handover in Q2 2028."
     },
     triggerSpan: "в строящемся ЖК «Сатпаев Сити Парк» ... Сдача во II квартале 2028 года",
     triggerSpans: {
@@ -551,7 +553,7 @@ const INITIAL_ADS = [
     platform: "OLX.kz",
     account: "@oskemen_invest_flat",
     accounts: { ru: "@oskemen_invest_flat", kz: "@oskemen_invest_flat", en: "@oskemen_invest_flat" },
-    phone: "+7 (705) 999-00-11", // Collision phone!
+    phone: "+7 (705) 999-00-11", // Опа, снова тот же номер телефона! Через него склеиваем граф связей
     date: "09.10.2026",
     pubDate: "09.10.2026",
     capturedAt: "10.10.2026, 16:40 (Snapshot #106)",
@@ -589,7 +591,7 @@ const INITIAL_ADS = [
     platform: "Instagram",
     account: "@oskemen_invest_flat",
     accounts: { ru: "@oskemen_invest_flat", kz: "@oskemen_invest_flat", en: "@oskemen_invest_flat" },
-    phone: "+7 (705) 999-00-11", // Collision phone!
+    phone: "+7 (705) 999-00-11", // Тот же телефон единого колл-центра
     date: "10.10.2026",
     pubDate: "10.10.2026",
     capturedAt: "11.10.2026, 10:05 (Snapshot #107)",
@@ -627,17 +629,17 @@ const INITIAL_ADS = [
     platform: "Telegram",
     account: "@nurly_zhol_ukg",
     accounts: { ru: "@nurly_zhol_ukg", kz: "@nurly_zhol_ukg", en: "@nurly_zhol_ukg" },
-    phone: "+7 (705) 999-00-11", // Collision phone!
+    phone: "+7 (705) 999-00-11", // И тут он же! Короче, три объекта сидят на одной трубке
     date: "13.10.2026",
     pubDate: "13.10.2026",
     capturedAt: "14.10.2026, 10:30 (Snapshot #108)",
     url: "https://t.me/ukg_nedvizhimost/5108-demo",
-    rawText: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 112). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
-    text: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 112). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
+    rawText: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 42). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
+    text: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 42). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
     texts: {
-      ru: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 112). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
-      kz: "«Нұрлы Жол Өскемен» ТК (Назарбаев даңғ., 112). Б блогының жабық пресейлі! Бүгін резервтеу шарты бойынша 400 000 тг депозит салыңыз да, паркингті сыйлыққа алыңыз!",
-      en: "Nurly Zhol Oskemen RC (112 Nazarbayev Ave). Closed Block B presale! Pay a 400,000 KZT deposit under a reservation contract today and get a free parking spot!"
+      ru: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 42). Закрытый пресейл блока Б! Внесите депозит 400 000 тг по договору резервирования сегодня и получите паркинг в подарок!",
+      kz: "«Нұрлы Жол Өскемен» ТК (Назарбаев даңғ., 42). Б блогының жабық пресейлі! Бүгін резервтеу шарты бойынша 400 000 тг депозит салыңыз да, паркингті сыйлыққа алыңыз!",
+      en: "Nurly Zhol Oskemen RC (42 Nazarbayev Ave). Closed Block B presale! Pay a 400,000 KZT deposit under a reservation contract today and get a free parking spot!"
     },
     triggerSpan: "Внесите депозит 400 000 тг по договору резервирования сегодня",
     triggerSpans: {
@@ -665,7 +667,7 @@ const INITIAL_ADS = [
     platform: "Instagram",
     account: "@nurly_zhol_ukg",
     accounts: { ru: "@nurly_zhol_ukg", kz: "@nurly_zhol_ukg", en: "@nurly_zhol_ukg" },
-    phone: "+7 (705) 999-00-11", // Collision phone!
+    phone: "+7 (705) 999-00-11", // Тоже общий телефон отдела продаж
     date: "13.10.2026",
     pubDate: "13.10.2026",
     capturedAt: "14.10.2026, 10:35 (Snapshot #109)",
@@ -708,12 +710,12 @@ const INITIAL_ADS = [
     pubDate: "10.10.2026",
     capturedAt: "11.10.2026, 12:15 (Snapshot #110)",
     url: "https://krisha.kz/a/show/698100110-demo",
-    rawText: "ЖК «КШТ Эко Квартал» (ул. Увалиева). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
-    text: "ЖК «КШТ Эко Квартал» (ул. Увалиева). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
+    rawText: "ЖК «КШТ Эко Квартал» (пр. Казыбек би, 5). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
+    text: "ЖК «КШТ Эко Квартал» (пр. Казыбек би, 5). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
     texts: {
-      ru: "ЖК «КШТ Эко Квартал» (ул. Увалиева). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
-      kz: "«КШТ Эко Квартал» ТК (Уәлиев к-сі). ЖАО рұқсаты №РД-2026/18. Үй дерлік дайын — дайындығы 90%, салынып жатқан кешеннен ҮҚШ арқылы пәтер сатып алып үлгеріңіз!",
-      en: "KShT Eco Quarter RC (Uvaliyev St). MIO Permit No. RD-2026/18. Almost ready — 90% completion, buy an apartment in the under-construction complex via DDU!"
+      ru: "ЖК «КШТ Эко Квартал» (пр. Казыбек би, 5). Разрешение МИО №РД-2026/18. Дом почти готов — готовность 90%, успейте купить квартиру в строящемся комплексе через ДДУ!",
+      kz: "«КШТ Эко Квартал» ТК (Қазыбек би даңғ., 5). ЖАО рұқсаты №РД-2026/18. Үй дерлік дайын — дайындығы 90%, салынып жатқан кешеннен ҮҚШ арқылы пәтер сатып алып үлгеріңіз!",
+      en: "KShT Eco Quarter RC (5 Kazybek Bi Ave). MIO Permit No. RD-2026/18. Almost ready — 90% completion, buy an apartment in the under-construction complex via DDU!"
     },
     triggerSpan: "Дом почти готов — готовность 90%",
     triggerSpans: {
@@ -746,12 +748,12 @@ const INITIAL_ADS = [
     pubDate: "12.10.2026",
     capturedAt: "12.10.2026, 15:00 (Snapshot #111)",
     url: "https://krisha.kz/a/show/698100111-demo",
-    rawText: "ЖК «Иртыш Плаза», ул. Казахстан, 75. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
-    text: "ЖК «Иртыш Плаза», ул. Казахстан, 75. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
+    rawText: "ЖК «Иртыш Плаза», ул. Казахстан, 68. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
+    text: "ЖК «Иртыш Плаза», ул. Казахстан, 68. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
     texts: {
-      ru: "ЖК «Иртыш Плаза», ул. Казахстан, 75. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
-      kz: "«Ертіс Плаза» ТК, Қазақстан к-сі, 75. ШҚО ЖАО рұқсаты №РД-2025/94. Пәтерлерді уәкілетті банк арқылы тек ҮҚШ бойынша сату.",
-      en: "Irtysh Plaza RC, 75 Kazakhstan St. MIO Permit No. RD-2025/94. Apartment sales exclusively via registered DDU through an authorized bank."
+      ru: "ЖК «Иртыш Плаза», ул. Казахстан, 68. Разрешение МИО ВКО №РД-2025/94. Продажа квартир исключительно по ДДУ через уполномоченный банк.",
+      kz: "«Ертіс Плаза» ТК, Қазақстан к-сі, 68. ШҚО ЖАО рұқсаты №РД-2025/94. Пәтерлерді уәкілетті банк арқылы тек ҮҚШ бойынша сату.",
+      en: "Irtysh Plaza RC, 68 Kazakhstan St. MIO Permit No. RD-2025/94. Apartment sales exclusively via registered DDU through an authorized bank."
     },
     triggerSpan: "Продажа квартир исключительно по ДДУ через уполномоченный банк",
     triggerSpans: {
@@ -812,6 +814,8 @@ const INITIAL_ADS = [
   }
 ];
 
+// Заготовки (пресеты) для живой демонстрации ИИ-парсера на защите
+// Чтобы жюри не печатало текст руками, можно тыкнуть кнопку и сразу увидеть разбор
 const AI_DEMO_PRESETS = [
   {
     id: "preset-1",
@@ -836,9 +840,9 @@ const AI_DEMO_PRESETS = [
       en: "Unlawful 400,000 KZT cash deposit without MIO permit (R2 +25 pts trigger)"
     },
     texts: {
-      ru: "ЖК «Нурлы Жол Оскемен» (ул. Бажова, 102). Закрытая акция! Внесите платный депозит 400 000 тг в кассу застройщика по предварительному договору бронирования до получения разрешения МИО!",
-      kz: "ЖК «Нурлы Жол Оскемен» (ул. Бажова, 102). Закрытая акция! Внесите платный депозит 400 000 тг в кассу застройщика по предварительному договору бронирования до получения разрешения МИО!",
-      en: "ЖК «Нурлы Жол Оскемен» (ул. Бажова, 102). Закрытая акция! Внесите платный депозит 400 000 тг в кассу застройщика по предварительному договору бронирования до получения разрешения МИО!"
+      ru: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 42). Закрытая акция! Внесите платный депозит 400 000 тг в кассу застройщика по предварительному договору бронирования до получения разрешения МИО!",
+      kz: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 42). Закрытая акция! Внесите платный депозит 400 000 тг в кассу застройщика по предварительному договору бронирования до получения разрешения МИО!",
+      en: "ЖК «Нурлы Жол Оскемен» (пр. Назарбаева, 42). Закрытая акция! Внесите платный депозит 400 000 тг в кассу застройщика по предварительному договору бронирования до получения разрешения МИО!"
     }
   },
   {
@@ -927,6 +931,7 @@ const AI_DEMO_PRESETS = [
   }
 ];
 
+// Контрольные тест-кейсы из Раздела 5 ТЗ (для панели быстрой проверки жюри)
 const CONTROL_TEST_CASES = [
   {
     id: "jk-2",
@@ -1018,7 +1023,8 @@ const CONTROL_TEST_CASES = [
   }
 ];
 
-// Ensure all ad objects have complete field aliases (text, rawText, date, pubDate, platform, source)
+// На всякий случай пробегаемся по объявлениям и добиваем алиасы полей,
+// чтобы нигде в шаблонах не вылез undefined, если обратились к source вместо platform
 INITIAL_ADS.forEach(a => {
   a.text = a.text || a.rawText || "";
   a.rawText = a.rawText || a.text || "";
@@ -1057,7 +1063,7 @@ const FACTOR_INFO = {
   R6: { code: "R6", weight: 5, ru: "Подтвержденный простой объекта или критический срыв графика", kz: "Құрылыстың тоқтап қалуы немесе кестенің бұзылуы", en: "Confirmed construction standstill or critical delay" }
 };
 
-// Factor Status Labels for plain language
+// Человекочитаемые плашки для статусов факторов риска
 const FACTOR_STATUS_LABELS = {
   CONFIRMED: {
     ru: "✅ Подтверждено",
@@ -1094,7 +1100,7 @@ function getFactorStatusLabel(status, lang = "ru") {
   return status;
 }
 
-// 11 Official State Registries of the Republic of Kazakhstan
+// 11 официальных государственных реестров РК для вкладки межведомственной сверки
 const STATE_REGISTRIES_RK = [
   {
     id: "REG-01",
@@ -1239,7 +1245,7 @@ const STATE_REGISTRIES_RK = [
     status: "ONLINE",
     statusText: { ru: "Интегрировано · Кадастровые номера", kz: "Біріктірілген · Кадастрлық нөмірлер", en: "Integrated · Cadastre IDs" },
     recordsCount: 8,
-    matchedValid: "Сверка земельных участков (Сатпаева 88, Пермитина 17, Астана 32, Жибек Жолы 14)",
+    matchedValid: "Сверка земельных участков (Сатпаева 34, Славского 40, Протозанова 37А, Жибек Жолы 3)",
     lastSync: "15.10.2026, 09:00",
     url: "https://map.gov4c.kz/egkn/"
   },
@@ -1329,7 +1335,7 @@ const STATE_REGISTRIES_RK = [
   }
 ];
 
-// Global window attachments
+// Прокидываем всё это дело в глобальный window, чтобы остальные скрипты видели без бандлера
 if (typeof window !== 'undefined') {
   window.RAW_COMPLEXES = RAW_COMPLEXES;
   window.COMPLEXES_DB = RAW_COMPLEXES;
@@ -1342,6 +1348,7 @@ if (typeof window !== 'undefined') {
   window.STATE_REGISTRIES_RK = STATE_REGISTRIES_RK;
 }
 
+// И на всякий пожарный экспорт для Node.js (когда гоняем локальные проверки)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     RAW_COMPLEXES,
