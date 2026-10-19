@@ -1,6 +1,6 @@
 """API-тесты на хранилище SQLite: сид, сохранение изменений и журнал аудита."""
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.db import SessionLocal
 from app.models import AuditLog, Complex, Publication, Signal
@@ -17,11 +17,11 @@ def _complex(client, complex_id):
 def test_health_reports_seeded_counts(client):
     data = client.get("/api/v1/health").json()
     assert data["status"] == "healthy"
-    assert data["complexes_count"] == 8
-    assert data["publications_count"] == 12
+    assert data["complexes_count"] == 9
+    assert data["publications_count"] == 13
 
 
-# Баллы всех 8 ЖК сида, посчитанные из данных БД по ТЗ (факторы, баллы, зона)
+# Баллы всех 9 ЖК сида, посчитанные из данных БД по ТЗ (факторы, баллы, зона)
 SEED_EXPECTED = {
     "jk-1": (["R1", "R2", "R3"], 70, "RED"),            # Кейс B; R5 — гипотеза ИИ (AD-102 не подтверждена)
     "jk-2": (["R2", "R3"], 35, "YELLOW"),               # Кейс A; R1 = «Нужна проверка»
@@ -31,15 +31,34 @@ SEED_EXPECTED = {
     "jk-6": (["R6"], 5, "GREEN"),                       # только гипотеза AD-110, подтверждённых публикаций нет
     "jk-7": (["R3"], 10, "GREEN"),
     "jk-8": ([], 0, "GREEN"),                           # введён в эксплуатацию, AD-112 отклонена
+    "jk-9": (["R3", "R4", "R6"], 30, "YELLOW"),         # New Life; R1 = «Нужна проверка»
 }
 
 
 def test_seed_scores_derived_from_data(client):
     by_id = {c["id"]: c for c in client.get("/api/v1/complexes").json()}
-    assert list(by_id) == [f"jk-{i}" for i in range(1, 9)]
+    assert list(by_id) == [f"jk-{i}" for i in range(1, 10)]
     for cid, (factors, score, zone) in SEED_EXPECTED.items():
         profile = by_id[cid]["riskProfile"]
         assert (profile["confirmed_factors"], profile["score"], profile["zone"]) == (factors, score, zone), cid
+
+
+def test_missing_seed_complex_added_to_existing_db(client):
+    """Уже живая база получает новые демо-ЖК из сида (New Life) без пересоздания."""
+    from app.seed import init_db
+
+    with SessionLocal() as db:
+        for model in (Signal, Publication):
+            db.execute(delete(model).where(model.complex_id == "jk-9"))
+        db.execute(delete(Complex).where(Complex.id == "jk-9"))
+        db.commit()
+    assert client.get("/api/v1/complexes/jk-9").status_code == 404
+    init_db()
+    jk9 = _complex(client, "jk-9")
+    assert jk9["name"] == "ЖК «New Life» (Нью Лайф)"
+    assert [p["id"] for p in jk9["publications"]] == ["AD-113"]
+    assert (jk9["riskProfile"]["score"], jk9["riskProfile"]["zone"]) == (30, "YELLOW")
+    assert client.get("/api/v1/health").json()["complexes_count"] == 9
 
 
 def test_seed_reference_cases_explained(client):
@@ -185,20 +204,20 @@ def test_create_publication_is_stored(client):
     })
     assert res.status_code == 200
     pub = res.json()["publication"]
-    assert pub["id"] == "AD-113"
+    assert pub["id"] == "AD-114"
     assert pub["proposedFactor"] == "R2"
     assert pub["pubDate"] == "15.10.2026"
     # Гипотеза ИИ не меняет балл jk-2
     assert _complex(client, "jk-2")["riskProfile"]["score"] == 35
 
     feed = client.get("/api/v1/publications").json()
-    assert feed[0]["id"] == "AD-113"
+    assert feed[0]["id"] == "AD-114"
     with SessionLocal() as db:
-        row = db.get(Publication, "AD-113")
+        row = db.get(Publication, "AD-114")
         assert row.status == "pending_review"
         assert row.has_direct_payment_offer
         assert not row.is_demo
-        assert db.scalar(select(AuditLog).where(AuditLog.entity_id == "AD-113")).action == "publication_create"
+        assert db.scalar(select(AuditLog).where(AuditLog.entity_id == "AD-114")).action == "publication_create"
 
 
 def test_confirmed_publication_adds_r2_and_r3(client):
@@ -220,7 +239,7 @@ def test_create_complex_is_stored(client):
     res = client.post("/api/v1/complexes", json={"name": "ЖК «Тест»", "developer": "ТОО «Тест-Демо»", "bin": "000000000000"})
     assert res.status_code == 200
     created = res.json()["complex"]
-    assert created["id"] == "jk-9"
+    assert created["id"] == "jk-10"
     assert created["legalBasisType"] == "UNVERIFIED"
-    assert _complex(client, "jk-9")["riskProfile"]["score"] == 0
-    assert client.get("/api/v1/health").json()["complexes_count"] == 9
+    assert _complex(client, "jk-10")["riskProfile"]["score"] == 0
+    assert client.get("/api/v1/health").json()["complexes_count"] == 10

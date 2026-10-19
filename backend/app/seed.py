@@ -62,7 +62,7 @@ def _sync_seed_locations(db: Session) -> None:
 
 
 def init_db() -> None:
-    """По сути, создаёт таблицы и заливает сид, если база ещё пустая (или обновляет координаты демо-объектов)."""
+    """По сути, создаёт таблицы и заливает сид, если база ещё пустая (или докидывает новые демо-ЖК и обновляет координаты старых)."""
     _check_schema()
     Base.metadata.create_all(engine)
     with Session(engine) as db:
@@ -70,6 +70,7 @@ def init_db() -> None:
             seed_database(db)
         else:
             _sync_seed_locations(db)
+            seed_database(db, only_missing=True)
 
 
 def _factor_confirmed(factors: Dict[str, Any], code: str) -> bool:
@@ -89,18 +90,29 @@ def _readiness_publication_id(item: Dict[str, Any], publications: list) -> Optio
     return next((p["id"] for p in own if p.get("proposedFactor") == "R5"), None)
 
 
-def seed_database(db: Session) -> None:
+def seed_database(db: Session, only_missing: bool = False) -> None:
+    """only_missing=True — для уже живой базы: заливаем только те ЖК из сида, которых в ней ещё нет, вместе с их объявлениями."""
     if not SEED_FILE.exists():
         return
     with open(SEED_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     seeded_at = now()
-    publications = data.get("publications", [])
+    all_publications = data.get("publications", [])
+    items = data.get("complexes", [])
+    publications = all_publications
+    if only_missing:
+        existing_complexes = set(db.scalars(select(Complex.id)))
+        existing_pubs = set(db.scalars(select(Publication.id)))
+        items = [i for i in items if i["id"] not in existing_complexes]
+        new_ids = {i["id"] for i in items}
+        publications = [p for p in all_publications if p.get("complexId") in new_ids and p["id"] not in existing_pubs]
+        if not items:
+            return
 
     # Короче, статусы факторов напрямую из seed.json мы не копируем в тупую — они у нас честно считаются на лету в app/factors.py.
     # Отсюда забираем чисто флажки R4/R6 и тексты доказательств к ним.
-    for item in data.get("complexes", []):
+    for item in items:
         legal_type, commissioned = legal_basis_to_db(item.get("legalBasisType"))
         factors = item.get("factors", {})
         declared = item.get("declaredReadiness") or {}
@@ -123,7 +135,7 @@ def seed_database(db: Session) -> None:
             verified_readiness=confirmed.get("pct"),
             verified_readiness_source=confirmed.get("source"),
             readiness_date=parse_date(confirmed.get("date")),
-            stated_readiness_publication_id=_readiness_publication_id(item, publications),
+            stated_readiness_publication_id=_readiness_publication_id(item, all_publications),
             legal_basis_type=legal_type,
             legal_basis_text=item.get("legalBasisText"),
             verification_status=verification_status_for(legal_type),
@@ -175,7 +187,7 @@ def seed_database(db: Session) -> None:
         ))
 
     db.flush()
-    for item in data.get("complexes", []):
+    for item in items:
         c = db.get(Complex, item["id"])
         db.refresh(c, ["publications"])
         reviewed_at, _ = parse_datetime(item.get("signalUpdatedAt"))

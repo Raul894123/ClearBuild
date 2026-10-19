@@ -30,10 +30,10 @@ def test_health(client, prefix):
 @pytest.mark.parametrize("prefix", PREFIXES)
 @pytest.mark.parametrize("zone, expected", [
     ("red", ["jk-1", "jk-4"]),
-    ("YELLOW", ["jk-2", "jk-5"]),
+    ("YELLOW", ["jk-2", "jk-5", "jk-9"]),
     ("Green", ["jk-3", "jk-6", "jk-7", "jk-8"]),
-    ("all", [f"jk-{i}" for i in range(1, 9)]),
-    (None, [f"jk-{i}" for i in range(1, 9)]),
+    ("all", [f"jk-{i}" for i in range(1, 10)]),
+    (None, [f"jk-{i}" for i in range(1, 10)]),
 ])
 def test_list_complexes_with_zone_filter(client, prefix, zone, expected):
     params = {"zone": zone} if zone else {}
@@ -67,7 +67,7 @@ def test_list_publications(client, prefix):
     res = client.get(f"{prefix}/publications")
     assert res.status_code == 200
     assert [p["id"] for p in res.json()][:2] == ["AD-101", "AD-102"]
-    assert len(res.json()) == 12
+    assert len(res.json()) == 13
 
 
 @pytest.mark.parametrize("prefix", PREFIXES)

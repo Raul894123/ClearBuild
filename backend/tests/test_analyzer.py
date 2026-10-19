@@ -218,7 +218,7 @@ def test_analysis_does_not_change_score(client):
     after = client.get("/api/v1/complexes/jk-5").json()["riskProfile"]
     assert (after["score"], after["zone"]) == (before["score"], before["zone"]) == (60, "YELLOW")
     with SessionLocal() as db:
-        assert len(db.scalars(select(Publication)).all()) == 12
+        assert len(db.scalars(select(Publication)).all()) == 13
 
 
 # --------------------------------------------------------------------------
