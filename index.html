@@ -1562,32 +1562,34 @@
     window.closeAddComplexModal = closeAddComplexModal;
 
     let geocodeDebounceTimer = null;
-    function updateLiveGeocodePreview(val) {
+    let geocodeRequestId = 0;
+
+    function updateLiveGeocodePreview(val, isPreset = false) {
       const coordsEl = document.getElementById('geocode-coords-display');
       const distEl = document.getElementById('geocode-district-display');
       const badgeEl = document.getElementById('geocode-live-badge');
       const latInput = document.getElementById('new-comp-lat');
       const lngInput = document.getElementById('new-comp-lng');
 
-      if (!val) {
+      if (!val || !val.trim()) {
         if (coordsEl) coordsEl.textContent = '[49.9490, 82.6200]';
         if (distEl) distEl.textContent = 'Центр города';
         if (latInput) latInput.value = '49.9490';
         if (lngInput) lngInput.value = '82.6200';
+        if (badgeEl) {
+          badgeEl.className = 'status-badge badge-green';
+          badgeEl.textContent = '📍 OSM Геокодер активен';
+        }
         window.currentResolvedCoords = [49.9490, 82.6200];
         return;
       }
 
-      // 1. Быстрый синхронный расчёт из локальной базы Усть-Каменогорска
+      // 1. Мгновенный синхронный расчёт из локальной базы Усть-Каменогорска (0 мс)
       const localCoords = typeof resolveCoordinatesForAddress === 'function' ? resolveCoordinatesForAddress(val) : [49.9490, 82.6200];
       window.currentResolvedCoords = localCoords;
       if (coordsEl) coordsEl.textContent = `[${localCoords[0].toFixed(5)}, ${localCoords[1].toFixed(5)}]`;
       if (latInput) latInput.value = localCoords[0].toFixed(5);
       if (lngInput) lngInput.value = localCoords[1].toFixed(5);
-      if (badgeEl) {
-        badgeEl.className = 'status-badge badge-blue';
-        badgeEl.textContent = '📍 Офлайн база УК';
-      }
 
       if (distEl) {
         let dName = 'г. Усть-Каменогорск';
@@ -1602,16 +1604,30 @@
         distEl.textContent = dName;
       }
 
-      // 2. Асинхронный поиск по OpenStreetMap через эндпоинт бэкенда
+      // Если адрес точно совпал со списком ключевых улиц/домов или это пресет — координаты готовы мгновенно!
+      const isKnown = (localCoords[0] !== 49.9490 || localCoords[1] !== 82.6200);
+      if (isPreset || isKnown) {
+        clearTimeout(geocodeDebounceTimer);
+        if (badgeEl) {
+          badgeEl.className = 'status-badge badge-green';
+          badgeEl.textContent = '✅ Координаты верифицированы';
+        }
+        return;
+      }
+
+      // 2. Только для неизвестных адресов: фоновый поиск в OpenStreetMap с быстрым таймаутом
       clearTimeout(geocodeDebounceTimer);
+      const curReqId = ++geocodeRequestId;
+      if (badgeEl) {
+        badgeEl.className = 'status-badge badge-yellow';
+        badgeEl.textContent = '🔍 Поиск OpenStreetMap...';
+      }
+
       geocodeDebounceTimer = setTimeout(async () => {
         if (typeof apiClient !== 'undefined' && apiClient.geocode) {
           try {
-            if (badgeEl) {
-              badgeEl.className = 'status-badge badge-yellow';
-              badgeEl.textContent = '🔍 Поиск OpenStreetMap...';
-            }
             const res = await apiClient.geocode(val);
+            if (curReqId !== geocodeRequestId) return;
             if (res && res.coords && res.coords.length === 2) {
               window.currentResolvedCoords = res.coords;
               if (coordsEl) coordsEl.textContent = `[${res.coords[0].toFixed(5)}, ${res.coords[1].toFixed(5)}]`;
@@ -1619,14 +1635,27 @@
               if (lngInput) lngInput.value = res.coords[1].toFixed(5);
               if (badgeEl) {
                 badgeEl.className = 'status-badge badge-green';
-                badgeEl.textContent = res.source === 'osm_nominatim' ? '✅ OpenStreetMap (OSM)' : '📍 Верифицировано УК';
+                badgeEl.textContent = '✅ OpenStreetMap (OSM)';
+              }
+            } else {
+              if (badgeEl) {
+                badgeEl.className = 'status-badge badge-blue';
+                badgeEl.textContent = '📍 Центр города (УК)';
               }
             }
           } catch(e) {
-            console.warn('Live geocode request failed', e);
+            if (curReqId === geocodeRequestId && badgeEl) {
+              badgeEl.className = 'status-badge badge-blue';
+              badgeEl.textContent = '📍 Центр города (УК)';
+            }
+          }
+        } else {
+          if (badgeEl) {
+            badgeEl.className = 'status-badge badge-blue';
+            badgeEl.textContent = '📍 База адресов УК';
           }
         }
-      }, 350);
+      }, 250);
     }
     window.updateLiveGeocodePreview = updateLiveGeocodePreview;
 
@@ -1650,7 +1679,7 @@
       const input = document.getElementById('new-comp-address');
       if (input) {
         input.value = addr;
-        updateLiveGeocodePreview(addr);
+        updateLiveGeocodePreview(addr, true /* isPreset -> instant 0ms */);
       }
     }
     window.setComplexAddressPreset = setComplexAddressPreset;
