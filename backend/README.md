@@ -88,6 +88,7 @@ cd backend
 | `test_api.py` | сохранение в БД, сид, итоговые баллы всех 9 ЖК |
 | `test_endpoints.py` | каждый эндпоинт под `/api/v1` и `/api` |
 | `test_analyzer.py` | анализатор объявлений, все объявления сида |
+| `test_geocoding.py` | геокодирование адресов г. Усть-Каменогорска и сопоставление с OSM |
 | `test_registries.py` | govChecks по 11 реестрам, импорт Ashyq Data, редиректы |
 
 ## Эндпоинты
@@ -101,6 +102,9 @@ cd backend
 | `GET /complexes?zone=red\|yellow\|green\|all` | список ЖК со скорингом (`riskProfile`) и сверкой по реестрам (`govChecks`) |
 | `GET /complexes/{id}` | карточка ЖК: расшифровка R1–R6, `govChecks`, публикации, текущая сигнальная карточка |
 | `POST /complexes` | добавить ЖК |
+| `DELETE /complexes/{id}` | полное удаление ЖК из SQLite и каскадное удаление сигналов, публикаций и аудита |
+| `GET /geocode` | геокодирование адреса г. Усть-Каменогорска и привязка к координатам OSM |
+| `POST /complexes/purge-tests` | очистка временных/тестовых демонстрационных ЖК |
 | `POST /complexes/{id}/confirm-factor` | решение аналитика по фактору: `CONFIRMED` / `REJECTED` / `NONE` / `AUTO` (сброс) |
 | `POST /complexes/{id}/signal-decision` | утвердить / вернуть / отклонить сигнальную карточку |
 | `POST /signals/{id}/decision` | то же, путь по ТЗ1 |
