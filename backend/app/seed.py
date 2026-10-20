@@ -24,12 +24,14 @@ SEED_FILE = BACKEND_DIR / "seed.json"
 
 
 def _purge_test_complexes(db: Session) -> None:
-    """Удаляет тестовые ЖК (jk-10, jk-11, TEST, KOMPUTERNY OSLIK), добавленные в ходе тестирования."""
-    test_ids = ["jk-10", "jk-11"]
+    """Удаляет тестовые ЖК (jk-10, jk-11, jk-17, TEST, KOMPUTERNY OSLIK, Бла Бла 2), добавленные в ходе тестирования."""
+    test_ids = ["jk-10", "jk-11", "jk-17"]
     items = db.scalars(select(Complex).where(
         (Complex.id.in_(test_ids)) | 
         (Complex.name.ilike("%TEST%")) | 
-        (Complex.name.ilike("%KOMPUTERNY OSLIK%"))
+        (Complex.name.ilike("%KOMPUTERNY%")) |
+        (Complex.name.ilike("%БЛА%")) |
+        (Complex.is_demo == False)
     )).all()
     if items:
         for c in items:

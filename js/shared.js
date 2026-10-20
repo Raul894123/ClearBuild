@@ -4,7 +4,7 @@
 // синхронизация с бэкендом (FastAPI + SQLite) и локальный фоллбэк в localStorage на всякий пожарный.
 
 const STATE_KEY = 'clearbuild_state_v2';
-const SCHEMA_VERSION = 8; // Версия 8: интеллектуальный геокодер OpenStreetMap для любых улиц Усть-Каменогорска (Кабанбай Батыра, Пермитина и др.) и удаление тестовых объектов
+const SCHEMA_VERSION = 9; // Версия 9: точная привязка номеров домов (Победы 13, Кабанбай Батыра 134, Пермитина 29), очистка JK-17 и мгновенный OSM геокодер
 
 function getLocalized(obj, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT_LANG : 'ru')) {
   if (!obj) return '';
@@ -197,7 +197,10 @@ function isTestComplexEntity(c) {
   if (!c) return false;
   const cid = (c.id || '').toLowerCase();
   const nameStr = typeof c.name === 'string' ? c.name : ((c.names && c.names.ru) || '');
-  return cid === 'jk-10' || cid === 'jk-11' || /TEST/i.test(nameStr) || /KOMPUTERNY OSLIK/i.test(nameStr);
+  const idNum = parseInt(cid.replace('jk-', ''), 10);
+  return cid === 'jk-10' || cid === 'jk-11' || cid === 'jk-17' ||
+         (!isNaN(idNum) && idNum >= 10 && (c.isDemo === false || !c.isDemo)) ||
+         /TEST|KOMPUTERNY|БЛА\s*БЛА/i.test(nameStr);
 }
 window.isTestComplexEntity = isTestComplexEntity;
 
@@ -275,6 +278,9 @@ function resolveCoordinatesForAddress(addr) {
 
   // 12. Независимости / Победы / Гагарина
   if (/независимост/i.test(s)) return [49.9630, 82.6080];
+  if (/побед.*?13/i.test(s)) return [49.94817, 82.61670]; // пр. Победы, 13 (Bank RBK)
+  if (/побед.*?(3|5|7)/i.test(s)) return [49.9475, 82.6135];
+  if (/побед.*?(14|16)/i.test(s)) return [49.9488, 82.6175];
   if (/побед/i.test(s)) return [49.9480, 82.6180];
   if (/бульвар\s*гагарин|гагарин/i.test(s)) return [49.9670, 82.6120];
 
@@ -319,6 +325,8 @@ function resolveSvgPos(coords, addr) {
     if (/утепов|бульвар\s*22/i.test(s)) return { x: 640, y: 410 };
     if (/казахстан|горьк/i.test(s)) return { x: 430, y: 250 };
     if (/клубн|согр/i.test(s)) return { x: 690, y: 115 };
+    if (/побед.*?13/i.test(s)) return { x: 405, y: 245 };
+    if (/побед/i.test(s)) return { x: 410, y: 245 };
     if (/тынышпаев|кокчетавск|защит/i.test(s)) return { x: 180, y: 100 };
     if (/аба/i.test(s)) return { x: 390, y: 230 };
   }
@@ -433,6 +441,20 @@ async function deleteComplexLocalOrRemote(complexId) {
   triggerUIRefresh();
 }
 window.deleteComplexLocalOrRemote = deleteComplexLocalOrRemote;
+
+function deleteComplexFromUI(id) {
+  if (!id) return;
+  const comp = complexes.find(c => c.id === id);
+  const name = comp ? (comp.names ? comp.names.ru : comp.name) : id;
+  if (!confirm(`Вы действительно хотите удалить жилой комплекс «${name}» (${id}) из реестра?`)) {
+    return;
+  }
+  deleteComplexLocalOrRemote(id);
+  if (typeof showCopyToast === 'function') {
+    showCopyToast(`🗑️ Объект «${name}» успешно удалён из реестра.`);
+  }
+}
+window.deleteComplexFromUI = deleteComplexFromUI;
 
 
 
