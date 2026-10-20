@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.analyzer import analyze
 from app.db import get_db
 from app.factors import evaluate_factors, hard_precondition_error, risk_profile
-from app.geocoding import geocode_address, svg_pos_from_coords
+from app.geocoding import geocode_address, geocode_address_online, svg_pos_from_coords
 from app.mappers import (
     SIGNAL_STATUS_TO_API,
     SIGNAL_STATUS_TO_DB,
@@ -354,11 +354,69 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
     }
 
 
+@router.get("/geocode", summary="Геокодирование адреса в г. Усть-Каменогорск с привязкой к OpenStreetMap")
+def geocode_api(q: str = Query(..., description="Адрес стройплощадки в г. Усть-Каменогорск")):
+    coords, svg_pos, source = geocode_address_online(q)
+    return {
+        "status": "success",
+        "query": q,
+        "coords": coords,
+        "lat": coords[0],
+        "lng": coords[1],
+        "svgPos": svg_pos,
+        "source": source,
+    }
+
+
+@router.delete("/complexes/{complex_id}", summary="Удаление ЖК и связанных записей (сигналы, публикации, аудит)")
+def delete_complex(complex_id: str, db: Session = Depends(get_db)):
+    c = db.get(Complex, complex_id)
+    if not c:
+        raise HTTPException(status_code=404, detail=f"Комплекс {complex_id} не найден")
+    name = c.name
+    db.query(Publication).filter(Publication.complex_id == complex_id).delete()
+    db.query(Signal).filter(Signal.complex_id == complex_id).delete()
+    db.query(AuditLog).filter(AuditLog.entity_id == complex_id).delete()
+    db.delete(c)
+    _audit(db, "Аналитик МИО (веб-интерфейс)", "complex_delete", "complex", complex_id, {"name": name})
+    db.commit()
+    return {"status": "success", "deleted_id": complex_id, "name": name}
+
+
+@router.post("/complexes/purge-tests", summary="Очистка тестовых демонстрационных ЖК (jk-10, jk-11)")
+def purge_test_complexes_endpoint(db: Session = Depends(get_db)):
+    test_ids = ["jk-10", "jk-11"]
+    items = db.scalars(select(Complex).where(
+        (Complex.id.in_(test_ids)) | 
+        (Complex.name.ilike("%TEST%")) | 
+        (Complex.name.ilike("%KOMPUTERNY OSLIK%"))
+    )).all()
+    purged = []
+    for c in items:
+        purged.append({"id": c.id, "name": c.name})
+        db.query(Publication).filter(Publication.complex_id == c.id).delete()
+        db.query(Signal).filter(Signal.complex_id == c.id).delete()
+        db.query(AuditLog).filter(AuditLog.entity_id == c.id).delete()
+        db.delete(c)
+    db.commit()
+    return {"status": "success", "purged": purged}
+
+
 @router.post("/complexes", summary="Добавление нового проверяемого ЖК в реестр")
 def create_complex(req: ComplexCreateRequest, db: Session = Depends(get_db)):
     legal_type, commissioned = legal_basis_to_db(req.legalBasisType)
-    coords = req.coords if req.coords and len(req.coords) >= 2 and req.coords != [49.95, 82.61] else geocode_address(req.district)
-    svg_pos = svg_pos_from_coords(coords, req.district)
+    has_custom_coords = (
+        req.coords
+        and len(req.coords) >= 2
+        and not (abs(req.coords[0] - 49.95) < 0.001 and abs(req.coords[1] - 82.61) < 0.001)
+        and not (abs(req.coords[0] - 49.949) < 0.001 and abs(req.coords[1] - 82.62) < 0.001)
+    )
+    if has_custom_coords:
+        coords = req.coords
+        svg_pos = svg_pos_from_coords(coords, req.district)
+    else:
+        coords, svg_pos, _ = geocode_address_online(req.district)
+
     new_item = Complex(
         id=_next_id(db, Complex, "jk-"),
         name=req.name,

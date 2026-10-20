@@ -195,6 +195,52 @@
       return { status: 'success', local: true, decision };
     },
 
+    async geocode(query) {
+      if (this.isConnected) {
+        try {
+          const res = await fetch(`${this.baseUrl}/geocode?q=${encodeURIComponent(query)}`);
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          console.warn('[apiClient] Geocode request failed, using local fallback', e);
+        }
+      }
+      return null;
+    },
+
+    async deleteComplex(complexId) {
+      if (this.isConnected) {
+        try {
+          const res = await fetch(`${this.baseUrl}/complexes/${encodeURIComponent(complexId)}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          console.warn('[apiClient] Delete complex failed', e);
+        }
+      }
+      return { status: 'success', local: true, deleted_id: complexId };
+    },
+
+    async purgeTestComplexes() {
+      if (this.isConnected) {
+        try {
+          const res = await fetch(`${this.baseUrl}/complexes/purge-tests`, {
+            method: 'POST'
+          });
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          console.warn('[apiClient] Purge tests failed', e);
+        }
+      }
+      return { status: 'success', local: true };
+    },
+
     async addComplex(complexData) {
       if (this.isConnected) {
         try {

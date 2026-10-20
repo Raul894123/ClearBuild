@@ -4,7 +4,7 @@
 // синхронизация с бэкендом (FastAPI + SQLite) и локальный фоллбэк в localStorage на всякий пожарный.
 
 const STATE_KEY = 'clearbuild_state_v2';
-const SCHEMA_VERSION = 7; // Версия 7: точные верифицированные OSM-координаты ЖК «New Life» (пр. Сатпаева, 9, район КШТ) и автоматический геокодер Усть-Каменогорска
+const SCHEMA_VERSION = 8; // Версия 8: интеллектуальный геокодер OpenStreetMap для любых улиц Усть-Каменогорска (Кабанбай Батыра, Пермитина и др.) и удаление тестовых объектов
 
 function getLocalized(obj, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT_LANG : 'ru')) {
   if (!obj) return '';
@@ -192,6 +192,15 @@ function normalizePublicationFromApi(apiPub, existingPub = null) {
 
 // То же самое для ЖК с бэка: склеиваем серверный ответ с нашими мультиязычными словарями
 // --------------------------------------------------------------------------
+// Вспомогательная функция отсеивания временных тестовых объектов
+function isTestComplexEntity(c) {
+  if (!c) return false;
+  const cid = (c.id || '').toLowerCase();
+  const nameStr = typeof c.name === 'string' ? c.name : ((c.names && c.names.ru) || '');
+  return cid === 'jk-10' || cid === 'jk-11' || /TEST/i.test(nameStr) || /KOMPUTERNY OSLIK/i.test(nameStr);
+}
+window.isTestComplexEntity = isTestComplexEntity;
+
 // Интеллектуальный геокодер адресов г. Усть-Каменогорска (OSM + SVG)
 // Предотвращает появление новых ЖК в случайных точках города
 // --------------------------------------------------------------------------
@@ -206,56 +215,84 @@ function resolveCoordinatesForAddress(addr) {
   if (/сатпаев.*?\b(88|89|90)\b/i.test(s)) return [49.9095, 82.6190];
   if (/сатпаев/i.test(s)) return [49.9051, 82.6195];
 
-  // 2. Пермитина / Набережная Славского (Стрелка)
+  // 2. Кабанбай Батыра (Қабанбай Батыр)
+  if (/кабанбай.*?\b134\b/i.test(s)) return [49.95207, 82.63645];
+  if (/кабанбай.*?\b(140|142|144)\b/i.test(s)) return [49.9515, 82.6390];
+  if (/кабанбай.*?\b(110|112|114|116)\b/i.test(s)) return [49.9525, 82.6320];
+  if (/кабанбай.*?\b(50|52|54|60)\b/i.test(s)) return [49.9535, 82.6240];
+  if (/кабанбай/i.test(s)) return [49.9525, 82.6280];
+
+  // 3. Пермитина / Набережная Славского (Стрелка)
+  if (/пермитин.*?\b29\b/i.test(s)) return [49.94814, 82.63402];
+  if (/пермитин.*?\b(25|27)\b/i.test(s)) return [49.9478, 82.6320];
   if (/(пермитин|славск).*?\b(11|40)\b/i.test(s)) return [49.9464, 82.5989];
   if (/(пермитин|славск).*?\b37\b/i.test(s)) return [49.9561, 82.6265];
-  if (/пермитин/i.test(s)) return [49.9440, 82.6302];
+  if (/пермитин.*?\b17\b/i.test(s)) return [49.9440, 82.6302];
+  if (/пермитин/i.test(s)) return [49.9470, 82.6200];
   if (/славск/i.test(s)) return [49.9480, 82.6100];
 
-  // 3. Жибек Жолы (КШТ)
+  // 4. Жибек Жолы (КШТ)
   if (/жибек\s*жолы.*?\b(1|3)\b/i.test(s)) return [49.9296, 82.6160];
   if (/жибек\s*жолы.*?\b14\b/i.test(s)) return [49.9296, 82.6138];
   if (/жибек\s*жолы/i.test(s)) return [49.9296, 82.6160];
 
-  // 4. Астана (бывш. Солнечная, Стрелка)
+  // 5. Астана (бывш. Солнечная, Стрелка)
   if (/астана.*?\b32\b/i.test(s)) return [49.9561, 82.6265];
   if (/астана/i.test(s)) return [49.9537, 82.5995];
 
-  // 5. Бажова (Аблакетка)
+  // 6. Бажова (Аблакетка)
   if (/бажов.*?\b(110|102)\b/i.test(s)) return [49.9653, 82.5990];
+  if (/бажов.*?\b42\b/i.test(s)) return [49.9653, 82.5990];
   if (/бажов/i.test(s)) return [49.9653, 82.5990];
 
-  // 6. Казыбек Би (КШТ)
+  // 7. Казыбек Би (КШТ)
+  if (/казыбек\s*би.*?\b5\b/i.test(s)) return [49.8954, 82.6148];
   if (/казыбек\s*би/i.test(s)) return [49.8954, 82.6148];
 
-  // 7. Утепова / Бульвар 22 (КШТ)
+  // 8. Утепова / Бульвар 22 (КШТ)
+  if (/утепов.*?\b12\b/i.test(s)) return [49.9016, 82.6170];
+  if (/утепов.*?\b22\b/i.test(s)) return [49.8995, 82.6025];
   if (/утепов|бульвар\s*22/i.test(s)) return [49.8995, 82.6025];
 
-  // 8. Казахстан / Горького (Центр)
+  // 9. Казахстан / Горького / Тохтарова / Крылова / Протозанова (Центр)
   if (/казахстан.*?\b(64|68)\b/i.test(s)) return [49.9465, 82.6282];
   if (/казахстан.*?\b72\b/i.test(s)) return [49.9507, 82.6318];
   if (/казахстан/i.test(s)) return [49.9465, 82.6282];
+  if (/горьк.*?\b21\b/i.test(s)) return [49.9463, 82.6303];
+  if (/горьк.*?\b20\b/i.test(s)) return [49.9477, 82.6135];
   if (/горьк/i.test(s)) return [49.9477, 82.6135];
+  if (/тохтаров/i.test(s)) return [49.9495, 82.6190];
+  if (/крылов/i.test(s)) return [49.9440, 82.6050];
+  if (/протозанов/i.test(s)) return [49.9510, 82.6200];
 
-  // 9. Клубная (Согра)
+  // 10. Клубная (Согра)
+  if (/клубн.*?\b20\b/i.test(s)) return [49.9477, 82.6135];
   if (/клубн/i.test(s)) return [50.0293, 82.7385];
 
-  // 10. Абая (Центр)
+  // 11. Абая (Центр)
+  if (/аба.*?\b5\b/i.test(s)) return [49.9520, 82.6100];
   if (/аба/i.test(s)) return [49.9520, 82.6100];
 
-  // 11. Независимости / Победы
+  // 12. Независимости / Победы / Гагарина
   if (/независимост/i.test(s)) return [49.9630, 82.6080];
   if (/побед/i.test(s)) return [49.9480, 82.6180];
+  if (/бульвар\s*гагарин|гагарин/i.test(s)) return [49.9670, 82.6120];
 
-  // 12. Студгородок (Потанина / Серикбаева)
+  // 13. Студгородок / Северо-Восток (Потанина / Серикбаева / Виноградова / Ворошилова / Мызы)
   if (/потанин|серикбаев/i.test(s)) return [49.9620, 82.6250];
+  if (/виноградов/i.test(s)) return [49.9680, 82.6280];
+  if (/ворошилов/i.test(s)) return [49.9720, 82.6150];
+  if (/белинск/i.test(s)) return [49.9740, 82.6080];
+  if (/мызы/i.test(s)) return [49.9600, 82.6320];
+  if (/космическ/i.test(s)) return [49.9650, 82.6380];
+  if (/шоссейн/i.test(s)) return [49.9350, 82.5600];
 
-  // 13. Защита
+  // 14. Защита
   if (/тынышпаев/i.test(s)) return [49.9820, 82.5720];
   if (/кокчетавск/i.test(s)) return [49.9772, 82.5703];
   if (/октябрьск/i.test(s)) return [49.9800, 82.5750];
 
-  // 14. Районы общего назначения
+  // 15. Районы общего назначения
   if (/кшт|сол\s*жа[ғг]алау|левый\s*берег/i.test(s)) return [49.9051, 82.6195];
   if (/стрелк/i.test(s)) return [49.9464, 82.5989];
   if (/согр/i.test(s)) return [50.0293, 82.7385];
@@ -271,6 +308,9 @@ function resolveSvgPos(coords, addr) {
     const s = addr.toLowerCase();
     if (/сатпаев.*?\b(9|9[а-я]?)\b/i.test(s)) return { x: 605, y: 395 };
     if (/сатпаев/i.test(s)) return { x: 585, y: 390 };
+    if (/кабанбай.*?\b134\b/i.test(s)) return { x: 485, y: 240 };
+    if (/кабанбай/i.test(s)) return { x: 460, y: 235 };
+    if (/пермитин.*?\b29\b/i.test(s)) return { x: 475, y: 255 };
     if (/пермитин|славск/i.test(s)) return { x: 350, y: 245 };
     if (/жибек\s*жолы/i.test(s)) return { x: 460, y: 365 };
     if (/астана/i.test(s)) return { x: 465, y: 215 };
@@ -374,6 +414,25 @@ function addComplexLocal(complexData) {
   return newComplex;
 }
 window.addComplexLocal = addComplexLocal;
+
+async function deleteComplexLocalOrRemote(complexId) {
+  if (!complexId) return;
+  if (typeof apiClient !== 'undefined' && apiClient.deleteComplex) {
+    try {
+      await apiClient.deleteComplex(complexId);
+    } catch(e) {
+      console.warn('Backend delete failed, continuing locally', e);
+    }
+  }
+  complexes = complexes.filter(c => c.id !== complexId);
+  adsList = adsList.filter(a => a.complexId !== complexId);
+  if (window.SELECTED_COMPLEX_ID === complexId) {
+    window.SELECTED_COMPLEX_ID = complexes.length ? complexes[0].id : null;
+  }
+  saveState();
+  triggerUIRefresh();
+}
+window.deleteComplexLocalOrRemote = deleteComplexLocalOrRemote;
 
 
 
@@ -577,9 +636,13 @@ function loadAppState() {
     };
   }
 
-  // Прогоняем всё через нормализаторы, чтобы трехъязычные поля были на месте
-  state.adsList = (state.adsList || []).map(a => normalizePublicationFromApi(a));
-  state.complexes = (state.complexes || []).map(c => normalizeComplexFromApi(c));
+  // Прогоняем всё через нормализаторы и фильтруем тестовые ЖК
+  state.adsList = (state.adsList || [])
+    .filter(a => a && a.complexId !== 'jk-10' && a.complexId !== 'jk-11')
+    .map(a => normalizePublicationFromApi(a));
+  state.complexes = (state.complexes || [])
+    .filter(c => !isTestComplexEntity(c))
+    .map(c => normalizeComplexFromApi(c));
 
   return state;
 }
@@ -677,14 +740,15 @@ async function syncWithBackend(zoneFilter = null) {
     ]);
 
     if (Array.isArray(apiComplexes) && apiComplexes.length > 0) {
+      const cleanApiComplexes = apiComplexes.filter(ac => !isTestComplexEntity(ac));
       if (!zoneFilter || zoneFilter === 'ALL') {
-        complexes = apiComplexes.map(ac => {
+        complexes = cleanApiComplexes.map(ac => {
           const existing = complexes.find(item => item.id === ac.id);
           return normalizeComplexFromApi(ac, existing);
         });
       } else {
         // Если запрашивали фильтр по конкретной зоне — обновляем только совпавшие ЖК
-        apiComplexes.forEach(ac => {
+        cleanApiComplexes.forEach(ac => {
           const idx = complexes.findIndex(item => item.id === ac.id);
           if (idx >= 0) {
             complexes[idx] = normalizeComplexFromApi(ac, complexes[idx]);
@@ -693,6 +757,7 @@ async function syncWithBackend(zoneFilter = null) {
           }
         });
       }
+      complexes = complexes.filter(c => !isTestComplexEntity(c));
       window.complexes = complexes;
     }
 

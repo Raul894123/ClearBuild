@@ -214,3 +214,50 @@ def test_signals_decision_spec_path(client, prefix):
         row = db.scalars(select(AuditLog).order_by(AuditLog.id.desc())).first()
         assert (row.action, row.entity_id, row.details["decision"]) == ("signal_decision", "jk-4", "RETURNED")
     assert client.post(f"{prefix}/signals/jk-404/decision", json={"decision": "confirmed"}).status_code == 404
+
+
+@pytest.mark.parametrize("prefix", PREFIXES)
+def test_geocode_endpoint(client, prefix):
+    res = client.get(f"{prefix}/geocode?q=ул. Кабанбай Батыра 134")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert len(data["coords"]) == 2
+    assert 49.80 <= data["lat"] <= 50.15
+    assert 82.40 <= data["lng"] <= 82.90
+
+
+@pytest.mark.parametrize("prefix", PREFIXES)
+def test_create_and_delete_complex(client, prefix):
+    create_res = client.post(f"{prefix}/complexes", json={
+        "name": "ЖК Тестовый",
+        "developer": "ТОО Тест",
+        "bin": "123456789012",
+        "district": "ул. Кабанбай Батыра 134",
+        "legalBasisType": "UNVERIFIED"
+    })
+    assert create_res.status_code == 200
+    comp = create_res.json()["complex"]
+    cid = comp["id"]
+    assert comp["coords"] == [49.95207, 82.63645] or 49.80 <= comp["coords"][0] <= 50.15
+
+    del_res = client.delete(f"{prefix}/complexes/{cid}")
+    assert del_res.status_code == 200
+    assert del_res.json()["deleted_id"] == cid
+
+    assert client.get(f"{prefix}/complexes/{cid}").status_code == 404
+
+
+@pytest.mark.parametrize("prefix", PREFIXES)
+def test_purge_tests_endpoint(client, prefix):
+    # Создаём тестовый ЖК с TEST в названии
+    client.post(f"{prefix}/complexes", json={
+        "name": "TEST COMPLEX PURGE",
+        "developer": "ТОО Тест",
+        "bin": "999999999999",
+        "district": "ул. Пермитина, 29",
+        "legalBasisType": "UNVERIFIED"
+    })
+    purge_res = client.post(f"{prefix}/complexes/purge-tests")
+    assert purge_res.status_code == 200
+    assert purge_res.json()["status"] == "success"

@@ -17,10 +17,27 @@ from app.mappers import (
     signal_snapshot,
     verification_status_for,
 )
-from app.models import Complex, Publication, Signal, now
+from app.models import AuditLog, Complex, Publication, Signal, now
 from app.registries import seed_gov_checks
 
 SEED_FILE = BACKEND_DIR / "seed.json"
+
+
+def _purge_test_complexes(db: Session) -> None:
+    """Удаляет тестовые ЖК (jk-10, jk-11, TEST, KOMPUTERNY OSLIK), добавленные в ходе тестирования."""
+    test_ids = ["jk-10", "jk-11"]
+    items = db.scalars(select(Complex).where(
+        (Complex.id.in_(test_ids)) | 
+        (Complex.name.ilike("%TEST%")) | 
+        (Complex.name.ilike("%KOMPUTERNY OSLIK%"))
+    )).all()
+    if items:
+        for c in items:
+            db.query(Publication).filter(Publication.complex_id == c.id).delete()
+            db.query(Signal).filter(Signal.complex_id == c.id).delete()
+            db.query(AuditLog).filter(AuditLog.entity_id == c.id).delete()
+            db.delete(c)
+        db.commit()
 
 
 def _check_schema() -> None:
@@ -66,6 +83,7 @@ def init_db() -> None:
     _check_schema()
     Base.metadata.create_all(engine)
     with Session(engine) as db:
+        _purge_test_complexes(db)
         if db.scalar(select(func.count()).select_from(Complex)) == 0:
             seed_database(db)
         else:

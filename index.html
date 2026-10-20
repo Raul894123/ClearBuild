@@ -652,15 +652,26 @@
             
             <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.35rem;">
               <span style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">Примеры адресов:</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Кабанбай Батыра, 134')">ул. Кабанбай Батыра, 134</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Пермитина, 29 (мкр. Стрелка)')">ул. Пермитина, 29</button>
               <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('пр. Каныша Сатпаева, 9 (район КШТ)')">пр. Сатпаева, 9</button>
               <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('пр. Каныша Сатпаева, 88 (район КШТ)')">пр. Сатпаева, 88</button>
               <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Абая, 5 (Центр)')">ул. Абая, 5</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Утепова, 22 (район КШТ)')">ул. Утепова, 22</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Пермитина, 25 (мкр. Стрелка)')">ул. Пермитина, 25</button>
             </div>
 
             <div id="geocode-preview-info" style="margin-top: 0.4rem; padding: 0.45rem 0.65rem; border-radius: 6px; background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.25); font-size: 0.75rem; color: var(--text-main);">
               🎯 <strong>Координаты OpenStreetMap:</strong> <code id="geocode-coords-display">[49.8980, 82.6236]</code> · Район: <span id="geocode-district-display">район КШТ / Левый берег</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.35rem;">
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600;">Широта (Lat):</label>
+                <input type="number" step="0.00001" id="new-comp-lat" class="search-input" value="49.8980" oninput="onManualCoordsChange()" style="width: 100%; font-family: monospace; font-size: 0.8rem; padding: 0.25rem 0.5rem;" />
+              </div>
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 600;">Долгота (Lng):</label>
+                <input type="number" step="0.00001" id="new-comp-lng" class="search-input" value="82.6236" oninput="onManualCoordsChange()" style="width: 100%; font-family: monospace; font-size: 0.8rem; padding: 0.25rem 0.5rem;" />
+              </div>
             </div>
           </div>
 
@@ -1550,20 +1561,39 @@
     }
     window.closeAddComplexModal = closeAddComplexModal;
 
+    let geocodeDebounceTimer = null;
     function updateLiveGeocodePreview(val) {
       const coordsEl = document.getElementById('geocode-coords-display');
       const distEl = document.getElementById('geocode-district-display');
+      const badgeEl = document.getElementById('geocode-live-badge');
+      const latInput = document.getElementById('new-comp-lat');
+      const lngInput = document.getElementById('new-comp-lng');
+
       if (!val) {
         if (coordsEl) coordsEl.textContent = '[49.9490, 82.6200]';
         if (distEl) distEl.textContent = 'Центр города';
+        if (latInput) latInput.value = '49.9490';
+        if (lngInput) lngInput.value = '82.6200';
+        window.currentResolvedCoords = [49.9490, 82.6200];
         return;
       }
-      const coords = typeof resolveCoordinatesForAddress === 'function' ? resolveCoordinatesForAddress(val) : [49.9490, 82.6200];
-      if (coordsEl) coordsEl.textContent = `[${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}]`;
+
+      // 1. Быстрый синхронный расчёт из локальной базы Усть-Каменогорска
+      const localCoords = typeof resolveCoordinatesForAddress === 'function' ? resolveCoordinatesForAddress(val) : [49.9490, 82.6200];
+      window.currentResolvedCoords = localCoords;
+      if (coordsEl) coordsEl.textContent = `[${localCoords[0].toFixed(5)}, ${localCoords[1].toFixed(5)}]`;
+      if (latInput) latInput.value = localCoords[0].toFixed(5);
+      if (lngInput) lngInput.value = localCoords[1].toFixed(5);
+      if (badgeEl) {
+        badgeEl.className = 'status-badge badge-blue';
+        badgeEl.textContent = '📍 Офлайн база УК';
+      }
+
       if (distEl) {
-        let dName = 'Усть-Каменогорск';
+        let dName = 'г. Усть-Каменогорск';
         const s = val.toLowerCase();
-        if (/сатпаев|жибек|утепов|казыбек|кшт/i.test(s)) dName = 'район КШТ / Левый берег';
+        if (/кабанбай/i.test(s)) dName = 'ул. Кабанбай Батыра / Центр';
+        else if (/сатпаев|жибек|утепов|казыбек|кшт/i.test(s)) dName = 'район КШТ / Левый берег';
         else if (/пермитин|славск|астана|стрелк/i.test(s)) dName = 'район Стрелка / Иртыш';
         else if (/казахстан|горьк|аба|центр/i.test(s)) dName = 'Центр города';
         else if (/бажов|аблакетк/i.test(s)) dName = 'район Аблакетка';
@@ -1571,8 +1601,50 @@
         else if (/тынышпаев|октябрьск|кокчетавск|защит/i.test(s)) dName = 'микрорайон Защита';
         distEl.textContent = dName;
       }
+
+      // 2. Асинхронный поиск по OpenStreetMap через эндпоинт бэкенда
+      clearTimeout(geocodeDebounceTimer);
+      geocodeDebounceTimer = setTimeout(async () => {
+        if (typeof apiClient !== 'undefined' && apiClient.geocode) {
+          try {
+            if (badgeEl) {
+              badgeEl.className = 'status-badge badge-yellow';
+              badgeEl.textContent = '🔍 Поиск OpenStreetMap...';
+            }
+            const res = await apiClient.geocode(val);
+            if (res && res.coords && res.coords.length === 2) {
+              window.currentResolvedCoords = res.coords;
+              if (coordsEl) coordsEl.textContent = `[${res.coords[0].toFixed(5)}, ${res.coords[1].toFixed(5)}]`;
+              if (latInput) latInput.value = res.coords[0].toFixed(5);
+              if (lngInput) lngInput.value = res.coords[1].toFixed(5);
+              if (badgeEl) {
+                badgeEl.className = 'status-badge badge-green';
+                badgeEl.textContent = res.source === 'osm_nominatim' ? '✅ OpenStreetMap (OSM)' : '📍 Верифицировано УК';
+              }
+            }
+          } catch(e) {
+            console.warn('Live geocode request failed', e);
+          }
+        }
+      }, 350);
     }
     window.updateLiveGeocodePreview = updateLiveGeocodePreview;
+
+    function onManualCoordsChange() {
+      const lat = parseFloat(document.getElementById('new-comp-lat').value);
+      const lng = parseFloat(document.getElementById('new-comp-lng').value);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        window.currentResolvedCoords = [lat, lng];
+        const coordsEl = document.getElementById('geocode-coords-display');
+        if (coordsEl) coordsEl.textContent = `[${lat.toFixed(5)}, ${lng.toFixed(5)}] (ручной ввод)`;
+        const badgeEl = document.getElementById('geocode-live-badge');
+        if (badgeEl) {
+          badgeEl.className = 'status-badge badge-blue';
+          badgeEl.textContent = '✏️ Задано вручную';
+        }
+      }
+    }
+    window.onManualCoordsChange = onManualCoordsChange;
 
     function setComplexAddressPreset(addr) {
       const input = document.getElementById('new-comp-address');
@@ -1596,9 +1668,11 @@
         return;
       }
 
-      const coords = typeof resolveCoordinatesForAddress === 'function'
-        ? resolveCoordinatesForAddress(district)
-        : [49.8980, 82.6236];
+      const latVal = parseFloat(document.getElementById('new-comp-lat') ? document.getElementById('new-comp-lat').value : '');
+      const lngVal = parseFloat(document.getElementById('new-comp-lng') ? document.getElementById('new-comp-lng').value : '');
+      const coords = (!isNaN(latVal) && !isNaN(lngVal))
+        ? [latVal, lngVal]
+        : (window.currentResolvedCoords || (typeof resolveCoordinatesForAddress === 'function' ? resolveCoordinatesForAddress(district) : [49.8980, 82.6236]));
 
       const complexData = {
         name: name,
