@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.analyzer import analyze
 from app.db import get_db
 from app.factors import evaluate_factors, hard_precondition_error, risk_profile
+from app.geocoding import geocode_address, svg_pos_from_coords
 from app.mappers import (
     SIGNAL_STATUS_TO_API,
     SIGNAL_STATUS_TO_DB,
@@ -356,13 +357,15 @@ def confirm_factor(complex_id: str, req: ConfirmFactorRequest, db: Session = Dep
 @router.post("/complexes", summary="Добавление нового проверяемого ЖК в реестр")
 def create_complex(req: ComplexCreateRequest, db: Session = Depends(get_db)):
     legal_type, commissioned = legal_basis_to_db(req.legalBasisType)
-    coords = req.coords if req.coords and len(req.coords) >= 2 else [49.95, 82.61]
+    coords = req.coords if req.coords and len(req.coords) >= 2 and req.coords != [49.95, 82.61] else geocode_address(req.district)
+    svg_pos = svg_pos_from_coords(coords, req.district)
     new_item = Complex(
         id=_next_id(db, Complex, "jk-"),
         name=req.name,
         address=req.district,
         lat=coords[0],
         lng=coords[1],
+        svg_pos=svg_pos,
         developer_name=req.developer,
         developer_bin=req.bin,
         stage=req.stage,
@@ -510,18 +513,28 @@ def _import_records(db: Session, records: List[Dict[str, Any]], source_name: str
 
 
 def _create_imported_complex(db: Session, row: Dict[str, str], source: str, at) -> Complex:
-    def coord(key: str, default: float) -> float:
+    address = row.get("address") or "г. Усть-Каменогорск"
+    def parse_coord(key: str) -> Optional[float]:
+        val = (row.get(key) or "").replace(",", ".").strip()
         try:
-            return float((row.get(key) or "").replace(",", "."))
+            return float(val) if val else None
         except ValueError:
-            return default
+            return None
+
+    row_lat, row_lng = parse_coord("lat"), parse_coord("lng")
+    if row_lat is not None and row_lng is not None:
+        coords = [row_lat, row_lng]
+    else:
+        coords = geocode_address(address)
+    svg_pos = svg_pos_from_coords(coords, address)
 
     c = Complex(
         id=_next_id(db, Complex, "jk-"),
         name=row["name"],
-        address=row.get("address") or "г. Усть-Каменогорск",
-        lat=coord("lat", 49.95),
-        lng=coord("lng", 82.61),
+        address=address,
+        lat=coords[0],
+        lng=coords[1],
+        svg_pos=svg_pos,
         developer_name=row.get("developer") or "Не указан",
         developer_bin=normalize_bin(row.get("bin")) or row.get("bin") or "",
         legal_basis_type="unknown",

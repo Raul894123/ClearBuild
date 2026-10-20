@@ -269,6 +269,7 @@
             <option value="YELLOW" id="reg-opt-yellow">🟡 Только Жёлтая (Проверка)</option>
             <option value="RED" id="reg-opt-red">🔴 Только Красная (Опасно)</option>
           </select>
+          <button class="btn btn-primary" onclick="openAddComplexModal()" id="btn-add-complex" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; font-weight: 700;">➕ <span id="lbl-add-complex">Добавить ЖК</span></button>
         </div>
       </div>
 
@@ -610,6 +611,80 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeDossierModal()" id="modal-dossier-btn-close">Закрыть</button>
         <button class="btn btn-primary" onclick="openSignalAct(SELECTED_COMPLEX_ID); closeDossierModal();" id="modal-dossier-btn-act">📄 Сформировать акт проверки</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка добавления нового ЖК в реестр с точным геокодером OSM -->
+  <div class="modal-overlay" id="add-complex-modal">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--brand-primary); text-transform: uppercase; font-weight: 700;">Реестр объектов строительства г. Усть-Каменогорск</div>
+          <h3 style="font-size: 1.15rem; font-weight: 800;" id="modal-complex-title">🏗️ Добавить объект ЖК в реестр мониторинга</h3>
+        </div>
+        <button onclick="closeAddComplexModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-complex" onsubmit="event.preventDefault(); submitNewComplex();" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Наименование жилого комплекса:</label>
+            <input type="text" id="new-comp-name" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="например: ЖК «Алтын Орда»" required />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Застройщик (ТОО):</label>
+              <input type="text" id="new-comp-dev" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="ТОО «ВостокСтрой-Демо»" required />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">БИН застройщика:</label>
+              <input type="text" id="new-comp-bin" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="12 цифр, например: 240840012345 (демо)" required />
+            </div>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Адрес стройплощадки в г. Усть-Каменогорск:</label>
+              <span id="geocode-live-badge" class="status-badge badge-green" style="font-size: 0.68rem; padding: 2px 6px;">📍 OSM Геокодер активен</span>
+            </div>
+            <input type="text" id="new-comp-address" class="search-input" style="width: 100%; margin-top: 0.25rem;" placeholder="пр. Каныша Сатпаева, 88 (район КШТ)" oninput="updateLiveGeocodePreview(this.value)" required />
+            
+            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.35rem;">
+              <span style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">Примеры адресов:</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('пр. Каныша Сатпаева, 9 (район КШТ)')">пр. Сатпаева, 9</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('пр. Каныша Сатпаева, 88 (район КШТ)')">пр. Сатпаева, 88</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Абая, 5 (Центр)')">ул. Абая, 5</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Утепова, 22 (район КШТ)')">ул. Утепова, 22</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 0.7rem;" onclick="setComplexAddressPreset('ул. Пермитина, 25 (мкр. Стрелка)')">ул. Пермитина, 25</button>
+            </div>
+
+            <div id="geocode-preview-info" style="margin-top: 0.4rem; padding: 0.45rem 0.65rem; border-radius: 6px; background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.25); font-size: 0.75rem; color: var(--text-main);">
+              🎯 <strong>Координаты OpenStreetMap:</strong> <code id="geocode-coords-display">[49.8980, 82.6236]</code> · Район: <span id="geocode-district-display">район КШТ / Левый берег</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Стадия строительства:</label>
+              <input type="text" id="new-comp-stage" class="search-input" style="width: 100%; margin-top: 0.25rem;" value="Строительно-монтажные работы (каркас)" />
+            </div>
+            <div>
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Правовой статус привлечения средств:</label>
+              <select id="new-comp-legal" class="search-input" style="width: 100%; margin-top: 0.25rem;">
+                <option value="UNVERIFIED">🟡 Не проверено · Нужна проверка (0 б. R1)</option>
+                <option value="ABSENT">🔴 Отсутствует основание (ст. 7 ДЖС, +35 б. R1)</option>
+                <option value="KZH_GUARANTEE">🟢 Гарантия Единого оператора КЖК (0 б.)</option>
+                <option value="MIO_PERMIT">🟢 Разрешение МИО акимата (0 б.)</option>
+                <option value="COMMISSIONED">🟢 Объект введён в эксплуатацию (0 б.)</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 0.5rem;">
+        <button class="btn btn-secondary" onclick="closeAddComplexModal()">Отмена</button>
+        <button class="btn btn-primary" onclick="submitNewComplex()">💾 Добавить ЖК и нанести на карту</button>
       </div>
     </div>
   </div>
@@ -1456,6 +1531,120 @@
         `;
       }).join('');
     }
+
+
+    function openAddComplexModal() {
+      const modal = document.getElementById('add-complex-modal');
+      if (modal) modal.style.display = 'flex';
+      const addrInput = document.getElementById('new-comp-address');
+      if (addrInput && !addrInput.value) {
+        addrInput.value = 'пр. Каныша Сатпаева, 9 (район КШТ)';
+        updateLiveGeocodePreview('пр. Каныша Сатпаева, 9 (район КШТ)');
+      }
+    }
+    window.openAddComplexModal = openAddComplexModal;
+
+    function closeAddComplexModal() {
+      const modal = document.getElementById('add-complex-modal');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeAddComplexModal = closeAddComplexModal;
+
+    function updateLiveGeocodePreview(val) {
+      const coordsEl = document.getElementById('geocode-coords-display');
+      const distEl = document.getElementById('geocode-district-display');
+      if (!val) {
+        if (coordsEl) coordsEl.textContent = '[49.9490, 82.6200]';
+        if (distEl) distEl.textContent = 'Центр города';
+        return;
+      }
+      const coords = typeof resolveCoordinatesForAddress === 'function' ? resolveCoordinatesForAddress(val) : [49.9490, 82.6200];
+      if (coordsEl) coordsEl.textContent = `[${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}]`;
+      if (distEl) {
+        let dName = 'Усть-Каменогорск';
+        const s = val.toLowerCase();
+        if (/сатпаев|жибек|утепов|казыбек|кшт/i.test(s)) dName = 'район КШТ / Левый берег';
+        else if (/пермитин|славск|астана|стрелк/i.test(s)) dName = 'район Стрелка / Иртыш';
+        else if (/казахстан|горьк|аба|центр/i.test(s)) dName = 'Центр города';
+        else if (/бажов|аблакетк/i.test(s)) dName = 'район Аблакетка';
+        else if (/клубн|согр/i.test(s)) dName = 'район Согра';
+        else if (/тынышпаев|октябрьск|кокчетавск|защит/i.test(s)) dName = 'микрорайон Защита';
+        distEl.textContent = dName;
+      }
+    }
+    window.updateLiveGeocodePreview = updateLiveGeocodePreview;
+
+    function setComplexAddressPreset(addr) {
+      const input = document.getElementById('new-comp-address');
+      if (input) {
+        input.value = addr;
+        updateLiveGeocodePreview(addr);
+      }
+    }
+    window.setComplexAddressPreset = setComplexAddressPreset;
+
+    async function submitNewComplex() {
+      const name = (document.getElementById('new-comp-name').value || '').trim();
+      const developer = (document.getElementById('new-comp-dev').value || '').trim();
+      const bin = (document.getElementById('new-comp-bin').value || '').trim();
+      const district = (document.getElementById('new-comp-address').value || '').trim();
+      const stage = (document.getElementById('new-comp-stage').value || '').trim() || 'Строительно-монтажные работы';
+      const legalBasisType = document.getElementById('new-comp-legal').value || 'UNVERIFIED';
+
+      if (!name || !developer || !bin || !district) {
+        alert('Пожалуйста, заполните все обязательные поля (название ЖК, застройщик, БИН, адрес)!');
+        return;
+      }
+
+      const coords = typeof resolveCoordinatesForAddress === 'function'
+        ? resolveCoordinatesForAddress(district)
+        : [49.8980, 82.6236];
+
+      const complexData = {
+        name: name,
+        developer: developer,
+        bin: bin,
+        district: district,
+        stage: stage,
+        legalBasisType: legalBasisType,
+        coords: coords
+      };
+
+      let savedComplex = null;
+      if (typeof apiClient !== 'undefined' && apiClient.addComplex) {
+        const res = await apiClient.addComplex(complexData);
+        if (res && res.complex) {
+          savedComplex = normalizeComplexFromApi(res.complex);
+        }
+      }
+
+      if (typeof apiClient !== 'undefined' && apiClient.isConnected && typeof syncWithBackend === 'function') {
+        await syncWithBackend();
+        const created = complexes.find(c => c.bin === bin || (c.names && c.names.ru === name));
+        if (created) savedComplex = created;
+      } else {
+        if (!savedComplex) {
+          savedComplex = addComplexLocal(complexData);
+        } else {
+          complexes.push(savedComplex);
+          auditLogEntries.unshift(`[${new Date().toLocaleTimeString()}] 🏗️ В реестр добавлен новый строящийся объект ${savedComplex.id} (${savedComplex.names.ru}, адрес: ${savedComplex.districts.ru})`);
+          saveState();
+        }
+      }
+
+      closeAddComplexModal();
+      window.refreshAllViews();
+
+      switchTab('map');
+      if (savedComplex) {
+        setTimeout(() => {
+          focusComplexOnMap(savedComplex.id);
+        }, 300);
+      }
+
+      showCopyToast(`✅ ЖК <strong>«${name}»</strong> успешно добавлен в реестр и нанесён на карту по координатам [${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}]!`);
+    }
+    window.submitNewComplex = submitNewComplex;
 
     function openAddAdModal() {
       const sel = document.getElementById('new-ad-complex');

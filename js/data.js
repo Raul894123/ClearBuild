@@ -346,6 +346,49 @@ const RAW_COMPLEXES = [
       R5: { status: "NONE", weight: 10, evidence: { ru: "100% готовность подтверждена актом.", kz: "Нақты дайындық 100%.", en: "Actual readiness 100%." } },
       R6: { status: "NONE", weight: 5, evidence: { ru: "Просрочек нет.", kz: "Үй пайдалануға берілді.", en: "Commissioned." } }
     }
+  },
+  {
+    id: "jk-9",
+    code: "NEW-LIFE",
+    caseTag: "Жёлтая · Жалобы и простой",
+    coords: [49.8980, 82.6236], // пр. Каныша Сатпаева, 9 (район КШТ) — точные проверенные координаты по OSM
+    svgPos: { x: 605, y: 395 },
+    names: { ru: "ЖК «New Life» (Нью Лайф)", kz: "«New Life» ТК", en: "New Life Residential Complex" },
+    developers: { ru: "ТОО «NewLifeStroy-Демо»", kz: "«NewLifeStroy-Демо» ЖШС", en: "NewLifeStroy-Demo LLP" },
+    bin: "230940051177 (демо)",
+    contactPhone: "+7 (708) 321-45-67",
+    salesAccount: "@newlife_oskemen_demo",
+    cadastreNumber: "05:102:044:327",
+    smrLicense: "ГСЛ №007321 от 18.06.2023 (II категория)",
+    landPurpose: "Строительство многоэтажного жилого дома",
+    districts: { ru: "пр. Каныша Сатпаева, 9 (район КШТ)", kz: "Қаныш Сәтбаев даңғылы, 9 (КШТ ауданы)", en: "9 Kanysh Satpayev Ave (KShT District)" },
+    stages: { ru: "Монолитные работы 6-го этажа из 9 (темп снижен)", kz: "9 қабаттың 6-қабатының монолитті жұмыстары", en: "6th floor monolithic works out of 9 (slow pace)" },
+    readinessFact: 38,
+    readinessDeclared: 45,
+    declaredReadiness: { pct: 45, source: "Instagram AD-113", date: "14.10.2026" },
+    confirmedReadiness: { pct: 38, source: "Выездной мониторинг УГАСК ВКО №131", date: "11.10.2026" },
+    legalStatus: "UNVERIFIED",
+    legalBasisType: "UNVERIFIED",
+    legalBasisText: "Не проверено · Нужна проверка (0 баллов по R1)",
+    legalSource: "В реестре КЖК и открытой выгрузке МИО записи не найдены; направлен межведомственный запрос №09-21/327 от 15.10.2026. До ответа R1 не начисляется.",
+    legalTexts: { ru: "Не проверено · Нужна проверка (Запрос №09-21/327, 0 б. по R1)", kz: "Құқықтық мәртебе тексерілуде (№09-21/327 сұрауы)", en: "Legal status under formal review (Inquiry No. 09-21/327)" },
+    legalDetails: {
+      ru: "В реестре КЖК и открытой выгрузке МИО записи не найдены; направлен межведомственный запрос №09-21/327 от 15.10.2026. До ответа R1 не начисляется.",
+      kz: "Ашық тізілімде деректер жоқ, №09-21/327 сұраухаты жолданған. Жауап алынғанға дейін R1 бойынша 0 ұпай.",
+      en: "Missing from public registry, inter-agency inquiry No. 09-21/327 sent. R1 is 0 pts until response."
+    },
+    signalStatus: "PENDING_HUMAN",
+    signalAuthor: "Ахметов Д.К.",
+    signalUpdatedAt: "16.10.2026, 12:30",
+    signalComment: "Правовое основание на проверке (R1 = 0 б.). Подтверждены коллективное обращение дольщиков R4 (+15), отставание от графика R6 (+5) и реклама строящегося дома R3 (+10) = 30 баллов (Жёлтая зона).",
+    factors: {
+      R1: { status: "UNVERIFIED", weight: 35, evidence: { ru: "Статус «Нужна проверка»: ожидание ответа МИО ВКО по запросу №09-21/327. Балл не начисляется (0 б.).", kz: "Мәртебе тексерілуде (0 ұпай).", en: "Under review (0 pts)." } },
+      R2: { status: "NONE", weight: 25, evidence: { ru: "В рекламе (AD-113) указано оформление по ДДУ, предложений брони или оплаты в кассу не найдено.", kz: "Хабарландыруда ҮҚШ арқылы ресімдеу көрсетілген, заңсыз жинау белгілері жоқ.", en: "DDU contract mentioned, no illegal deposit solicitations." } },
+      R3: { status: "CONFIRMED", weight: 10, evidence: { ru: "Публикация AD-113 (Instagram): реклама продажи квартир в строящемся доме.", kz: "Instagram желісіндегі сату жарнамасы (AD-113).", en: "Classified promotion in Instagram (AD-113)." } },
+      R4: { status: "CONFIRMED", weight: 15, evidence: { ru: "Коллективное обращение 9 граждан в e-Otinish №ЖТ-2026-091544 от 12.10.2026 о срыве сроков строительства.", kz: "Құрылыс мерзімінің кешігуі туралы e-Otinish арқылы 9 азаматтың ұжымдық шағымы.", en: "Collective petition from 9 citizens in e-Otinish No. ZHT-2026-091544 on construction delays." } },
+      R5: { status: "NONE", weight: 10, evidence: { ru: "Заявлено 45%, подтверждено УГАСК 38% — разница 7 п.п. (менее порога в 20 п.п.).", kz: "Айырмашылық 7 п.п. (шектен аспайды).", en: "Readiness delta within normal margin (7 pp)." } },
+      R6: { status: "CONFIRMED", weight: 5, evidence: { ru: "По акту УГАСК №131 отставание от графика более 4 месяцев; перенос сдачи с IV кв. 2026 на II кв. 2027.", kz: "МСҚБ №131 актісі бойынша кестеден 4 айдан астам кешігу.", en: "GASK Act No. 131: schedule delay exceeds 4 months; completion postponed to Q2 2027." } }
+    }
   }
 ];
 
@@ -811,6 +854,48 @@ const INITIAL_ADS = [
     status: "REJECTED",
     hasDirectPaymentOffer: false,
     isActivePreCommissioningAd: false
+  },
+  {
+    id: "AD-113",
+    complexId: "jk-9",
+    source: "Instagram",
+    platform: "Instagram",
+    account: "@newlife_oskemen_demo",
+    accounts: {
+      ru: "@newlife_oskemen_demo",
+      kz: "@newlife_oskemen_demo",
+      en: "@newlife_oskemen_demo"
+    },
+    phone: "+7 (708) 321-45-67",
+    date: "14.10.2026",
+    pubDate: "14.10.2026",
+    capturedAt: "15.10.2026, 11:20 (Snapshot #113)",
+    url: "https://instagram.com/p/C8demoNewLife113",
+    rawText: "ЖК «New Life» (пр. Каныша Сатпаева, 9, район КШТ)! Открыта продажа 1- и 2-комнатных квартир в строящемся доме, готовность 45%. Сдача во II квартале 2027 года, оформление по ДДУ.",
+    text: "ЖК «New Life» (пр. Каныша Сатпаева, 9, район КШТ)! Открыта продажа 1- и 2-комнатных квартир в строящемся доме, готовность 45%. Сдача во II квартале 2027 года, оформление по ДДУ.",
+    texts: {
+      ru: "ЖК «New Life» (пр. Каныша Сатпаева, 9, район КШТ)! Открыта продажа 1- и 2-комнатных квартир в строящемся доме, готовность 45%. Сдача во II квартале 2027 года, оформление по ДДУ.",
+      kz: "«New Life» ТК (Қаныш Сәтбаев даңғылы, 9, КШТ ауданы)! Салынып жатқан үйде 1 және 2 бөлмелі пәтерлерді сату басталды, дайындығы 45%. 2027 жылдың II тоқсанында тапсырылады, ҮҚШ бойынша ресімделеді.",
+      en: "New Life Residential Complex (9 Kanysh Satpayev Ave, KShT District)! Sales of 1- and 2-room flats open in house under construction, readiness 45%. Handover in Q2 2027, official DDU."
+    },
+    triggerSpan: "Открыта продажа 1- и 2-комнатных квартир в строящемся доме",
+    triggerSpans: {
+      ru: "Открыта продажа 1- и 2-комнатных квартир в строящемся доме",
+      kz: "Салынып жатқан үйде пәтерлерді сату басталды",
+      en: "Sales of flats open in house under construction"
+    },
+    triggers: ["продажа в строящемся доме", "сдача во II квартале"],
+    proposedFactor: "R3",
+    confidence: 96,
+    aiHypothesis: "R3 (+10 б.): Реклама строящегося жилья до ввода без подтверждённого основания",
+    aiHypotheses: {
+      ru: "R3 (+10 б.): Реклама строящегося жилья до ввода без подтверждённого основания",
+      kz: "R3 (+10 ұп.): Пайдалануға берілгенге дейін салынып жатқан үйді жарнамалау",
+      en: "R3 (+10 pts): Advertising pre-commissioned housing without verified legal basis"
+    },
+    status: "CONFIRMED",
+    hasDirectPaymentOffer: false,
+    isActivePreCommissioningAd: true
   }
 ];
 

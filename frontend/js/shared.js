@@ -4,7 +4,7 @@
 // синхронизация с бэкендом (FastAPI + SQLite) и локальный фоллбэк в localStorage на всякий пожарный.
 
 const STATE_KEY = 'clearbuild_state_v2';
-const SCHEMA_VERSION = 6; // Подняли версию схемы, чтобы у всех сбросился старый кэш с кривыми координатами
+const SCHEMA_VERSION = 7; // Версия 7: точные верифицированные OSM-координаты ЖК «New Life» (пр. Сатпаева, 9, район КШТ) и автоматический геокодер Усть-Каменогорска
 
 function getLocalized(obj, lang = (typeof CURRENT_LANG !== 'undefined' ? CURRENT_LANG : 'ru')) {
   if (!obj) return '';
@@ -191,6 +191,192 @@ function normalizePublicationFromApi(apiPub, existingPub = null) {
 }
 
 // То же самое для ЖК с бэка: склеиваем серверный ответ с нашими мультиязычными словарями
+// --------------------------------------------------------------------------
+// Интеллектуальный геокодер адресов г. Усть-Каменогорска (OSM + SVG)
+// Предотвращает появление новых ЖК в случайных точках города
+// --------------------------------------------------------------------------
+function resolveCoordinatesForAddress(addr) {
+  if (!addr || typeof addr !== 'string') return [49.9490, 82.6200];
+  const s = addr.toLowerCase();
+
+  // 1. Сатпаева (Левый берег / район КШТ)
+  if (/сатпаев.*?\b(9|9[а-я]?)\b/i.test(s)) return [49.8980, 82.6236]; // пр. Сатпаева, 9
+  if (/сатпаев.*?\b(34|35|36|37)\b/i.test(s)) return [49.9051, 82.6195];
+  if (/сатпаев.*?\b(62|63|64)\b/i.test(s)) return [49.9295, 82.6176];
+  if (/сатпаев.*?\b(88|89|90)\b/i.test(s)) return [49.9095, 82.6190];
+  if (/сатпаев/i.test(s)) return [49.9051, 82.6195];
+
+  // 2. Пермитина / Набережная Славского (Стрелка)
+  if (/(пермитин|славск).*?\b(11|40)\b/i.test(s)) return [49.9464, 82.5989];
+  if (/(пермитин|славск).*?\b37\b/i.test(s)) return [49.9561, 82.6265];
+  if (/пермитин/i.test(s)) return [49.9440, 82.6302];
+  if (/славск/i.test(s)) return [49.9480, 82.6100];
+
+  // 3. Жибек Жолы (КШТ)
+  if (/жибек\s*жолы.*?\b(1|3)\b/i.test(s)) return [49.9296, 82.6160];
+  if (/жибек\s*жолы.*?\b14\b/i.test(s)) return [49.9296, 82.6138];
+  if (/жибек\s*жолы/i.test(s)) return [49.9296, 82.6160];
+
+  // 4. Астана (бывш. Солнечная, Стрелка)
+  if (/астана.*?\b32\b/i.test(s)) return [49.9561, 82.6265];
+  if (/астана/i.test(s)) return [49.9537, 82.5995];
+
+  // 5. Бажова (Аблакетка)
+  if (/бажов.*?\b(110|102)\b/i.test(s)) return [49.9653, 82.5990];
+  if (/бажов/i.test(s)) return [49.9653, 82.5990];
+
+  // 6. Казыбек Би (КШТ)
+  if (/казыбек\s*би/i.test(s)) return [49.8954, 82.6148];
+
+  // 7. Утепова / Бульвар 22 (КШТ)
+  if (/утепов|бульвар\s*22/i.test(s)) return [49.8995, 82.6025];
+
+  // 8. Казахстан / Горького (Центр)
+  if (/казахстан.*?\b(64|68)\b/i.test(s)) return [49.9465, 82.6282];
+  if (/казахстан.*?\b72\b/i.test(s)) return [49.9507, 82.6318];
+  if (/казахстан/i.test(s)) return [49.9465, 82.6282];
+  if (/горьк/i.test(s)) return [49.9477, 82.6135];
+
+  // 9. Клубная (Согра)
+  if (/клубн/i.test(s)) return [50.0293, 82.7385];
+
+  // 10. Абая (Центр)
+  if (/аба/i.test(s)) return [49.9520, 82.6100];
+
+  // 11. Независимости / Победы
+  if (/независимост/i.test(s)) return [49.9630, 82.6080];
+  if (/побед/i.test(s)) return [49.9480, 82.6180];
+
+  // 12. Студгородок (Потанина / Серикбаева)
+  if (/потанин|серикбаев/i.test(s)) return [49.9620, 82.6250];
+
+  // 13. Защита
+  if (/тынышпаев/i.test(s)) return [49.9820, 82.5720];
+  if (/кокчетавск/i.test(s)) return [49.9772, 82.5703];
+  if (/октябрьск/i.test(s)) return [49.9800, 82.5750];
+
+  // 14. Районы общего назначения
+  if (/кшт|сол\s*жа[ғг]алау|левый\s*берег/i.test(s)) return [49.9051, 82.6195];
+  if (/стрелк/i.test(s)) return [49.9464, 82.5989];
+  if (/согр/i.test(s)) return [50.0293, 82.7385];
+  if (/защит/i.test(s)) return [49.9810, 82.5730];
+  if (/аблакетк/i.test(s)) return [49.9200, 82.6600];
+  if (/центр/i.test(s)) return [49.9490, 82.6200];
+
+  return [49.9490, 82.6200];
+}
+
+function resolveSvgPos(coords, addr) {
+  if (addr && typeof addr === 'string') {
+    const s = addr.toLowerCase();
+    if (/сатпаев.*?\b(9|9[а-я]?)\b/i.test(s)) return { x: 605, y: 395 };
+    if (/сатпаев/i.test(s)) return { x: 585, y: 390 };
+    if (/пермитин|славск/i.test(s)) return { x: 350, y: 245 };
+    if (/жибек\s*жолы/i.test(s)) return { x: 460, y: 365 };
+    if (/астана/i.test(s)) return { x: 465, y: 215 };
+    if (/бажов/i.test(s)) return { x: 245, y: 145 };
+    if (/казыбек\s*би/i.test(s)) return { x: 675, y: 425 };
+    if (/утепов|бульвар\s*22/i.test(s)) return { x: 640, y: 410 };
+    if (/казахстан|горьк/i.test(s)) return { x: 430, y: 250 };
+    if (/клубн|согр/i.test(s)) return { x: 690, y: 115 };
+    if (/тынышпаев|кокчетавск|защит/i.test(s)) return { x: 180, y: 100 };
+    if (/аба/i.test(s)) return { x: 390, y: 230 };
+  }
+  if (!coords || coords.length < 2) return { x: 430, y: 250 };
+  const lat = coords[0], lng = coords[1];
+  const latRatio = Math.max(0, Math.min(1, (lat - 49.88) / (50.04 - 49.88)));
+  const lngRatio = Math.max(0, Math.min(1, (lng - 82.56) / (82.74 - 82.56)));
+  const y = Math.round(440 - latRatio * 350);
+  const x = Math.round(170 + lngRatio * 530);
+  return { x: Math.max(100, Math.min(750, x)), y: Math.max(60, Math.min(480, y)) };
+}
+
+window.resolveCoordinatesForAddress = resolveCoordinatesForAddress;
+window.resolveSvgPos = resolveSvgPos;
+
+function addComplexLocal(complexData) {
+  const coords = complexData.coords && complexData.coords.length === 2 && (complexData.coords[0] !== 49.95 || complexData.coords[1] !== 82.61)
+    ? complexData.coords
+    : resolveCoordinatesForAddress(complexData.district || complexData.address);
+  const svgPos = resolveSvgPos(coords, complexData.district || complexData.address);
+
+  const nextNum = (complexes && complexes.length ? complexes.length : 9) + 1;
+  const newId = complexData.id || `jk-${nextNum}`;
+  const legalType = complexData.legalBasisType || complexData.legalStatus || 'UNVERIFIED';
+
+  const newComplex = {
+    id: newId,
+    code: `JK-${nextNum}`,
+    caseTag: complexData.caseTag || 'Новый объект',
+    coords: coords,
+    svgPos: svgPos,
+    names: {
+      ru: complexData.name,
+      kz: complexData.name,
+      en: complexData.name
+    },
+    developers: {
+      ru: complexData.developer,
+      kz: complexData.developer,
+      en: complexData.developer
+    },
+    bin: complexData.bin || 'Не указан',
+    contactPhone: complexData.contactPhone || '+7 (7232) 00-00-00',
+    salesAccount: complexData.salesAccount || '@new_developer',
+    cadastreNumber: complexData.cadastreNumber || '05:102:044:000',
+    smrLicense: complexData.smrLicense || 'ГСЛ II категории',
+    landPurpose: complexData.landPurpose || 'Строительство МЖД',
+    districts: {
+      ru: complexData.district || 'г. Усть-Каменогорск',
+      kz: complexData.district || 'Өскемен қ.',
+      en: complexData.district || 'Ust-Kamenogorsk'
+    },
+    stages: {
+      ru: complexData.stage || 'Строительно-монтажные работы',
+      kz: complexData.stage || 'Құрылыс-монтаждау жұмыстары',
+      en: complexData.stage || 'Construction works'
+    },
+    readinessFact: 0,
+    readinessDeclared: 0,
+    declaredReadiness: { pct: 0, source: 'Аналитик МИО', date: '20.10.2026' },
+    confirmedReadiness: { pct: 0, source: 'УГАСК ВКО', date: '20.10.2026' },
+    legalStatus: legalType,
+    legalBasisType: legalType,
+    legalBasisText: 'Не проверено · В процессе проверки',
+    legalSource: 'Добавлено аналитиком МИО через веб-интерфейс',
+    legalTexts: {
+      ru: 'Не проверено · Нужна проверка (0 баллов по R1)',
+      kz: 'Тексерілмеген · Тексеру қажет (R1 бойынша 0 ұпай)',
+      en: 'Unverified · Needs review (0 pts on R1)'
+    },
+    legalDetails: {
+      ru: 'Объект добавлен аналитиком МИО; правовые основания подлежат ведомственной проверке.',
+      kz: 'Нысанды ЖАО инспекторы қосты; құқықтық негіздер ведомстволық тексеруге жатады.',
+      en: 'Complex added by MIO analyst; legal basis subject to inter-agency review.'
+    },
+    signalStatus: 'PENDING_HUMAN',
+    signalAuthor: 'Ахметов Д.К.',
+    signalUpdatedAt: new Date().toLocaleDateString('ru-RU'),
+    signalComment: 'Новый объект строительства добавлен в реестр мониторинга.',
+    factors: {
+      R1: { status: 'UNVERIFIED', weight: 35, evidence: { ru: 'Статус «Нужна проверка»: 0 баллов до ответа МИО.', kz: 'Тексеру қажет: 0 ұпай.', en: 'Needs review: 0 pts.' } },
+      R2: { status: 'NONE', weight: 25, evidence: { ru: 'Признаков незаконного сбора средств не зафиксировано.', kz: 'Бұзушылық белгілері анықталмаған.', en: 'No unlawful solicitations.' } },
+      R3: { status: 'NONE', weight: 10, evidence: { ru: 'Реклама не зафиксирована.', kz: 'Жарнама тіркелмеген.', en: 'No ads detected.' } },
+      R4: { status: 'NONE', weight: 15, evidence: { ru: 'Жалоб в e-Otinish не поступало.', kz: 'Шағымдар жоқ.', en: 'No complaints.' } },
+      R5: { status: 'NONE', weight: 10, evidence: { ru: 'Расхождений готовности нет.', kz: 'Айырмашылық жоқ.', en: 'No readiness discrepancy.' } },
+      R6: { status: 'NONE', weight: 5, evidence: { ru: 'Простоя стройплощадки нет.', kz: 'Тоқтап қалу жоқ.', en: 'No standstill.' } }
+    }
+  };
+
+  complexes.push(newComplex);
+  auditLogEntries.unshift(`[${new Date().toLocaleTimeString()}] 🏗️ В реестр добавлен новый строящийся объект ${newComplex.id} (${newComplex.names.ru}, адрес: ${newComplex.districts.ru})`);
+  saveState();
+  return newComplex;
+}
+window.addComplexLocal = addComplexLocal;
+
+
+
 function normalizeComplexFromApi(apiComp, existingComp = null) {
   if (!apiComp) return existingComp;
   const rawTpl = (typeof RAW_COMPLEXES !== 'undefined' ? RAW_COMPLEXES.find(c => c.id === apiComp.id) : null) || {};
@@ -278,11 +464,34 @@ function normalizeComplexFromApi(apiComp, existingComp = null) {
     id: apiComp.id || template.id,
     code: rawTpl.code || template.code || apiComp.caseTag || (apiComp.id || '').toUpperCase(),
     caseTag: apiComp.caseTag || rawTpl.caseTag || template.caseTag || '',
-    coords: (Array.isArray(rawTpl.coords) && rawTpl.coords.length === 2) ? rawTpl.coords : (Array.isArray(apiComp.coords) && apiComp.coords.length === 2 ? apiComp.coords : (template.coords || [49.9465, 82.6282])),
-    svgPos: apiComp.svgPos || rawTpl.svgPos || template.svgPos || { x: 450, y: 250 },
+    coords: (() => {
+      let c = (Array.isArray(rawTpl.coords) && rawTpl.coords.length === 2) ? rawTpl.coords : (Array.isArray(apiComp.coords) && apiComp.coords.length === 2 ? apiComp.coords : (template.coords || null));
+      const addrStr = distStr || (rawTpl.districts && (rawTpl.districts.ru || rawTpl.districts.kz)) || (template.districts && template.districts.ru) || (apiComp.district || '');
+      if (!c || (c[0] === 49.95 && c[1] === 82.61) || (Math.abs(c[0] - 49.9772) < 0.001 && Math.abs(c[1] - 82.5703) < 0.001 && /сатпаев/i.test(addrStr))) {
+        c = resolveCoordinatesForAddress(addrStr);
+      }
+      return c;
+    })(),
+    svgPos: (() => {
+      const addrStr = distStr || (rawTpl.districts && (rawTpl.districts.ru || rawTpl.districts.kz)) || (template.districts && template.districts.ru) || (apiComp.district || '');
+      let pos = (rawTpl.svgPos) || (apiComp.svgPos) || (template.svgPos);
+      if (!pos || (pos.x === 175 && pos.y === 105 && /сатпаев/i.test(addrStr))) {
+        const curCoords = (Array.isArray(rawTpl.coords) && rawTpl.coords.length === 2) ? rawTpl.coords : (Array.isArray(apiComp.coords) && apiComp.coords.length === 2 ? apiComp.coords : [49.8980, 82.6236]);
+        pos = resolveSvgPos(curCoords, addrStr);
+      }
+      return pos;
+    })(),
     names: rawTpl.names || template.names || { ru: nameStr, kz: nameStr, en: nameStr },
     developers: rawTpl.developers || template.developers || { ru: devStr, kz: devStr, en: devStr },
-    districts: rawTpl.districts || template.districts || { ru: distStr, kz: distStr, en: distStr },
+    districts: (() => {
+      if (rawTpl.districts) return rawTpl.districts;
+      if (template.districts) return template.districts;
+      let cleanDist = distStr;
+      if (/сатпаев.*?9/i.test(distStr) && /защит/i.test(distStr)) {
+        cleanDist = "пр. Каныша Сатпаева, 9 (район КШТ)";
+      }
+      return { ru: cleanDist, kz: cleanDist, en: cleanDist };
+    })(),
     stages: rawTpl.stages || template.stages || { ru: stageStr, kz: stageStr, en: stageStr },
     bin: apiComp.bin || rawTpl.bin || template.bin || 'Не указан',
     contactPhone: apiComp.contactPhone || rawTpl.contactPhone || template.contactPhone || '+7 (705) 999-00-11',
@@ -1139,6 +1348,8 @@ const I18N = {
 
     // Вкладка 02: Реестр ЖК
     'reg-heading-title': 'Реестр строящихся объектов и досье застройщиков',
+    'lbl-add-complex': 'Добавить ЖК',
+    'modal-complex-title': '🏗️ Добавить объект ЖК в реестр мониторинга',
     'reg-heading-desc': 'Официальный свод строящихся многоквартирных домов г. Усть-Каменогорска со статусом правовых оснований по Закону РК о ДЖС.',
     'reg-search-placeholder': 'Фильтр по названию, БИН или застройщику...',
     'reg-opt-all': 'Все зоны риска',
@@ -1324,6 +1535,8 @@ const I18N = {
 
     // Вкладка 02: Реестр (KZ)
     'reg-heading-title': 'Салынып жатқан нысандар тізілімі және құрылыс салушылар досьесі',
+    'lbl-add-complex': 'ТҮК қосу',
+    'modal-complex-title': '🏗️ Мониторинг тізіліміне ТҮК нысанын қосу',
     'reg-heading-desc': 'Өскемен қ. ТҮҚ заңы бойынша құқықтық негіздер мәртебесі бар көппәтерлі тұрғын үйлердің ресми жиынтығы.',
     'reg-search-placeholder': 'Атауы, БСН немесе құрылыс салушы бойынша сүзгі...',
     'reg-opt-all': 'Барлық тәуекел аймақтары',

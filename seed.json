@@ -956,6 +956,125 @@
           "evidence": "Просрочек нет."
         }
       }
+    },
+    {
+      "id": "jk-9",
+      "caseTag": "Жёлтая · Жалобы и простой",
+      "name": "ЖК «New Life» (Нью Лайф)",
+      "district": "пр. Каныша Сатпаева, 9 (район КШТ)",
+      "coords": [
+        49.898,
+        82.6236
+      ],
+      "svgPos": {
+        "x": 605,
+        "y": 395
+      },
+      "developer": "ТОО «NewLifeStroy-Демо»",
+      "bin": "230940051177 (демо)",
+      "stage": "Монолитные работы 6-го этажа из 9 (темп снижен)",
+      "declaredReadiness": {
+        "pct": 45,
+        "source": "Instagram AD-113",
+        "date": "14.10.2026"
+      },
+      "confirmedReadiness": {
+        "pct": 38,
+        "source": "Выездной мониторинг УГАСК ВКО №131",
+        "date": "11.10.2026"
+      },
+      "legalBasisType": "UNVERIFIED",
+      "legalBasisText": "Не проверено · Нужна проверка (0 баллов по R1)",
+      "legalSource": "В реестре КЖК и открытой выгрузке МИО записи не найдены; направлен межведомственный запрос №09-21/327 от 15.10.2026. До ответа R1 не начисляется.",
+      "contactPhone": "+7 (708) 321-45-67",
+      "salesAccount": "@newlife_oskemen_demo",
+      "signalStatus": "PENDING_HUMAN",
+      "signalAuthor": "Ахметов Д.К.",
+      "signalUpdatedAt": "16.10.2026, 12:30",
+      "signalComment": "Правовое основание на проверке (R1 = 0 б.). Подтверждены коллективное обращение дольщиков R4 (+15), отставание от графика R6 (+5) и реклама строящегося дома R3 (+10) = 30 баллов (Жёлтая зона).",
+      "govChecks": {
+        "homeportal": {
+          "status": "warning",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Сведения о гарантии КЖК отсутствуют, направлен межведомственный запрос"
+        },
+        "qazreestr": {
+          "status": "warning",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Записи ДДУ не найдены, нужна проверка"
+        },
+        "ashyq_data": {
+          "status": "warning",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Запись о разрешении не найдена, нужна проверка"
+        },
+        "elicense": {
+          "status": "ok",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Лицензия СМР действует"
+        },
+        "equrylys": {
+          "status": "warning",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Отставание от графика производства работ"
+        },
+        "egkn": {
+          "status": "ok",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Участок под многоэтажную жилую застройку"
+        },
+        "egov": {
+          "status": "ok",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "ТОО зарегистрировано"
+        },
+        "kgd": {
+          "status": "warning",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Есть налоговая задолженность застройщика (индикатор риска простоя)"
+        },
+        "rsp": {
+          "status": "ok",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "Субъект предпринимательства активен"
+        },
+        "rnu": {
+          "status": "ok",
+          "checkedAt": "15.10.2026, 10:00",
+          "note": "В РНУ не значится"
+        },
+        "data_egov": {
+          "status": "not_checked",
+          "checkedAt": null,
+          "note": null
+        }
+      },
+      "factors": {
+        "R1": {
+          "status": "UNVERIFIED",
+          "evidence": "Статус «Нужна проверка»: ожидание ответа МИО ВКО по запросу №09-21/327. Балл не начисляется (0 б.)."
+        },
+        "R2": {
+          "status": "NONE",
+          "evidence": "В рекламе (AD-113) указано оформление по ДДУ, предложений брони или оплаты в кассу не найдено."
+        },
+        "R3": {
+          "status": "CONFIRMED",
+          "evidence": "Публикация AD-113 (Instagram): реклама продажи квартир в строящемся доме."
+        },
+        "R4": {
+          "status": "CONFIRMED",
+          "evidence": "Коллективное обращение 9 граждан в e-Otinish №ЖТ-2026-091544 от 12.10.2026 о срыве сроков строительства."
+        },
+        "R5": {
+          "status": "NONE",
+          "evidence": "Заявлено 45%, подтверждено УГАСК 38% — разница 7 п.п. (менее порога в 20 п.п.)."
+        },
+        "R6": {
+          "status": "CONFIRMED",
+          "evidence": "По акту УГАСК №131 отставание от графика более 4 месяцев; перенос сдачи с IV кв. 2026 на II кв. 2027."
+        }
+      }
     }
   ],
   "publications": [
@@ -1162,6 +1281,23 @@
       "status": "REJECTED",
       "hasDirectPaymentOffer": false,
       "isActivePreCommissioningAd": false
+    },
+    {
+      "id": "AD-113",
+      "complexId": "jk-9",
+      "platform": "Instagram",
+      "account": "@newlife_oskemen_demo",
+      "phone": "+7 (708) 321-45-67",
+      "url": "https://instagram.com/p/C8demoNewLife113",
+      "pubDate": "14.10.2026",
+      "capturedAt": "15.10.2026, 11:20 (Snapshot #113)",
+      "text": "ЖК «New Life» (пр. Каныша Сатпаева, 9, район КШТ)! Открыта продажа 1- и 2-комнатных квартир в строящемся доме, готовность 45%. Сдача во II квартале 2027 года, оформление по ДДУ.",
+      "triggerSpan": "Открыта продажа 1- и 2-комнатных квартир в строящемся доме",
+      "proposedFactor": "R3",
+      "confidence": 96,
+      "status": "CONFIRMED",
+      "hasDirectPaymentOffer": false,
+      "isActivePreCommissioningAd": true
     }
   ]
 }
