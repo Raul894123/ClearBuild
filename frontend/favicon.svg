@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="55%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="favGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Base with border -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#favBg)"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.6"/>
+
+  <!-- Left Tower -->
+  <rect x="13" y="27" width="10" height="25" rx="2" fill="#cbd5e1"/>
+  <rect x="15.5" y="31" width="2" height="3" rx="0.5" fill="#0369a1"/>
+  <rect x="18.5" y="31" width="2" height="3" rx="0.5" fill="#0369a1"/>
+  <rect x="15.5" y="37" width="2" height="3" rx="0.5" fill="#0369a1"/>
+  <rect x="18.5" y="37" width="2" height="3" rx="0.5" fill="#0369a1"/>
+  <rect x="15.5" y="43" width="2" height="3" rx="0.5" fill="#0369a1"/>
+  <rect x="18.5" y="43" width="2" height="3" rx="0.5" fill="#0369a1"/>
+
+  <!-- Right Tower -->
+  <rect x="41" y="22" width="10" height="30" rx="2" fill="#94a3b8"/>
+  <rect x="43.5" y="26" width="2" height="3" rx="0.5" fill="#0f172a"/>
+  <rect x="46.5" y="26" width="2" height="3" rx="0.5" fill="#0f172a"/>
+  <rect x="43.5" y="32" width="2" height="3" rx="0.5" fill="#0f172a"/>
+  <rect x="46.5" y="32" width="2" height="3" rx="0.5" fill="#0f172a"/>
+  <rect x="43.5" y="38" width="2" height="3" rx="0.5" fill="#0f172a"/>
+  <rect x="46.5" y="38" width="2" height="3" rx="0.5" fill="#0f172a"/>
+
+  <!-- Center Main Tower -->
+  <rect x="26" y="15" width="12" height="37" rx="2" fill="#ffffff"/>
+  <!-- Golden Spire -->
+  <path d="M32 9 L32 15" stroke="url(#favGold)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="32" cy="8" r="1.5" fill="#fde047"/>
+  <!-- Center Tower Windows -->
+  <rect x="28.5" y="19" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="33" y="19" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="28.5" y="25" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="33" y="25" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="28.5" y="31" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="33" y="31" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="28.5" y="37" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+  <rect x="33" y="37" width="2.5" height="3.5" rx="0.5" fill="#0284c7"/>
+
+  <!-- Security Verification Shield Crest at Bottom-Right -->
+  <circle cx="46" cy="46" r="11" fill="#16a34a" stroke="#ffffff" stroke-width="2.2"/>
+  <path d="M41 46.2 L44.2 49.5 L51 42.5" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
