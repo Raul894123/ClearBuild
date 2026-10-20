@@ -196,8 +196,7 @@ function normalizePublicationFromApi(apiPub, existingPub = null) {
 function isTestComplexEntity(c) {
   if (!c) return false;
   const cid = (c.id || '').toLowerCase();
-  const nameStr = typeof c.name === 'string' ? c.name : ((c.names && c.names.ru) || '');
-  return cid === 'jk-17' || /^(?:TEST|KOMPUTERNY\s*OSLIK|БЛА\s*БЛА\s*2)/i.test(nameStr.trim());
+  return cid === 'jk-17';
 }
 window.isTestComplexEntity = isTestComplexEntity;
 

@@ -24,14 +24,9 @@ SEED_FILE = BACKEND_DIR / "seed.json"
 
 
 def _purge_test_complexes(db: Session) -> None:
-    """Удаляет только тестовые мусорные ЖК (jk-17, TEST, KOMPUTERNY, БЛА БЛА), добавленные в ходе ранних тестов."""
+    """Удаляет только устаревший мусорный ID jk-17 из ранних тестов."""
     test_ids = ["jk-17"]
-    items = db.scalars(select(Complex).where(
-        (Complex.id.in_(test_ids)) | 
-        (Complex.name.ilike("%TEST%")) | 
-        (Complex.name.ilike("%KOMPUTERNY%")) |
-        (Complex.name.ilike("%БЛА%"))
-    )).all()
+    items = db.scalars(select(Complex).where(Complex.id.in_(test_ids))).all()
     if items:
         for c in items:
             db.query(Publication).filter(Publication.complex_id == c.id).delete()
