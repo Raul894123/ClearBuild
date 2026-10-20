@@ -372,15 +372,21 @@ def geocode_api(q: str = Query(..., description="Адрес стройплоща
 def delete_complex(complex_id: str, db: Session = Depends(get_db)):
     c = db.get(Complex, complex_id)
     if not c:
-        raise HTTPException(status_code=404, detail=f"Комплекс {complex_id} не найден")
+        c = db.scalar(select(Complex).where(func.lower(Complex.id) == complex_id.lower()))
+    if not c:
+        _audit(db, "Аналитик МИО (веб-интерфейс)", "complex_delete", "complex", complex_id, {"name": complex_id, "note": "idempotent"})
+        db.commit()
+        return {"status": "success", "already_deleted": True, "deleted_id": complex_id}
+
     name = c.name
-    db.query(Publication).filter(Publication.complex_id == complex_id).delete()
-    db.query(Signal).filter(Signal.complex_id == complex_id).delete()
-    db.query(AuditLog).filter(AuditLog.entity_id == complex_id).delete()
+    target_id = c.id
+    db.query(Publication).filter(Publication.complex_id == target_id).delete()
+    db.query(Signal).filter(Signal.complex_id == target_id).delete()
+    db.query(AuditLog).filter(AuditLog.entity_id == target_id).delete()
     db.delete(c)
-    _audit(db, "Аналитик МИО (веб-интерфейс)", "complex_delete", "complex", complex_id, {"name": name})
+    _audit(db, "Аналитик МИО (веб-интерфейс)", "complex_delete", "complex", target_id, {"name": name})
     db.commit()
-    return {"status": "success", "deleted_id": complex_id, "name": name}
+    return {"status": "success", "deleted_id": target_id, "name": name}
 
 
 @router.post("/complexes/purge-tests", summary="Очистка тестовых демонстрационных ЖК (jk-10, jk-11)")

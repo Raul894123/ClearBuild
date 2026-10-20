@@ -276,19 +276,37 @@
     },
 
     async deleteComplex(complexId) {
-      if (this.isConnected) {
+      if (!complexId) return { status: 'error', error: 'No complexId' };
+      let deletedOnServer = false;
+
+      // Активно отправляем DELETE во все возможные адреса бэкенда (настроенный + локальный SQLite)
+      const urlsToTry = [
+        this.baseUrl,
+        'http://localhost:8000/api/v1',
+        'http://127.0.0.1:8000/api/v1'
+      ];
+      const uniqueUrls = [...new Set(urlsToTry.filter(Boolean))];
+
+      for (const u of uniqueUrls) {
         try {
-          const res = await fetch(`${this.baseUrl}/complexes/${encodeURIComponent(complexId)}`, {
-            method: 'DELETE'
+          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const to = controller ? setTimeout(() => controller.abort(), 3500) : null;
+          const res = await fetch(`${u}/complexes/${encodeURIComponent(complexId)}`, {
+            method: 'DELETE',
+            headers: { 'Accept': 'application/json' },
+            signal: controller ? controller.signal : undefined
           });
+          if (to) clearTimeout(to);
           if (res.ok) {
-            return await res.json();
+            deletedOnServer = true;
+            console.log(`[apiClient] Complex ${complexId} successfully deleted on server ${u}`);
           }
         } catch (e) {
-          console.warn('[apiClient] Delete complex failed', e);
+          // Игнорируем недоступный порт, пробуем следующий
         }
       }
-      return { status: 'success', local: true, deleted_id: complexId };
+
+      return { status: 'success', serverDeleted: deletedOnServer, deleted_id: complexId };
     },
 
     async purgeTestComplexes() {

@@ -2039,6 +2039,9 @@
       if (!savedComplex) {
         savedComplex = addComplexLocal(complexData);
       } else {
+        if (typeof appState !== 'undefined' && appState && appState.deletedComplexIds) {
+          appState.deletedComplexIds = appState.deletedComplexIds.filter(id => id !== savedComplex.id);
+        }
         if (!complexes.some(c => c.id === savedComplex.id)) {
           complexes.push(savedComplex);
         }

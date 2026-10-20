@@ -123,7 +123,8 @@ def seed_database(db: Session, only_missing: bool = False) -> None:
     if only_missing:
         existing_complexes = set(db.scalars(select(Complex.id)))
         existing_pubs = set(db.scalars(select(Publication.id)))
-        items = [i for i in items if i["id"] not in existing_complexes]
+        deleted_complexes = set(db.scalars(select(AuditLog.entity_id).where(AuditLog.action == "complex_delete")))
+        items = [i for i in items if i["id"] not in existing_complexes and i["id"] not in deleted_complexes]
         new_ids = {i["id"] for i in items}
         publications = [p for p in all_publications if p.get("complexId") in new_ids and p["id"] not in existing_pubs]
         if not items:

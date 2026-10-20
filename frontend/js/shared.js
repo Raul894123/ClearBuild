@@ -413,6 +413,9 @@ function addComplexLocal(complexData) {
     }
   };
 
+  if (appState && appState.deletedComplexIds) {
+    appState.deletedComplexIds = appState.deletedComplexIds.filter(id => id !== newComplex.id);
+  }
   complexes.push(newComplex);
   auditLogEntries.unshift(`[${new Date().toLocaleTimeString()}] 🏗️ В реестр добавлен новый строящийся объект ${newComplex.id} (${newComplex.names.ru}, адрес: ${newComplex.districts.ru})`);
   saveState();
@@ -422,34 +425,45 @@ window.addComplexLocal = addComplexLocal;
 
 async function deleteComplexLocalOrRemote(complexId) {
   if (!complexId) return;
+
+  // 1. Фиксируем в персистентный список удаленных ID (чтобы ни при каком синке не воскрешался)
+  if (!appState.deletedComplexIds) appState.deletedComplexIds = [];
+  if (!appState.deletedComplexIds.includes(complexId)) {
+    appState.deletedComplexIds.push(complexId);
+  }
+
+  // 2. Отправляем DELETE во все адреса бэкенда (SQLite DB)
   if (typeof apiClient !== 'undefined' && apiClient.deleteComplex) {
     try {
       await apiClient.deleteComplex(complexId);
     } catch(e) {
-      console.warn('Backend delete failed, continuing locally', e);
+      console.warn('[deleteComplex] Backend delete failed', e);
     }
   }
+
+  // 3. Удаляем объект и связанные объявления из памяти
   complexes = complexes.filter(c => c.id !== complexId);
   adsList = adsList.filter(a => a.complexId !== complexId);
   if (window.SELECTED_COMPLEX_ID === complexId) {
     window.SELECTED_COMPLEX_ID = complexes.length ? complexes[0].id : null;
   }
+
   saveState();
   if (typeof triggerUIRefresh === 'function') triggerUIRefresh();
   if (typeof window.refreshAllViews === 'function') window.refreshAllViews();
 }
 window.deleteComplexLocalOrRemote = deleteComplexLocalOrRemote;
 
-function deleteComplexFromUI(id) {
+async function deleteComplexFromUI(id) {
   if (!id) return;
   const comp = complexes.find(c => c.id === id);
-  const name = comp ? (comp.names ? comp.names.ru : comp.name) : id;
-  if (!confirm(`Вы действительно хотите удалить жилой комплекс «${name}» (${id}) из реестра?`)) {
+  const name = comp ? (comp.names ? (comp.names.ru || comp.names[CURRENT_LANG] || comp.names.kz) : comp.name) : id;
+  if (!confirm(`Вы действительно хотите удалить жилой комплекс «${name}» (${id}) из базы данных и реестра?`)) {
     return;
   }
-  deleteComplexLocalOrRemote(id);
+  await deleteComplexLocalOrRemote(id);
   if (typeof showCopyToast === 'function') {
-    showCopyToast(`🗑️ Объект «${name}» успешно удалён из реестра.`);
+    showCopyToast(`🗑️ Объект «${name}» удалён из базы данных.`);
   }
 }
 window.deleteComplexFromUI = deleteComplexFromUI;
@@ -640,6 +654,7 @@ function loadAppState() {
   if (!state || state.schemaVersion !== SCHEMA_VERSION) {
     state = {
       schemaVersion: SCHEMA_VERSION,
+      deletedComplexIds: (state && state.deletedComplexIds) || [],
       complexes: JSON.parse(JSON.stringify(RAW_COMPLEXES)),
       adsList: JSON.parse(JSON.stringify(INITIAL_ADS)),
       auditLogEntries: [
@@ -656,12 +671,15 @@ function loadAppState() {
     };
   }
 
-  // Прогоняем всё через нормализаторы и фильтруем тестовые ЖК
+  if (!state.deletedComplexIds) state.deletedComplexIds = [];
+  const deletedIds = state.deletedComplexIds;
+
+  // Прогоняем всё через нормализаторы и фильтруем удаленные и тестовые ЖК
   state.adsList = (state.adsList || [])
-    .filter(a => a && a.complexId !== 'jk-10' && a.complexId !== 'jk-11')
+    .filter(a => a && a.complexId !== 'jk-10' && a.complexId !== 'jk-11' && !deletedIds.includes(a.complexId))
     .map(a => normalizePublicationFromApi(a));
   state.complexes = (state.complexes || [])
-    .filter(c => !isTestComplexEntity(c))
+    .filter(c => !isTestComplexEntity(c) && !deletedIds.includes(c.id))
     .map(c => normalizeComplexFromApi(c));
 
   return state;
@@ -701,6 +719,7 @@ if (urlParams.get('tab')) {
 
 function saveState() {
   appState.schemaVersion = SCHEMA_VERSION;
+  if (!appState.deletedComplexIds) appState.deletedComplexIds = [];
   appState.complexes = complexes;
   appState.adsList = adsList;
   appState.auditLogEntries = auditLogEntries;
@@ -760,7 +779,8 @@ async function syncWithBackend(zoneFilter = null) {
     ]);
 
     if (Array.isArray(apiComplexes) && apiComplexes.length > 0) {
-      const cleanApiComplexes = apiComplexes.filter(ac => !isTestComplexEntity(ac));
+      const deletedIds = (appState && appState.deletedComplexIds) || [];
+      const cleanApiComplexes = apiComplexes.filter(ac => !isTestComplexEntity(ac) && !deletedIds.includes(ac.id));
       if (!zoneFilter || zoneFilter === 'ALL') {
         complexes = cleanApiComplexes.map(ac => {
           const existing = complexes.find(item => item.id === ac.id);
@@ -777,7 +797,7 @@ async function syncWithBackend(zoneFilter = null) {
           }
         });
       }
-      complexes = complexes.filter(c => !isTestComplexEntity(c));
+      complexes = complexes.filter(c => !isTestComplexEntity(c) && !deletedIds.includes(c.id));
       window.complexes = complexes;
     }
 
