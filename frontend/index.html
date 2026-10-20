@@ -673,8 +673,8 @@
                 <input type="number" step="0.00001" id="new-comp-lng" class="search-input" value="82.6236" oninput="onManualCoordsChange()" style="width: 100%; font-family: monospace; font-size: 0.8rem; padding: 0.25rem 0.5rem;" />
               </div>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="pickCoordsFromMap()" style="padding: 4px 8px; font-size: 0.72rem; margin-top: 0.35rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-              <span>🎯</span> <strong>Указать точное местоположение кликом на карте города</strong>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="pickCoordsFromMap()" style="padding: 6px 12px; font-size: 0.78rem; margin-top: 0.45rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.45rem; font-weight: 700; border: 1.5px solid var(--brand-primary); color: var(--brand-primary); background: rgba(2, 132, 199, 0.06); cursor: pointer;">
+              <span>📍</span> <span>Открыть интерактивную карту города для выбора точки</span>
             </button>
           </div>
 
@@ -699,6 +699,53 @@
       <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 0.5rem;">
         <button class="btn btn-secondary" onclick="closeAddComplexModal()">Отмена</button>
         <button class="btn btn-primary" onclick="submitNewComplex()">💾 Добавить ЖК и нанести на карту</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно выбора точки ЖК на интерактивной карте города (с защитой от случайного клика) -->
+  <div class="modal-overlay" id="map-picker-modal" style="display: none; z-index: 2100;" onclick="if(event.target===this) closeMapPicker(false);">
+    <div class="modal-card" style="max-width: 860px; width: 95vw; height: 85vh; max-height: 720px; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 12px; box-shadow: 0 25px 60px rgba(0,0,0,0.45);">
+      <div class="modal-header" style="padding: 0.75rem 1.25rem; background: var(--bg-surface); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+        <div>
+          <div style="font-size: 0.72rem; color: var(--brand-primary); text-transform: uppercase; font-weight: 700;">Интерактивная карта г. Усть-Каменогорск</div>
+          <h3 style="font-size: 1.1rem; font-weight: 800; margin: 0; color: var(--text-main);">📍 Выбор координат стройплощадки</h3>
+        </div>
+        <button type="button" onclick="closeMapPicker(false)" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;" title="Закрыть без сохранения">✕</button>
+      </div>
+
+      <!-- Панель быстрых переходов по районам и отображения выбранных координат -->
+      <div style="padding: 0.55rem 1.25rem; background: rgba(2, 132, 199, 0.06); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; flex-shrink: 0;">
+        <div style="font-size: 0.8rem; color: var(--text-main); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+          <span>🎯 Выбранная точка:</span>
+          <code id="map-picker-coords-val" style="font-weight: 700; color: var(--brand-primary); font-size: 0.85rem; background: var(--bg-surface); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border-color);">[49.94900, 82.62000]</code>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap;">
+          <span style="font-size: 0.7rem; color: var(--text-muted); margin-right: 0.2rem;">Районы:</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.7rem;" onclick="jumpPickerMapTo(49.9490, 82.6200, 15)">Центр</button>
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.7rem;" onclick="jumpPickerMapTo(49.9480, 82.6180, 16)">Стрелка / Победы</button>
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.7rem;" onclick="jumpPickerMapTo(49.9051, 82.6195, 15)">КШТ / Сатпаева</button>
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.7rem;" onclick="jumpPickerMapTo(49.9810, 82.5730, 15)">Защита</button>
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.7rem;" onclick="jumpPickerMapTo(50.0293, 82.7385, 14)">Согра</button>
+        </div>
+      </div>
+
+      <!-- Контейнер карты Leaflet -->
+      <div style="flex: 1; position: relative; width: 100%; min-height: 380px;">
+        <div id="picker-leaflet-map" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 1;"></div>
+      </div>
+
+      <!-- Подвал с защитой от случайного клика и кнопкой подтверждения -->
+      <div class="modal-footer" style="padding: 0.75rem 1.25rem; background: var(--bg-surface); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeMapPicker(false)">Отмена</button>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+          <div id="map-picker-hint" style="font-size: 0.75rem; color: var(--text-muted);">
+            💡 Кликните на здание или перетащите маркер, затем подтвердите
+          </div>
+          <button type="button" id="map-picker-btn-confirm" class="btn btn-primary" onclick="closeMapPicker(true)" style="font-weight: 700; padding: 0.45rem 1.1rem; display: flex; align-items: center; gap: 0.4rem;">
+            <span>✅</span> <span>Подтвердить выбор точки</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1667,19 +1714,113 @@
       }, 150);
     }
 
+    let pickerMapInstance = null;
+    let pickerMarker = null;
+    let tempPickedCoords = null;
+
     function pickCoordsFromMap() {
-      const modal = document.getElementById('add-complex-modal');
-      if (modal) modal.style.display = 'none';
-      if (typeof showCopyToast === 'function') {
-        showCopyToast('📍 Кликните на карте города в точке расположения объекта...');
+      const addModal = document.getElementById('add-complex-modal');
+      if (addModal) addModal.style.display = 'none';
+
+      const pickerModal = document.getElementById('map-picker-modal');
+      if (pickerModal) pickerModal.style.display = 'flex';
+
+      // 1. Считываем текущие координаты из формы (если уже введены или определены геокодером)
+      let curLat = parseFloat(document.getElementById('new-comp-lat') ? document.getElementById('new-comp-lat').value : '');
+      let curLng = parseFloat(document.getElementById('new-comp-lng') ? document.getElementById('new-comp-lng').value : '');
+
+      if (isNaN(curLat) || isNaN(curLng) || curLat < 49.5 || curLat > 50.5 || curLng < 82.0 || curLng > 83.2) {
+        if (window.currentResolvedCoords && window.currentResolvedCoords.length === 2) {
+          curLat = window.currentResolvedCoords[0];
+          curLng = window.currentResolvedCoords[1];
+        } else {
+          curLat = 49.9490;
+          curLng = 82.6200;
+        }
       }
-      if (!leafletMapInstance) return;
-      const container = leafletMapInstance.getContainer();
-      if (container) container.style.cursor = 'crosshair';
-      leafletMapInstance.once('click', (e) => {
-        if (container) container.style.cursor = '';
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
+
+      tempPickedCoords = [curLat, curLng];
+
+      if (!pickerMapInstance && typeof L !== 'undefined') {
+        pickerMapInstance = L.map('picker-leaflet-map', {
+          center: [curLat, curLng],
+          zoom: 15,
+          minZoom: 11,
+          maxZoom: 19
+        });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(pickerMapInstance);
+
+        pickerMapInstance.on('click', (e) => {
+          onPickerMapClicked(e.latlng.lat, e.latlng.lng);
+        });
+      } else if (pickerMapInstance) {
+        pickerMapInstance.setView([curLat, curLng], 15);
+      }
+
+      onPickerMapClicked(curLat, curLng);
+
+      setTimeout(() => {
+        if (pickerMapInstance) {
+          pickerMapInstance.invalidateSize();
+          pickerMapInstance.setView([curLat, curLng], 15);
+        }
+      }, 150);
+    }
+    window.pickCoordsFromMap = pickCoordsFromMap;
+
+    function jumpPickerMapTo(lat, lng, zoom = 15) {
+      if (pickerMapInstance) {
+        pickerMapInstance.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 });
+        onPickerMapClicked(lat, lng);
+      }
+    }
+    window.jumpPickerMapTo = jumpPickerMapTo;
+
+    function onPickerMapClicked(lat, lng) {
+      tempPickedCoords = [lat, lng];
+
+      if (typeof L !== 'undefined' && pickerMapInstance) {
+        if (!pickerMarker) {
+          const pinIcon = L.divIcon({
+            className: 'custom-picker-pin',
+            html: '<div style="background:#ef4444; color:#fff; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 12px rgba(0,0,0,0.5); border:3px solid #fff; font-size:18px; cursor:grab;">📍</div>',
+            iconSize: [34, 34],
+            iconAnchor: [17, 34]
+          });
+          pickerMarker = L.marker([lat, lng], { draggable: true, icon: pinIcon }).addTo(pickerMapInstance);
+          pickerMarker.on('dragend', (e) => {
+            const pos = e.target.getLatLng();
+            onPickerMapClicked(pos.lat, pos.lng);
+          });
+        } else {
+          pickerMarker.setLatLng([lat, lng]);
+        }
+      }
+
+      const coordsDisplay = document.getElementById('map-picker-coords-val');
+      if (coordsDisplay) {
+        coordsDisplay.textContent = `[${lat.toFixed(5)}, ${lng.toFixed(5)}]`;
+      }
+
+      const hintEl = document.getElementById('map-picker-hint');
+      if (hintEl) {
+        hintEl.innerHTML = '<span style="color:#16a34a; font-weight:700;">✓ Точка зафиксирована.</span> Нажмите «Подтвердить выбор точки»';
+      }
+    }
+    window.onPickerMapClicked = onPickerMapClicked;
+
+    function closeMapPicker(confirmed = false) {
+      const pickerModal = document.getElementById('map-picker-modal');
+      if (pickerModal) pickerModal.style.display = 'none';
+
+      const addModal = document.getElementById('add-complex-modal');
+      if (addModal) addModal.style.display = 'flex';
+
+      if (confirmed && tempPickedCoords && tempPickedCoords.length === 2) {
+        const [lat, lng] = tempPickedCoords;
         window.currentResolvedCoords = [lat, lng];
         const latInput = document.getElementById('new-comp-lat');
         const lngInput = document.getElementById('new-comp-lng');
@@ -1687,17 +1828,17 @@
         const badgeEl = document.getElementById('geocode-live-badge');
         if (latInput) latInput.value = lat.toFixed(5);
         if (lngInput) lngInput.value = lng.toFixed(5);
-        if (coordsEl) coordsEl.textContent = `[${lat.toFixed(5)}, ${lng.toFixed(5)}] (клик на карте)`;
+        if (coordsEl) coordsEl.textContent = `[${lat.toFixed(5)}, ${lng.toFixed(5)}] (выбрано на карте)`;
         if (badgeEl) {
           badgeEl.className = 'status-badge badge-green';
-          badgeEl.textContent = '🎯 Точка указана на карте';
+          badgeEl.textContent = '🎯 Точка подтверждена на карте';
         }
-        if (modal) modal.style.display = 'flex';
         if (typeof showCopyToast === 'function') {
           showCopyToast(`✅ Координаты [${lat.toFixed(4)}, ${lng.toFixed(4)}] зафиксированы!`);
         }
-      });
+      }
     }
+    window.closeMapPicker = closeMapPicker;
     window.pickCoordsFromMap = pickCoordsFromMap;
     window.updateLiveGeocodePreview = updateLiveGeocodePreview;
 
