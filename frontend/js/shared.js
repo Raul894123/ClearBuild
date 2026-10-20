@@ -197,10 +197,7 @@ function isTestComplexEntity(c) {
   if (!c) return false;
   const cid = (c.id || '').toLowerCase();
   const nameStr = typeof c.name === 'string' ? c.name : ((c.names && c.names.ru) || '');
-  const idNum = parseInt(cid.replace('jk-', ''), 10);
-  return cid === 'jk-10' || cid === 'jk-11' || cid === 'jk-17' ||
-         (!isNaN(idNum) && idNum >= 10 && (c.isDemo === false || !c.isDemo)) ||
-         /TEST|KOMPUTERNY|БЛА\s*БЛА/i.test(nameStr);
+  return cid === 'jk-17' || /^(?:TEST|KOMPUTERNY\s*OSLIK|БЛА\s*БЛА\s*2)/i.test(nameStr.trim());
 }
 window.isTestComplexEntity = isTestComplexEntity;
 
@@ -438,7 +435,8 @@ async function deleteComplexLocalOrRemote(complexId) {
     window.SELECTED_COMPLEX_ID = complexes.length ? complexes[0].id : null;
   }
   saveState();
-  triggerUIRefresh();
+  if (typeof triggerUIRefresh === 'function') triggerUIRefresh();
+  if (typeof window.refreshAllViews === 'function') window.refreshAllViews();
 }
 window.deleteComplexLocalOrRemote = deleteComplexLocalOrRemote;
 

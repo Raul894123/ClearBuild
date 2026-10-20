@@ -608,9 +608,14 @@
         <button onclick="closeDossierModal()" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;">✕</button>
       </div>
       <div class="modal-body" id="modal-dossier-body"></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeDossierModal()" id="modal-dossier-btn-close">Закрыть</button>
-        <button class="btn btn-primary" onclick="openSignalAct(SELECTED_COMPLEX_ID); closeDossierModal();" id="modal-dossier-btn-act">📄 Сформировать акт проверки</button>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <button type="button" class="btn btn-secondary" style="color: #dc2626; border-color: rgba(220, 38, 38, 0.4);" onclick="deleteComplexFromUI(SELECTED_COMPLEX_ID); closeDossierModal();">🗑️ Удалить ЖК</button>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="closeDossierModal()" id="modal-dossier-btn-close">Закрыть</button>
+          <button class="btn btn-primary" onclick="openSignalAct(SELECTED_COMPLEX_ID); closeDossierModal();" id="modal-dossier-btn-act">📄 Сформировать акт проверки</button>
+        </div>
       </div>
     </div>
   </div>
@@ -714,11 +719,12 @@
         <button type="button" onclick="closeMapPicker(false)" class="map-action-btn" style="font-size: 1rem; padding: 0.3rem 0.6rem;" title="Закрыть без сохранения">✕</button>
       </div>
 
-      <!-- Панель быстрых переходов по районам и отображения выбранных координат -->
+      <!-- Панель быстрых переходов по районам и отображения выбранных координат и адреса -->
       <div style="padding: 0.55rem 1.25rem; background: rgba(2, 132, 199, 0.06); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; flex-shrink: 0;">
-        <div style="font-size: 0.8rem; color: var(--text-main); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
-          <span>🎯 Выбранная точка:</span>
+        <div style="font-size: 0.8rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span>🎯 Точка:</span>
           <code id="map-picker-coords-val" style="font-weight: 700; color: var(--brand-primary); font-size: 0.85rem; background: var(--bg-surface); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border-color);">[49.94900, 82.62000]</code>
+          <span id="map-picker-addr-val" style="font-weight: 600; color: var(--text-main); font-size: 0.8rem; background: rgba(22, 163, 74, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(22, 163, 74, 0.3);">📍 Определение адреса...</span>
         </div>
         <div style="display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap;">
           <span style="font-size: 0.7rem; color: var(--text-muted); margin-right: 0.2rem;">Районы:</span>
@@ -1177,6 +1183,7 @@
               <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openComplexDossier('${c.id}')">${btnDossier}</button>
               <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); switchTab('scoring'); renderScoringView('${c.id}')">${btnMatrix}</button>
               <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); switchTab('signal'); renderSignalCard('${c.id}')">${btnAct}</button>
+              <button class="btn btn-secondary btn-sm" style="color: #dc2626; border-color: rgba(220, 38, 38, 0.4); padding: 0.25rem 0.5rem;" onclick="event.stopPropagation(); deleteComplexFromUI('${c.id}')" title="Удалить ЖК">🗑️</button>
             </div>
           </div>
         `;
@@ -1284,6 +1291,7 @@
             <td style="text-align: center; white-space: nowrap;">
               <span class="status-badge ${risk.zoneBadgeClass}">${risk.zoneName} · ${risk.score} ${ptSuffix}</span>
               <button class="btn btn-secondary btn-sm" style="display: block; width: 100%; margin-top: 5px; font-weight: 600;" onclick="event.stopPropagation(); openComplexDossier('${c.id}')">${btnDossier}</button>
+              <button class="btn btn-secondary btn-sm" style="display: block; width: 100%; margin-top: 4px; font-weight: 600; color: #dc2626; border-color: rgba(220, 38, 38, 0.35); font-size: 0.72rem; padding: 2px 4px;" onclick="event.stopPropagation(); deleteComplexFromUI('${c.id}')">🗑️ Удалить</button>
             </td>
           </tr>
         `;
@@ -1501,7 +1509,8 @@
           </div>
         </div>
 
-        <div style="margin-top: 1.25rem; display: flex; gap: 0.65rem; justify-content: flex-end;">
+        <div style="margin-top: 1.25rem; display: flex; gap: 0.65rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-secondary" style="color: #dc2626; border-color: rgba(220, 38, 38, 0.4);" onclick="deleteComplexFromUI('${c.id}')">🗑️ Удалить ЖК</button>
           <button class="btn btn-secondary" onclick="switchTab('scoring'); renderScoringView('${c.id}')">${btnScoring}</button>
           <button class="btn btn-primary" onclick="openSignalAct('${c.id}')">${btnAct}</button>
         </div>
@@ -1604,8 +1613,8 @@
       if (modal) modal.style.display = 'flex';
       const addrInput = document.getElementById('new-comp-address');
       if (addrInput && !addrInput.value) {
-        addrInput.value = 'пр. Каныша Сатпаева, 9 (район КШТ)';
-        updateLiveGeocodePreview('пр. Каныша Сатпаева, 9 (район КШТ)');
+        addrInput.placeholder = 'Введите адрес (напр. пр. Победы, 13) или укажите на карте';
+        updateLiveGeocodePreview('');
       }
     }
     window.openAddComplexModal = openAddComplexModal;
@@ -1771,6 +1780,101 @@
     }
     window.pickCoordsFromMap = pickCoordsFromMap;
 
+    function reverseGeocodeCoordsLocal(lat, lng) {
+      const known = [
+        { lat: 49.94817, lng: 82.61670, addr: 'пр. Победы, 13 (мкр. Стрелка)' },
+        { lat: 49.94750, lng: 82.61350, addr: 'пр. Победы, 5 (мкр. Стрелка)' },
+        { lat: 49.94880, lng: 82.61750, addr: 'пр. Победы, 14 (мкр. Стрелка)' },
+        { lat: 49.95207, lng: 82.63645, addr: 'ул. Кабанбай Батыра, 134' },
+        { lat: 49.95150, lng: 82.63900, addr: 'ул. Кабанбай Батыра, 142' },
+        { lat: 49.95250, lng: 82.63200, addr: 'ул. Кабанбай Батыра, 114' },
+        { lat: 49.95350, lng: 82.62400, addr: 'ул. Кабанбай Батыра, 52' },
+        { lat: 49.94814, lng: 82.63402, addr: 'ул. Пермитина, 29 (мкр. Стрелка)' },
+        { lat: 49.94780, lng: 82.63200, addr: 'ул. Пермитина, 25 (мкр. Стрелка)' },
+        { lat: 49.94400, lng: 82.63020, addr: 'ул. Пермитина, 17 (Стрелка)' },
+        { lat: 49.89800, lng: 82.62360, addr: 'пр. Каныша Сатпаева, 9 (район КШТ)' },
+        { lat: 49.90510, lng: 82.61950, addr: 'пр. Каныша Сатпаева, 36 (район КШТ)' },
+        { lat: 49.90950, lng: 82.61900, addr: 'пр. Каныша Сатпаева, 88 (район КШТ)' },
+        { lat: 49.92950, lng: 82.61760, addr: 'пр. Каныша Сатпаева, 64 (район КШТ)' },
+        { lat: 49.92960, lng: 82.61600, addr: 'ул. Жибек Жолы, 3 (район КШТ)' },
+        { lat: 49.95200, lng: 82.61000, addr: 'ул. Абая, 5 (Центр)' },
+        { lat: 49.94900, lng: 82.62000, addr: 'ул. Казахстан, 64 (Центр города)' },
+        { lat: 49.94770, lng: 82.61350, addr: 'ул. Клубная, 20 (район Согра)' },
+        { lat: 49.96300, lng: 82.60800, addr: 'пр. Независимости, 30' },
+        { lat: 49.96700, lng: 82.61200, addr: 'бульвар Гагарина, 12' },
+        { lat: 49.98100, lng: 82.57300, addr: 'ул. Тынышпаева (мкр. Защита)' },
+        { lat: 50.02930, lng: 82.73850, addr: 'ул. Клубная (район Согра)' }
+      ];
+
+      let best = null;
+      let bestDist = 999999;
+      for (const item of known) {
+        const d = Math.hypot(lat - item.lat, (lng - item.lng) * 0.65);
+        if (d < bestDist) {
+          bestDist = d;
+          best = item;
+        }
+      }
+
+      if (best && bestDist < 0.0022) {
+        return best.addr;
+      }
+
+      if (lat < 49.935 && lng < 82.65) return 'пр. Каныша Сатпаева (район КШТ)';
+      if (lat >= 49.94 && lat <= 49.96 && lng <= 82.622) return 'мкр. Стрелка / пр. Победы';
+      if (lat >= 49.94 && lat <= 49.965 && lng > 82.622 && lng < 82.65) return 'ул. Кабанбай Батыра (Центр)';
+      if (lat >= 49.96 && lat <= 49.98 && lng > 82.60) return 'пр. Независимости / Студгородок';
+      if (lat > 49.97 && lng < 82.60) return 'микрорайон Защита';
+      if (lat > 50.00) return 'район Новая Согра';
+      return `г. Усть-Каменогорск (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+    }
+
+    function fetchOsmReverseGeocode(lat, lng, cb) {
+      const cbName = '_osm_rev_cb_' + Math.floor(Math.random() * 1000000);
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        cleanup();
+      }, 2500);
+
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cbName]; } catch(e) {}
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[cbName] = function(data) {
+        cleanup();
+        if (!data || !data.address) return;
+        const a = data.address;
+        let road = a.road || a.pedestrian || a.street || '';
+        if (/же[ңн][іи]с/i.test(road)) road = 'пр. Победы (Жеңіс)';
+        else if (/қабанбай/i.test(road)) road = 'ул. Кабанбай Батыра';
+        else if (/сәтбаев|сатпаев/i.test(road)) road = 'пр. Каныша Сатпаева';
+        else if (/абай/i.test(road)) road = 'пр. Абая';
+        else if (/қазақстан/i.test(road)) road = 'ул. Казахстан';
+        else if (/пермитин/i.test(road)) road = 'ул. Пермитина';
+        else if (/славск/i.test(road)) road = 'Набережная Славского';
+        else if (/тәуелсіздік|независимост/i.test(road)) road = 'пр. Независимости';
+
+        let res = road;
+        if (a.house_number) {
+          res = (res ? res + ', ' : '') + a.house_number;
+        }
+        const suburb = a.suburb || a.city_district || '';
+        if (suburb && !res.includes(suburb)) {
+          res = (res ? res + ' (' + suburb + ')' : suburb);
+        }
+        if (res && typeof cb === 'function') {
+          cb(res);
+        }
+      };
+
+      script.src = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&json_callback=${cbName}&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+      document.head.appendChild(script);
+    }
+
+    let tempPickedAddress = '';
+
     function jumpPickerMapTo(lat, lng, zoom = 15) {
       if (pickerMapInstance) {
         pickerMapInstance.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 });
@@ -1805,6 +1909,21 @@
         coordsDisplay.textContent = `[${lat.toFixed(5)}, ${lng.toFixed(5)}]`;
       }
 
+      // Мгновенное определение адреса (локальный словарь 0мс)
+      tempPickedAddress = reverseGeocodeCoordsLocal(lat, lng);
+      const addrDisplay = document.getElementById('map-picker-addr-val');
+      if (addrDisplay) {
+        addrDisplay.textContent = '📍 ' + tempPickedAddress;
+      }
+
+      // Доуточнение через живой OpenStreetMap Nominatim
+      fetchOsmReverseGeocode(lat, lng, (liveAddr) => {
+        if (liveAddr) {
+          tempPickedAddress = liveAddr;
+          if (addrDisplay) addrDisplay.textContent = '📍 ' + liveAddr;
+        }
+      });
+
       const hintEl = document.getElementById('map-picker-hint');
       if (hintEl) {
         hintEl.innerHTML = '<span style="color:#16a34a; font-weight:700;">✓ Точка зафиксирована.</span> Нажмите «Подтвердить выбор точки»';
@@ -1824,17 +1943,26 @@
         window.currentResolvedCoords = [lat, lng];
         const latInput = document.getElementById('new-comp-lat');
         const lngInput = document.getElementById('new-comp-lng');
+        const addrInput = document.getElementById('new-comp-address');
         const coordsEl = document.getElementById('geocode-coords-display');
         const badgeEl = document.getElementById('geocode-live-badge');
+        const distEl = document.getElementById('geocode-district-display');
+
         if (latInput) latInput.value = lat.toFixed(5);
         if (lngInput) lngInput.value = lng.toFixed(5);
+
+        if (tempPickedAddress) {
+          if (addrInput) addrInput.value = tempPickedAddress;
+          if (distEl) distEl.textContent = tempPickedAddress;
+        }
+
         if (coordsEl) coordsEl.textContent = `[${lat.toFixed(5)}, ${lng.toFixed(5)}] (выбрано на карте)`;
         if (badgeEl) {
           badgeEl.className = 'status-badge badge-green';
-          badgeEl.textContent = '🎯 Точка подтверждена на карте';
+          badgeEl.textContent = '🎯 Точка и адрес подтверждены';
         }
         if (typeof showCopyToast === 'function') {
-          showCopyToast(`✅ Координаты [${lat.toFixed(4)}, ${lng.toFixed(4)}] зафиксированы!`);
+          showCopyToast(`✅ Адрес «${tempPickedAddress || 'выбран на карте'}» [${lat.toFixed(4)}, ${lng.toFixed(4)}] подтверждён!`);
         }
       }
     }
@@ -1898,25 +2026,45 @@
 
       let savedComplex = null;
       if (typeof apiClient !== 'undefined' && apiClient.addComplex) {
-        const res = await apiClient.addComplex(complexData);
-        if (res && res.complex) {
-          savedComplex = normalizeComplexFromApi(res.complex);
+        try {
+          const res = await apiClient.addComplex(complexData);
+          if (res && res.complex) {
+            savedComplex = normalizeComplexFromApi(res.complex);
+          }
+        } catch(e) {
+          console.warn('Backend addComplex error, using local fallback:', e);
         }
       }
 
-      if (typeof apiClient !== 'undefined' && apiClient.isConnected && typeof syncWithBackend === 'function') {
-        await syncWithBackend();
-        const created = complexes.find(c => c.bin === bin || (c.names && c.names.ru === name));
-        if (created) savedComplex = created;
+      if (!savedComplex) {
+        savedComplex = addComplexLocal(complexData);
       } else {
-        if (!savedComplex) {
-          savedComplex = addComplexLocal(complexData);
-        } else {
+        if (!complexes.some(c => c.id === savedComplex.id)) {
           complexes.push(savedComplex);
-          auditLogEntries.unshift(`[${new Date().toLocaleTimeString()}] 🏗️ В реестр добавлен новый строящийся объект ${savedComplex.id} (${savedComplex.names.ru}, адрес: ${savedComplex.districts.ru})`);
-          saveState();
+        }
+        auditLogEntries.unshift(`[${new Date().toLocaleTimeString()}] 🏗️ В реестр добавлен новый строящийся объект ${savedComplex.id} (${savedComplex.names.ru}, адрес: ${savedComplex.districts.ru})`);
+        saveState();
+      }
+
+      if (typeof apiClient !== 'undefined' && apiClient.isConnected && typeof syncWithBackend === 'function') {
+        try {
+          await syncWithBackend();
+          const created = complexes.find(c => c.bin === bin || (c.names && c.names.ru === name));
+          if (created) savedComplex = created;
+        } catch(e) {
+          console.warn('Sync after add warning:', e);
         }
       }
+
+      // Очищаем форму под следующий ввод
+      const nameInp = document.getElementById('new-comp-name');
+      const devInp = document.getElementById('new-comp-dev');
+      const binInp = document.getElementById('new-comp-bin');
+      const addrInp = document.getElementById('new-comp-address');
+      if (nameInp) nameInp.value = '';
+      if (devInp) devInp.value = '';
+      if (binInp) binInp.value = '';
+      if (addrInp) addrInp.value = '';
 
       closeAddComplexModal();
       window.refreshAllViews();
