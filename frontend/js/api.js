@@ -196,6 +196,8 @@
     },
 
     async geocode(query) {
+      if (!query || typeof query !== 'string' || !query.trim()) return null;
+      // 1. Попытка через наш бэкенд FastAPI
       if (this.isConnected) {
         try {
           const res = await fetch(`${this.baseUrl}/geocode?q=${encodeURIComponent(query)}`);
@@ -203,7 +205,54 @@
             return await res.json();
           }
         } catch (e) {
-          console.warn('[apiClient] Geocode request failed, using local fallback', e);
+          // фоллбэк на прямой OpenStreetMap JSONP ниже
+        }
+      }
+      // 2. Прямой живой запрос к OpenStreetMap Nominatim через JSONP (работает независимо от состояния бэкенда)
+      if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.createElement) {
+        try {
+          return await new Promise((resolve) => {
+            const cbName = 'osm_cb_' + Math.random().toString(36).substring(2);
+            let clean = query.trim();
+            if (!/(усть-каменогорск|өскемен)/i.test(clean)) {
+              clean = 'Усть-Каменогорск, ' + clean;
+            }
+            const script = document.createElement('script');
+            const timer = setTimeout(() => {
+              cleanup();
+              resolve(null);
+            }, 3500);
+            function cleanup() {
+              clearTimeout(timer);
+              if (script.parentNode) script.parentNode.removeChild(script);
+              try { delete window[cbName]; } catch(_) {}
+            }
+            window[cbName] = function(data) {
+              cleanup();
+              if (Array.isArray(data) && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                // Проверяем, что координаты попадают в черту Усть-Каменогорска
+                if (lat >= 49.80 && lat <= 50.15 && lng >= 82.40 && lng <= 82.90) {
+                  resolve({
+                    status: 'success',
+                    coords: [lat, lng],
+                    lat: lat,
+                    lng: lng,
+                    source: 'osm_nominatim',
+                    displayName: data[0].display_name
+                  });
+                  return;
+                }
+              }
+              resolve(null);
+            };
+            script.src = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(clean)}&format=json&countrycodes=kz&limit=1&json_callback=${cbName}`;
+            script.onerror = () => { cleanup(); resolve(null); };
+            document.head.appendChild(script);
+          });
+        } catch(e) {
+          console.warn('[apiClient] Client OSM JSONP geocode failed', e);
         }
       }
       return null;
